@@ -3,9 +3,15 @@ import { connectDB } from "./config/db.js";
 import app from "./app.js";
 import "@dotenvx/dotenvx/config";
 
-dotenv.config();
-connectDB();
+export function startServer() {
+  dotenv.config();
+  connectDB();
 
-const PORT = process.env.PORT || 4000;
+  const PORT = process.env.PORT || 4000;
 
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+  return app.listen(PORT, () =>
+    console.log(`🚀 Server running on port ${PORT}`),
+  );
+}
+
+startServer();
