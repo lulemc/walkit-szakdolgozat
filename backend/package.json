@@ -1,0 +1,34 @@
+{
+  "name": "walkit_backend",
+  "version": "1.0.0",
+  "description": "NodeJS Express backend for walkit app",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon src/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lulemc/szakdolgozat.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/lulemc/szakdolgozat/issues"
+  },
+  "homepage": "https://github.com/lulemc/szakdolgozat#readme",
+  "dependencies": {
+    "@dotenvx/dotenvx": "^1.51.1",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^7.0.0",
+    "mongoose": "^9.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  }
+}
