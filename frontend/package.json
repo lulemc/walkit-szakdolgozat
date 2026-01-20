@@ -10,7 +10,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "prepare": "husky",
-     "test": "vitest run"
+    "test": "vitest run"
   },
   "dependencies": {
     "@expo/html-elements": "^0.13.7",
@@ -50,6 +50,7 @@
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
     "husky": "^9.1.7",
+    "jsdom": "^27.4.0",
     "typescript": "~5.9.2",
     "vitest": "^4.0.17"
   },
