@@ -2,9 +2,9 @@ name: CI
 
 on:
   pull_request:
-    branches: [ '**' ]
+    branches: [ '**' ]  # Run on PRs to all branches
   push:
-    branches: [ '**' ]
+    branches: [ '**' ]  # Run on pushes to all branches
 
 jobs:
   backend:
