@@ -10,7 +10,13 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "prepare": "husky",
-    "test": "vitest run"
+    "test": "jest --watchAll"
+  },
+  "jest": {
+    "preset": "jest-expo",
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/$1"
+    }
   },
   "dependencies": {
     "@expo/html-elements": "^0.13.7",
@@ -20,6 +26,7 @@
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.8",
+    "@testing-library/react": "^16.3.2",
     "axios": "^1.13.2",
     "babel-plugin-module-resolver": "^5.0.2",
     "dotenv": "^17.2.3",
@@ -36,8 +43,8 @@
     "expo-symbols": "~1.0.7",
     "expo-system-ui": "~6.0.8",
     "expo-web-browser": "~15.0.9",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
+    "react": "^19.2.3",
+    "react-dom": "19.2.3",
     "react-native": "0.81.5",
     "react-native-css-interop": "^0.2.1",
     "react-native-gesture-handler": "~2.28.0",
@@ -50,13 +57,19 @@
     "react-native-worklets": "0.5.1"
   },
   "devDependencies": {
-    "@types/react": "~19.1.0",
+    "@testing-library/jest-native": "^5.4.3",
+    "@testing-library/react-native": "^13.3.3",
+    "@types/jest": "^29.5.14",
+    "@types/react": "~19.2.3",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
     "husky": "^9.1.7",
+    "jest": "~29.7.0",
+    "jest-expo": "~54.0.16",
     "jsdom": "^27.4.0",
-    "typescript": "~5.9.2",
-    "vitest": "^4.0.17"
+    "react-test-renderer": "^19.2.3",
+    "ts-jest": "^29.4.6",
+    "typescript": "~5.9.2"
   },
   "private": true
 }
