@@ -40,6 +40,12 @@ describe("Server startup", () => {
 
     expect(dotenv.default.config).toHaveBeenCalled();
     expect(connectDB).toHaveBeenCalled();
-    expect(app.listen).toHaveBeenCalledWith("5000", expect.any(Function));
+
+    // Update this expectation to match the actual call
+    expect(app.listen).toHaveBeenCalledWith(
+      "5000",
+      "0.0.0.0",
+      expect.any(Function),
+    );
   });
 });

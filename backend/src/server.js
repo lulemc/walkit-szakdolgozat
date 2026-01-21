@@ -9,9 +9,10 @@ export function startServer() {
 
   const PORT = process.env.PORT || 4000;
 
-  return app.listen(PORT, () =>
+  return app.listen(PORT, "0.0.0.0", () =>
     console.log(`🚀 Server running on port ${PORT}`),
   );
 }
 
 startServer();
+//192.168.0.103
