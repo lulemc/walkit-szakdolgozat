@@ -77,7 +77,11 @@ describe("User controller", () => {
     expect(res.status).toHaveBeenCalledWith(201);
     expect(res.json).toHaveBeenCalledWith({
       message: "User created",
-      user: expect.any(Object),
+      token: expect.any(String),
+      user: expect.objectContaining({
+        name: "John",
+        email: "john@test.com",
+      }),
     });
   });
 
