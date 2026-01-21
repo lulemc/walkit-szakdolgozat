@@ -28,7 +28,7 @@ jobs:
         run: npm ci
 
       - name: Run backend tests
-        run: npm test:run
+        run: npm run test:run
 
   frontend:
     name: Frontend tests
