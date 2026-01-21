@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import * as SecureStore from "expo-secure-store";
 import { registerUser } from "@/services/authApi";
 import { useRouter } from "expo-router";
+import { storage } from "@/utils/storage";
 
 interface AuthContextType {
   token: string | null;
@@ -23,11 +23,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const bootstrap = async () => {
       try {
-        const storedToken = await SecureStore.getItemAsync("token");
-        console.log("Loaded token from storage:", storedToken);
+        const storedToken = await storage.getToken();
+        console.log("Loaded token:", storedToken);
         setToken(storedToken);
       } catch (err) {
-        console.log("Failed to load token", err);
+        console.error("Failed to load token", err);
       } finally {
         setLoading(false);
       }
@@ -35,24 +35,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     bootstrap();
   }, []);
 
-  const saveToken = async (newToken: string) => {
-    await SecureStore.setItemAsync("token", newToken);
-    setToken(newToken);
-  };
-
   const register = async (name: string, email: string, password: string) => {
     try {
       const res = await registerUser({ name, email, password });
-      console.log("Registration response:", res);
+      console.info("Registration response:", res);
 
       if (!res.token) {
         throw new Error("No token returned from backend");
       }
 
-      await saveToken(res.token);
-      router.replace("/home"); // go to home after registration
+      await storage.setToken(res.token);
+      setToken(res.token);
+
+      router.replace("/home");
     } catch (err: any) {
-      console.log("Registration failed:", err.response?.data || err.message);
+      console.error("Registration failed:", err.response?.data || err.message);
       throw err;
     }
   };

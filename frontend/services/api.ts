@@ -1,17 +1,16 @@
 import axios from 'axios';
-import { getToken, setToken, clearToken } from './tokenStore';
 import { refreshTokenRequest } from './authApi';
+import { storage } from '@/utils/storage';
 
 const api = axios.create({
   baseURL: process.env.EXPO_PUBLIC_API_URL,
   headers: { 'Content-Type': 'application/json' },
-  withCredentials: true,
 });
 
 /* ---------------- request interceptor ---------------- */
 
 api.interceptors.request.use(async (config) => {
-  const token = await getToken();
+  const token = await storage.getToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -59,7 +58,7 @@ api.interceptors.response.use(
 
       try {
         const { token } = await refreshTokenRequest();
-        await setToken(token);
+        await storage.setToken(token);
 
         processQueue(null, token);
 
@@ -67,7 +66,7 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (err) {
         processQueue(err, null);
-        await clearToken();
+        await storage.removeToken();
         return Promise.reject(err);
       } finally {
         isRefreshing = false;

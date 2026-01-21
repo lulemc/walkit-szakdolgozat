@@ -23,9 +23,10 @@ export default function RegisterScreen() {
 
   useEffect(() => {
     testNetworkRequest().catch((err) => {
-      console.log("Network test failed:", err.message);
+      console.error("Network test failed:", err.message);
     });
   }, []);
+
   const onSubmit = async () => {
     if (!name || !email || !password) {
       setError("All fields are required");
