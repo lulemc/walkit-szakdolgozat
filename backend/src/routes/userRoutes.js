@@ -5,11 +5,13 @@ import {
   getUserById,
   updateUser,
   deleteUser,
+  testNetwork,
 } from "../controllers/userController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
+router.get("/test", testNetwork);
 router.post("/register", registerUser);
 router.get("/:id", getUserById);
 router.put("/:id", updateUser);

@@ -1,5 +1,12 @@
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+
+const generateToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
+    expiresIn: "7d",
+  });
+};
 
 export const registerUser = async (req, res) => {
   try {
@@ -13,9 +20,16 @@ export const registerUser = async (req, res) => {
       passwordHash: hashed,
     });
 
+    const token = generateToken(user._id);
+
     res.status(201).json({
       message: "User created",
-      user,
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+      },
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -95,4 +109,9 @@ export const deleteUser = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+};
+
+export const testNetwork = async (req, res) => {
+  console.log("Network test endpoint hit");
+  res.json({ message: "Network test successful" });
 };
