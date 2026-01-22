@@ -1,10 +1,15 @@
 import express from "express";
 import cors from "cors";
+import swaggerUi from "swagger-ui-express"; // NEW
+import swaggerSpec from "./config/swagger.js"; // NEW
+
 import userRoutes from "./routes/userRoutes.js";
 import authRoutes from "./routes/auth.js";
+
 const allowedOrigins = [
-  "http://localhost:8081", // Expo web
-  "http://localhost:19006", // Expo web (older)
+  "http://localhost:8081",
+  "http://localhost:19006",
+  "http://localhost:4000",
 ];
 
 const app = express();
@@ -12,7 +17,6 @@ const app = express();
 app.use(
   cors({
     origin: (origin, callback) => {
-      // allow requests with no origin (mobile apps, curl, Postman)
       if (!origin) return callback(null, true);
 
       if (allowedOrigins.includes(origin)) {
@@ -27,6 +31,9 @@ app.use(
 );
 
 app.use(express.json());
+
+// 🔹 Swagger endpoint
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // API routes
 app.use("/api/users", userRoutes);
