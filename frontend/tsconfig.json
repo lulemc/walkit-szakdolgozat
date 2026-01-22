@@ -12,6 +12,8 @@
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
-    "tests/context/AuthProvider.test.js"
+    "tests/context/AuthProvider.test.js",
+    "src",
+    "src/types"
   ]
 }

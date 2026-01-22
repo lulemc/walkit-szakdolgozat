@@ -30,7 +30,7 @@ describe('authApi', () => {
 
       const result = await registerUser(mockUserData);
 
-      expect(mockedApi.post).toHaveBeenCalledWith('/users/register', mockUserData);
+      expect(mockedApi.post).toHaveBeenCalledWith('/auth/register', mockUserData);
       expect(result).toEqual(mockResponse.data);
     });
 
@@ -46,7 +46,7 @@ describe('authApi', () => {
 
       await expect(registerUser(mockUserData)).rejects.toThrow('Registration failed');
 
-      expect(mockedApi.post).toHaveBeenCalledWith('/users/register', mockUserData);
+      expect(mockedApi.post).toHaveBeenCalledWith('/auth/register', mockUserData);
     });
   });
 

@@ -1,13 +1,14 @@
 import { renderHook, act } from "@testing-library/react-native"; // Standard React hook tester
 import { AuthProvider, useAuth } from "../../context/AuthProvider";
-import { registerUser } from "@/services/authApi";
 import { storage } from "@/utils/storage";
 import { useRouter } from "expo-router";
 import React from "react";
+import { loginUser, registerUser } from "@/services/authApi";
 
 // Mock the API
 jest.mock("@/services/authApi", () => ({
   registerUser: jest.fn(),
+  loginUser: jest.fn(),
 }));
 
 // Mock Storage
@@ -67,7 +68,7 @@ describe("AuthContext Logic", () => {
 
     expect(storage.setToken).toHaveBeenCalledWith(mockToken);
     expect(result.current.token).toBe(mockToken);
-    expect(mockReplace).toHaveBeenCalledWith("/home");
+    expect(mockReplace).toHaveBeenCalledWith("/");
   });
 
   it("should handle registration errors", async () => {
@@ -85,5 +86,71 @@ describe("AuthContext Logic", () => {
 
     expect(result.current.token).toBeNull();
     expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it("should throw if register returns no token", async () => {
+    (registerUser as jest.Mock).mockResolvedValue({}); // no token
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await act(async () => {
+      await expect(
+        result.current.register("User", "test@test.com", "password"),
+      ).rejects.toThrow("No token returned from backend");
+    });
+
+    expect(storage.setToken).not.toHaveBeenCalled();
+    expect(result.current.token).toBeNull();
+  });
+
+  it("should login successfully and update state", async () => {
+    const mockToken = "login-token";
+    (loginUser as jest.Mock).mockResolvedValue({ token: mockToken });
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await act(async () => {
+      await result.current.login("test@test.com", "password");
+    });
+
+    expect(storage.setToken).toHaveBeenCalledWith(mockToken);
+    expect(result.current.token).toBe(mockToken);
+    expect(mockReplace).toHaveBeenCalledWith("/");
+  });
+
+  it("should throw if login returns no token", async () => {
+    (loginUser as jest.Mock).mockResolvedValue({}); // no token
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await act(async () => {
+      await expect(
+        result.current.login("test@test.com", "password"),
+      ).rejects.toThrow("No token returned from backend");
+    });
+
+    expect(storage.setToken).not.toHaveBeenCalled();
+    expect(result.current.token).toBeNull();
+  });
+
+  it("should log error if token loading fails", async () => {
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+
+    (storage.getToken as jest.Mock).mockRejectedValue(
+      new Error("Storage broken"),
+    );
+
+    renderHook(() => useAuth(), { wrapper });
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    expect(errorSpy).toHaveBeenCalledWith(
+      "Failed to load token",
+      expect.any(Error),
+    );
+
+    errorSpy.mockRestore();
   });
 });
