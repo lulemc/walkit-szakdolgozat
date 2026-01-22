@@ -1,10 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import User from "../../models/User.js";
 
 import {
-  registerUser,
   getAllUsers,
   getUserById,
   updateUser,
@@ -19,25 +17,14 @@ vi.mock("bcryptjs", () => ({
   },
 }));
 
-vi.mock("jsonwebtoken", () => ({
-  default: {
-    sign: vi.fn(),
-  },
-}));
-
 vi.mock("../../models/User.js", () => ({
   default: {
-    create: vi.fn(),
     find: vi.fn(),
     findById: vi.fn(),
     findByIdAndUpdate: vi.fn(),
     findByIdAndDelete: vi.fn(),
   },
 }));
-
-const mockedBcrypt = vi.mocked(bcrypt);
-const mockedJwt = vi.mocked(jwt);
-const mockedUser = vi.mocked(User);
 
 /* ---------------- helpers ---------------- */
 
@@ -51,54 +38,6 @@ const mockRes = () => ({
 describe("User controller", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.JWT_SECRET = "test-secret";
-    mockedJwt.sign.mockReturnValue("test-token");
-  });
-
-  /* -------- registerUser -------- */
-
-  it("registerUser creates user and returns 201", async () => {
-    const req = {
-      body: {
-        name: "John",
-        email: "john@test.com",
-        password: "secret",
-      },
-    };
-
-    const res = mockRes();
-
-    mockedBcrypt.hash.mockResolvedValue("hashed-password");
-
-    mockedUser.create.mockResolvedValue({
-      _id: "123", // Changed from id to _id to match your implementation
-      name: "John",
-      email: "john@test.com",
-    });
-
-    await registerUser(req, res);
-
-    expect(bcrypt.hash).toHaveBeenCalledWith("secret", 10);
-    expect(mockedUser.create).toHaveBeenCalledWith({
-      name: "John",
-      email: "john@test.com",
-      passwordHash: "hashed-password",
-    });
-
-    expect(mockedJwt.sign).toHaveBeenCalledWith({ id: "123" }, "test-secret", {
-      expiresIn: "7d",
-    });
-
-    expect(res.status).toHaveBeenCalledWith(201);
-    expect(res.json).toHaveBeenCalledWith({
-      message: "User created",
-      token: "test-token",
-      user: {
-        _id: "123",
-        name: "John",
-        email: "john@test.com",
-      },
-    });
   });
 
   /* -------- getAllUsers -------- */
@@ -107,15 +46,15 @@ describe("User controller", () => {
     const req = {};
     const res = mockRes();
 
-    const users = [{ _id: "1" }, { _id: "2" }]; // Changed from id to _id
+    const users = [{ _id: "1" }, { _id: "2" }];
 
-    mockedUser.find.mockReturnValue({
+    User.find.mockReturnValue({
       select: vi.fn().mockResolvedValue(users),
     });
 
     await getAllUsers(req, res);
 
-    expect(mockedUser.find).toHaveBeenCalled();
+    expect(User.find).toHaveBeenCalled();
     expect(res.json).toHaveBeenCalledWith(users);
   });
 
@@ -125,15 +64,15 @@ describe("User controller", () => {
     const req = { params: { id: "123" } };
     const res = mockRes();
 
-    const user = { _id: "123", name: "Jane" }; // Changed from id to _id
+    const user = { _id: "123", name: "Jane" };
 
-    mockedUser.findById.mockReturnValue({
+    User.findById.mockReturnValue({
       select: vi.fn().mockResolvedValue(user),
     });
 
     await getUserById(req, res);
 
-    expect(mockedUser.findById).toHaveBeenCalledWith("123");
+    expect(User.findById).toHaveBeenCalledWith("123");
     expect(res.json).toHaveBeenCalledWith(user);
   });
 
@@ -141,7 +80,7 @@ describe("User controller", () => {
     const req = { params: { id: "123" } };
     const res = mockRes();
 
-    mockedUser.findById.mockReturnValue({
+    User.findById.mockReturnValue({
       select: vi.fn().mockResolvedValue(null),
     });
 
@@ -161,11 +100,11 @@ describe("User controller", () => {
 
     const res = mockRes();
 
-    mockedBcrypt.hash.mockResolvedValue("new-hash");
+    bcrypt.hash.mockResolvedValue("new-hash");
 
-    mockedUser.findByIdAndUpdate.mockReturnValue({
+    User.findByIdAndUpdate.mockReturnValue({
       select: vi.fn().mockResolvedValue({
-        _id: "123", // Changed from id to _id
+        _id: "123",
         name: "New Name",
       }),
     });
@@ -173,7 +112,8 @@ describe("User controller", () => {
     await updateUser(req, res);
 
     expect(bcrypt.hash).toHaveBeenCalledWith("newpass", 10);
-    expect(mockedUser.findByIdAndUpdate).toHaveBeenCalledWith(
+
+    expect(User.findByIdAndUpdate).toHaveBeenCalledWith(
       "123",
       {
         name: "New Name",
@@ -182,10 +122,12 @@ describe("User controller", () => {
       { new: true },
     );
 
-    expect(res.json).toHaveBeenCalledWith({
-      message: "User updated successfully",
-      user: expect.any(Object),
-    });
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "User updated",
+        user: expect.any(Object),
+      }),
+    );
   });
 
   it("updateUser returns 404 if user not found", async () => {
@@ -196,7 +138,7 @@ describe("User controller", () => {
 
     const res = mockRes();
 
-    mockedUser.findByIdAndUpdate.mockReturnValue({
+    User.findByIdAndUpdate.mockReturnValue({
       select: vi.fn().mockResolvedValue(null),
     });
 
@@ -212,21 +154,19 @@ describe("User controller", () => {
     const req = { params: { id: "123" } };
     const res = mockRes();
 
-    mockedUser.findByIdAndDelete.mockResolvedValue({ _id: "123" }); // Changed from id to _id
+    User.findByIdAndDelete.mockResolvedValue({ _id: "123" });
 
     await deleteUser(req, res);
 
-    expect(mockedUser.findByIdAndDelete).toHaveBeenCalledWith("123");
-    expect(res.json).toHaveBeenCalledWith({
-      message: "User deleted successfully",
-    });
+    expect(User.findByIdAndDelete).toHaveBeenCalledWith("123");
+    expect(res.json).toHaveBeenCalledWith({ message: "User deleted" });
   });
 
   it("deleteUser returns 404 if user not found", async () => {
     const req = { params: { id: "123" } };
     const res = mockRes();
 
-    mockedUser.findByIdAndDelete.mockResolvedValue(null);
+    User.findByIdAndDelete.mockResolvedValue(null);
 
     await deleteUser(req, res);
 

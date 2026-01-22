@@ -30,6 +30,6 @@ app.use(express.json());
 
 // API routes
 app.use("/api/users", userRoutes);
-app.use("/auth", authRoutes);
+app.use("/api/auth", authRoutes);
 
 export default app;
