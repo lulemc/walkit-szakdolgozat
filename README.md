@@ -1,23 +1,23 @@
 # walkit-szakdolgozat
-Városi sétatervező alkalmazás React Native környezetben 
+
+Városi sétatervező alkalmazás React Native környezetben
 
 # Frontend
-Indítás: 
+
+Indítás:
 
     npm i
     npm start
 
 A mobilon való teszteléshez előzetesen telepíteni kell az [Expo Go](https://expo.dev/go) alkalmazást.
+
 # Backend
 
-Indítás: 
+Indítás:
 
     npm i
     npm run dev
 
 Az alkalmazás a `localhost:4000`-en fog futni
 
-
-
-
-
+ipconfig getifaddr en0 - backend URL
