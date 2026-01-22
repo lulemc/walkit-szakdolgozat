@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import User from "../../models/User.js";
 
 import {
@@ -18,6 +19,12 @@ vi.mock("bcryptjs", () => ({
   },
 }));
 
+vi.mock("jsonwebtoken", () => ({
+  default: {
+    sign: vi.fn(),
+  },
+}));
+
 vi.mock("../../models/User.js", () => ({
   default: {
     create: vi.fn(),
@@ -28,6 +35,8 @@ vi.mock("../../models/User.js", () => ({
   },
 }));
 
+const mockedBcrypt = vi.mocked(bcrypt);
+const mockedJwt = vi.mocked(jwt);
 const mockedUser = vi.mocked(User);
 
 /* ---------------- helpers ---------------- */
@@ -42,6 +51,8 @@ const mockRes = () => ({
 describe("User controller", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    process.env.JWT_SECRET = "test-secret";
+    mockedJwt.sign.mockReturnValue("test-token");
   });
 
   /* -------- registerUser -------- */
@@ -57,10 +68,10 @@ describe("User controller", () => {
 
     const res = mockRes();
 
-    bcrypt.hash.mockResolvedValue("hashed-password");
+    mockedBcrypt.hash.mockResolvedValue("hashed-password");
 
     mockedUser.create.mockResolvedValue({
-      id: "123",
+      _id: "123", // Changed from id to _id to match your implementation
       name: "John",
       email: "john@test.com",
     });
@@ -74,14 +85,19 @@ describe("User controller", () => {
       passwordHash: "hashed-password",
     });
 
+    expect(mockedJwt.sign).toHaveBeenCalledWith({ id: "123" }, "test-secret", {
+      expiresIn: "7d",
+    });
+
     expect(res.status).toHaveBeenCalledWith(201);
     expect(res.json).toHaveBeenCalledWith({
       message: "User created",
-      token: expect.any(String),
-      user: expect.objectContaining({
+      token: "test-token",
+      user: {
+        _id: "123",
         name: "John",
         email: "john@test.com",
-      }),
+      },
     });
   });
 
@@ -91,7 +107,7 @@ describe("User controller", () => {
     const req = {};
     const res = mockRes();
 
-    const users = [{ id: "1" }, { id: "2" }];
+    const users = [{ _id: "1" }, { _id: "2" }]; // Changed from id to _id
 
     mockedUser.find.mockReturnValue({
       select: vi.fn().mockResolvedValue(users),
@@ -109,7 +125,7 @@ describe("User controller", () => {
     const req = { params: { id: "123" } };
     const res = mockRes();
 
-    const user = { id: "123", name: "Jane" };
+    const user = { _id: "123", name: "Jane" }; // Changed from id to _id
 
     mockedUser.findById.mockReturnValue({
       select: vi.fn().mockResolvedValue(user),
@@ -145,11 +161,11 @@ describe("User controller", () => {
 
     const res = mockRes();
 
-    bcrypt.hash.mockResolvedValue("new-hash");
+    mockedBcrypt.hash.mockResolvedValue("new-hash");
 
     mockedUser.findByIdAndUpdate.mockReturnValue({
       select: vi.fn().mockResolvedValue({
-        id: "123",
+        _id: "123", // Changed from id to _id
         name: "New Name",
       }),
     });
@@ -196,7 +212,7 @@ describe("User controller", () => {
     const req = { params: { id: "123" } };
     const res = mockRes();
 
-    mockedUser.findByIdAndDelete.mockResolvedValue({ id: "123" });
+    mockedUser.findByIdAndDelete.mockResolvedValue({ _id: "123" }); // Changed from id to _id
 
     await deleteUser(req, res);
 
