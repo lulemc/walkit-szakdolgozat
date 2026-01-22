@@ -3,7 +3,8 @@ import jwt from "jsonwebtoken";
 import User from "../../models/User.js";
 import { protect } from "../../middleware/authMiddleware.js";
 
-// ---- mocks ----
+/* ---------------- mocks ---------------- */
+
 vi.mock("jsonwebtoken", () => ({
   default: {
     verify: vi.fn(),
@@ -16,15 +17,15 @@ vi.mock("../../models/User.js", () => ({
   },
 }));
 
+/* ---------------- tests ---------------- */
+
 describe("authMiddleware - protect", () => {
   let req;
   let res;
   let next;
 
   beforeEach(() => {
-    req = {
-      headers: {},
-    };
+    req = { headers: {} };
 
     res = {
       status: vi.fn().mockReturnThis(),
@@ -34,10 +35,11 @@ describe("authMiddleware - protect", () => {
     next = vi.fn();
 
     vi.clearAllMocks();
+    process.env.JWT_SECRET = "test-secret";
   });
 
   it("calls next and attaches user when token is valid", async () => {
-    const mockUser = { id: "123", email: "test@test.com" };
+    const mockUser = { _id: "123", email: "test@test.com" };
 
     req.headers.authorization = "Bearer validtoken";
 
@@ -49,10 +51,7 @@ describe("authMiddleware - protect", () => {
 
     await protect(req, res, next);
 
-    expect(jwt.verify).toHaveBeenCalledWith(
-      "validtoken",
-      process.env.JWT_SECRET,
-    );
+    expect(jwt.verify).toHaveBeenCalledWith("validtoken", "test-secret");
 
     expect(User.findById).toHaveBeenCalledWith("123");
     expect(req.user).toEqual(mockUser);
@@ -69,9 +68,11 @@ describe("authMiddleware - protect", () => {
     await protect(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith({
-      message: "Not authorized, token failed",
-    });
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "Not authorized, token failed",
+      }),
+    );
     expect(next).not.toHaveBeenCalled();
   });
 
