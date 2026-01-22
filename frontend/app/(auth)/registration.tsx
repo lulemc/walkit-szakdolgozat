@@ -1,23 +1,26 @@
-import { useEffect, useState } from "react";
-import { View, StyleSheet } from "react-native";
-import {
-  TextInput,
-  Button,
-  Text,
-  HelperText,
-  useTheme,
-} from "react-native-paper";
+import React, { useEffect, useState } from "react";
+import { StyleSheet } from "react-native";
+import { HelperText } from "react-native-paper";
 import { useRouter } from "expo-router";
+import { useTextInput } from "@/hooks/form/useTextInput";
 import { useAuth } from "@/context/AuthProvider";
 import { testNetworkRequest } from "@/services/authApi";
+import {
+  CustomText,
+  RowLayout,
+  CustomTextInput,
+  ScreenContainer,
+  PrimaryButton,
+} from "@/components";
 
-export default function RegisterScreen() {
+const RegisterScreen: React.FC = () => {
   const router = useRouter();
-  const theme = useTheme();
   const { register } = useAuth();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+
+  const name = useTextInput();
+  const email = useTextInput();
+  const password = useTextInput();
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,7 +31,7 @@ export default function RegisterScreen() {
   }, []);
 
   const onSubmit = async () => {
-    if (!name || !email || !password) {
+    if (!name.value || !email.value || !password.value) {
       setError("All fields are required");
       return;
     }
@@ -37,9 +40,7 @@ export default function RegisterScreen() {
       setLoading(true);
       setError(null);
 
-      await register(name, email, password);
-
-      router.replace("/");
+      await register(name.value, email.value, password.value);
     } catch (err: any) {
       setError(err.response?.data?.message || "Registration failed");
     } finally {
@@ -48,48 +49,32 @@ export default function RegisterScreen() {
   };
 
   return (
-    <View
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-    >
-      <Text
-        variant="headlineMedium"
-        style={{ ...styles.title, color: theme.colors.primary }}
-      >
+    <ScreenContainer style={styles.container}>
+      <CustomText variant="headlineMedium" style={styles.title}>
         Create account
-      </Text>
-
-      <TextInput
+      </CustomText>
+      <CustomTextInput
         label="Name"
-        mode="outlined"
-        value={name}
-        onChangeText={setName}
-        style={styles.input}
+        value={name.value}
+        onChangeText={name.onChangeText}
       />
-
-      <TextInput
+      <CustomTextInput
         label="Email"
-        mode="outlined"
+        value={email.value}
+        onChangeText={email.onChangeText}
         autoCapitalize="none"
         keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
-        style={styles.input}
       />
-
-      <TextInput
+      <CustomTextInput
         label="Password"
-        mode="outlined"
+        value={password.value}
+        onChangeText={password.onChangeText}
         secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-        style={styles.input}
       />
-
       <HelperText type="error" visible={!!error}>
         {error}
       </HelperText>
-
-      <Button
+      <PrimaryButton
         mode="contained"
         onPress={onSubmit}
         loading={loading}
@@ -97,28 +82,29 @@ export default function RegisterScreen() {
         style={styles.button}
       >
         Register
-      </Button>
-
-      <Button mode="text" onPress={() => router.replace("/login")}>
-        Already have an account? Login
-      </Button>
-    </View>
+      </PrimaryButton>
+      <RowLayout>
+        <CustomText>Already have an account?</CustomText>
+        <PrimaryButton mode="text" onPress={() => router.replace("/login")}>
+          <CustomText custom="link">Login</CustomText>
+        </PrimaryButton>
+      </RowLayout>
+    </ScreenContainer>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     justifyContent: "center",
     padding: 24,
   },
   title: {
     marginBottom: 24,
-  },
-  input: {
-    marginBottom: 12,
+    textAlign: "center",
   },
   button: {
     marginTop: 12,
   },
 });
+
+export default RegisterScreen;
