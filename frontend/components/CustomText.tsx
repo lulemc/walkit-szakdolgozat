@@ -1,6 +1,7 @@
 import { colors } from "@/theme/colors";
 import React, { ReactNode } from "react";
 import { Text, TextProps } from "react-native-paper";
+import { useTheme } from "react-native-paper";
 
 interface CustomTextProps extends TextProps<any> {
   children: ReactNode;
@@ -14,6 +15,8 @@ export const CustomText: React.FC<CustomTextProps> = ({
   custom,
   ...props
 }) => {
+  const theme = useTheme();
+
   switch (custom) {
     case "link":
       style = [{ color: colors.khaki }, style];
@@ -25,9 +28,10 @@ export const CustomText: React.FC<CustomTextProps> = ({
       style = [{ color: colors.error }, style];
       break;
     default:
-      style = [{ color: colors.beige }, style];
+      style = [{ color: theme.colors.onSurface }, style];
       break;
   }
+
   return (
     <Text variant={variant} style={style} {...props}>
       {children}

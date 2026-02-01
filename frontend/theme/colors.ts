@@ -6,4 +6,5 @@ export const colors = {
   khaki: '#d8d355',
   error: '#fc741d',
   grey: '#3a3a3a',
+  darkGreen: '#8eb198',
 };

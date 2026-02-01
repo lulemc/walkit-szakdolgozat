@@ -21,6 +21,9 @@ export const lightTheme: MD3Theme = {
     primary: brandColors.primary,
     secondary: brandColors.secondary,
     error: brandColors.error,
+    background: brandColors.beige,
+    onBackground: brandColors.black,
+    onSurface: brandColors.black,
   },
 };
 
@@ -34,7 +37,8 @@ export const darkTheme: MD3Theme = {
     secondary: brandColors.secondary,
     error: brandColors.error,
     background: brandColors.black,
-    onBackground: brandColors.beige
+    onBackground: brandColors.beige,
+    onSurface: brandColors.beige,
 
   },
 };

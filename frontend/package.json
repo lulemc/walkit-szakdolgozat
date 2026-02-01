@@ -24,6 +24,9 @@
     "@expo/html-elements": "^0.13.7",
     "@expo/vector-icons": "^15.0.3",
     "@react-native-async-storage/async-storage": "^2.2.0",
+    "@react-native-vector-icons/evil-icons": "^12.4.0",
+    "@react-native-vector-icons/fontawesome": "^12.4.0",
+    "@react-native-vector-icons/fontawesome6": "^12.3.0",
     "@react-native-vector-icons/material-design-icons": "^12.4.0",
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/elements": "^2.6.3",
@@ -73,5 +76,10 @@
     "ts-jest": "^29.4.6",
     "typescript": "~5.9.2"
   },
-  "private": true
+  "private": true,
+  "fontDir": {
+    "reactNativeVectorIcons": {
+      "fontDir": "src/rnvi-fonts"
+    }
+  }
 }
