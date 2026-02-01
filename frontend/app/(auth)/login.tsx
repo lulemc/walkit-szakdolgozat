@@ -33,7 +33,7 @@ const LoginScreen: React.FC = () => {
 
       await login(email.value, password.value);
     } catch (err: any) {
-      setError(err.response?.data?.message || "Registration failed");
+      setError(err.response?.data?.message || "Login failed");
     } finally {
       setLoading(false);
     }

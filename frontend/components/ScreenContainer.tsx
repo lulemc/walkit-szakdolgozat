@@ -1,5 +1,5 @@
 import React, { ReactNode } from "react";
-import { View, StyleSheet, ViewStyle } from "react-native";
+import { View, ViewStyle } from "react-native";
 import { useTheme } from "react-native-paper";
 
 interface ScreenContainerProps {
@@ -16,8 +16,12 @@ export const ScreenContainer: React.FC<ScreenContainerProps> = ({
   return (
     <View
       style={[
-        styles.container,
-        { backgroundColor: theme.colors.background },
+        {
+          backgroundColor: theme.colors.background,
+          flex: 1,
+          padding: 24,
+          justifyContent: "center",
+        },
         style,
       ]}
     >
@@ -25,11 +29,3 @@ export const ScreenContainer: React.FC<ScreenContainerProps> = ({
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 24,
-    justifyContent: "center",
-  },
-});
