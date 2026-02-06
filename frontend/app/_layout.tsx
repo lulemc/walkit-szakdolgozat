@@ -3,6 +3,7 @@ import { Provider as PaperProvider } from "react-native-paper";
 import { AuthProvider, useAuth } from "@/context/AuthProvider";
 import { lightTheme, darkTheme } from "@/theme/paperTheme";
 import { useColorScheme, View, Text } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 function AppContent() {
   const { token, loading } = useAuth();
@@ -27,7 +28,12 @@ export default function RootLayout() {
   const theme = scheme === "dark" ? darkTheme : lightTheme;
 
   return (
-    <PaperProvider theme={theme}>
+    <PaperProvider
+      theme={theme}
+      settings={{
+        icon: (props) => <Ionicons {...props} />,
+      }}
+    >
       <AuthProvider>
         <AppContent />
       </AuthProvider>
