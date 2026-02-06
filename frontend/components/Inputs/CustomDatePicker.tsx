@@ -7,12 +7,14 @@ interface CustomDatePickerProps {
   value: Date;
   onChange: (event: any, selectedDate?: Date) => void;
   label: string;
+  disabled?: boolean;
 }
 
 export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   value,
   onChange,
   label,
+  disabled = false,
 }) => {
   return (
     <View style={styles.rowInputContainer}>
@@ -23,6 +25,7 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
         accentColor={colors.khaki}
         display="default"
         onChange={onChange}
+        disabled={disabled}
       />
     </View>
   );

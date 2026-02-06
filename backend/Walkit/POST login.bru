@@ -1,0 +1,23 @@
+meta {
+  name: POST login
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://192.168.0.158:4000/api/auth/login
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "email": "testjan22@gmail.com",
+    "password": "testjan22"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

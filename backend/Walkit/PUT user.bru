@@ -1,0 +1,24 @@
+meta {
+  name: PUT user
+  type: http
+  seq: 3
+}
+
+put {
+  url: http://192.168.0.158:4000/api/users/?id=697251811fe35563f6adbc6a
+  body: none
+  auth: bearer
+}
+
+params:query {
+  id: 697251811fe35563f6adbc6a
+}
+
+auth:bearer {
+  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5NzI1MTgxMWZlMzU1NjNmNmFkYmM2YSIsImlhdCI6MTc3MDQwOTgzOCwiZXhwIjoxNzcxMDE0NjM4fQ.SpwfsnoQ8SCcCPmAzUhKDNaH3PP6eDJniTocht7gESI
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -1,6 +1,7 @@
-import { renderHook, act } from "@testing-library/react-native"; // Standard React hook tester
+import { renderHook, act } from "@testing-library/react-native";
 import { AuthProvider, useAuth } from "../../context/AuthProvider";
 import { storage } from "@/utils/storage";
+import { userStorage } from "@/utils/userStorage";
 import { useRouter } from "expo-router";
 import React from "react";
 import { loginUser, registerUser } from "@/services/authApi";
@@ -16,6 +17,16 @@ jest.mock("@/utils/storage", () => ({
   storage: {
     getToken: jest.fn(),
     setToken: jest.fn(),
+    removeToken: jest.fn(),
+  },
+}));
+
+// Mock User Storage
+jest.mock("@/utils/userStorage", () => ({
+  userStorage: {
+    getUser: jest.fn(),
+    setUser: jest.fn(),
+    removeUser: jest.fn(),
   },
 }));
 
@@ -30,6 +41,10 @@ jest.mock("expo-router", () => ({
 describe("AuthContext Logic", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Setup default mock implementations for userStorage
+    (userStorage.getUser as jest.Mock).mockResolvedValue(null);
+    (userStorage.setUser as jest.Mock).mockResolvedValue(undefined);
+    (userStorage.removeUser as jest.Mock).mockResolvedValue(undefined);
   });
 
   const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -37,7 +52,14 @@ describe("AuthContext Logic", () => {
   );
 
   it("should initialize with token from storage", async () => {
+    const mockUser = {
+      _id: "123",
+      name: "Test User",
+      email: "test@test.com",
+    };
+
     (storage.getToken as jest.Mock).mockResolvedValue("existing-token");
+    (userStorage.getUser as jest.Mock).mockResolvedValue(mockUser);
 
     const { result } = renderHook(() => useAuth(), { wrapper });
 
@@ -52,8 +74,17 @@ describe("AuthContext Logic", () => {
 
   it("should register successfully and update state", async () => {
     const mockToken = "new-jwt-token";
+    const mockUser = {
+      _id: "123",
+      name: "Test User",
+      email: "test@test.com",
+    };
+
     (storage.getToken as jest.Mock).mockResolvedValue(null);
-    (registerUser as jest.Mock).mockResolvedValue({ token: mockToken });
+    (registerUser as jest.Mock).mockResolvedValue({
+      token: mockToken,
+      user: mockUser,
+    });
 
     const { result } = renderHook(() => useAuth(), { wrapper });
 
@@ -67,6 +98,7 @@ describe("AuthContext Logic", () => {
     });
 
     expect(storage.setToken).toHaveBeenCalledWith(mockToken);
+    expect(userStorage.setUser).toHaveBeenCalledWith(mockUser);
     expect(result.current.token).toBe(mockToken);
     expect(mockReplace).toHaveBeenCalledWith("/");
   });
@@ -105,7 +137,16 @@ describe("AuthContext Logic", () => {
 
   it("should login successfully and update state", async () => {
     const mockToken = "login-token";
-    (loginUser as jest.Mock).mockResolvedValue({ token: mockToken });
+    const mockUser = {
+      _id: "456",
+      name: "Login User",
+      email: "login@test.com",
+    };
+
+    (loginUser as jest.Mock).mockResolvedValue({
+      token: mockToken,
+      user: mockUser,
+    });
 
     const { result } = renderHook(() => useAuth(), { wrapper });
 
@@ -114,6 +155,7 @@ describe("AuthContext Logic", () => {
     });
 
     expect(storage.setToken).toHaveBeenCalledWith(mockToken);
+    expect(userStorage.setUser).toHaveBeenCalledWith(mockUser);
     expect(result.current.token).toBe(mockToken);
     expect(mockReplace).toHaveBeenCalledWith("/");
   });
@@ -131,6 +173,41 @@ describe("AuthContext Logic", () => {
 
     expect(storage.setToken).not.toHaveBeenCalled();
     expect(result.current.token).toBeNull();
+  });
+
+  it("should logout successfully and clear token", async () => {
+    const mockToken = "login-token";
+    const mockUser = {
+      _id: "456",
+      name: "Login User",
+      email: "login@test.com",
+    };
+
+    (loginUser as jest.Mock).mockResolvedValue({
+      token: mockToken,
+      user: mockUser,
+    });
+    (storage.removeToken as jest.Mock).mockResolvedValue(undefined);
+    (userStorage.removeUser as jest.Mock).mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    // First login
+    await act(async () => {
+      await result.current.login("test@test.com", "password");
+    });
+
+    expect(result.current.token).toBe(mockToken);
+
+    // Then logout
+    await act(async () => {
+      await result.current.logout();
+    });
+
+    expect(storage.removeToken).toHaveBeenCalled();
+    expect(userStorage.removeUser).toHaveBeenCalled();
+    expect(result.current.token).toBeNull();
+    expect(mockReplace).toHaveBeenCalledWith("/(auth)/login");
   });
 
   it("should log error if token loading fails", async () => {

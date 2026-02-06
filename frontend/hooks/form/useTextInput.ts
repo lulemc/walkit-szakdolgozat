@@ -7,8 +7,6 @@ interface UseTextInputOptions {
 export const useTextInput = ({ initialValue = "" }: UseTextInputOptions = {}) => {
   const [value, setValue] = useState(initialValue);
   const onChangeText = (text: string) => {
-    console.log(" text:", text);
-
     setValue(text);
   };
 

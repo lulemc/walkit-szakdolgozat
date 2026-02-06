@@ -4,6 +4,7 @@ import {
   getUserById,
   updateUser,
   deleteUser,
+  changePassword,
 } from "../controllers/userController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
@@ -105,5 +106,36 @@ router.put("/:id", protect, updateUser);
  *         description: User deleted
  */
 router.delete("/:id", protect, deleteUser);
+
+/**
+ * @swagger
+ * /api/users/{id}/change-password:
+ *   post:
+ *     summary: Change user password
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               currentPassword:
+ *                 type: string
+ *               newPassword:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Password changed successfully
+ */
+router.post("/:id/change-password", protect, changePassword); // ADD THIS ROUTE
 
 export default router;
