@@ -1,7 +1,9 @@
+import { User } from '@/models/User';
 import api from './api';
 
 type AuthResponse = {
   token: string;
+  user: User;
 };
 
 export const registerUser = async (data: { name: string; email: string; password: string }) => {

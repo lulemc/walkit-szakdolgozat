@@ -6,8 +6,8 @@ export const sexOptions = [
 
 export const activityLevelOptions = [
   { label: "Sedentary", value: "sedentary" },
-  { label: "Lightly Active", value: "lightly_active" },
-  { label: "Moderately Active", value: "moderately_active" },
+  { label: "Lightly Active", value: "light" },
+  { label: "Moderately Active", value: "moderate" },
+  { label: "Active", value: "active" },
   { label: "Very Active", value: "very_active" },
-  { label: "Extra Active", value: "extra_active" },
 ];

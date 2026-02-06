@@ -3,7 +3,7 @@ import { useEffect } from "react";
 
 export default function Home() {
   useEffect(() => {
-    // Simulate an async operation, e.g., fetching data
+    // Simulate an async operation, e.g., fetching datac
   }, []);
 
   return (

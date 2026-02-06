@@ -1,25 +1,47 @@
-import { CustomText, ScreenContainer } from "@/components";
+import { PrimaryButton, ScreenContainer } from "@/components";
 import AppSettings from "@/components/Settings/AppSettings";
 import ProfileHeader from "@/components/Settings/ProfileHeader";
 import ProfileSettings from "@/components/Settings/ProfileSettings";
-import { useState, useEffect } from "react";
+import { useAuth } from "@/context/AuthProvider";
+import { User } from "@/models/User";
+import { useEffect, useState } from "react";
 import { Divider } from "react-native-paper";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { userStorage } from "@/utils/userStorage";
 
 export default function Settings() {
-  const insets = useSafeAreaInsets();
+  const { logout } = useAuth();
+  const [user, setUser] = useState<User | null>(null);
+
+  const onLogout = async () => {
+    await logout().then((res) => console.log(res));
+  };
+
+  const handleProfileUpdate = (updatedUser: User) => {
+    setUser(updatedUser);
+  };
 
   useEffect(() => {
-    // Simulate an async operation, e.g., fetching data
+    const fetchUser = async () => {
+      const currentUser = await userStorage.getUser();
+      setUser(currentUser ? currentUser : null);
+    };
+
+    fetchUser();
+    return () => {
+      setUser(null);
+    };
   }, []);
 
   return (
     <ScreenContainer scrollable={true}>
-      <ProfileHeader />
+      {user && <ProfileHeader {...user} />}
       <Divider />
-      <ProfileSettings />
+      {user && (
+        <ProfileSettings {...user} onProfileUpdate={handleProfileUpdate} />
+      )}
       <Divider />
       <AppSettings />
+      <PrimaryButton onPress={() => onLogout()}>Log out</PrimaryButton>
     </ScreenContainer>
   );
 }
