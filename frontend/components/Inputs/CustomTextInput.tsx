@@ -1,17 +1,13 @@
 import React from "react";
 import { StyleSheet } from "react-native";
-import { TextInput, useTheme } from "react-native-paper";
+import { TextInput, TextInputProps, useTheme } from "react-native-paper";
 
-interface CustomTextInputProps {
+interface CustomTextInputProps extends TextInputProps {
   label: string;
   value: string;
   onChangeText: (text: string) => void;
   secureTextEntry?: boolean;
-  keyboardType?: "default" | "email-address" | "numeric";
-  autoCapitalize?: "none" | "sentences" | "words" | "characters";
   error?: boolean;
-  editable?: boolean;
-  disabled?: boolean;
 }
 
 export const CustomTextInput: React.FC<CustomTextInputProps> = ({
@@ -22,8 +18,7 @@ export const CustomTextInput: React.FC<CustomTextInputProps> = ({
   keyboardType = "default",
   autoCapitalize = "none",
   error = false,
-  editable = true,
-  disabled = false,
+  ...props
 }) => {
   const theme = useTheme();
 
@@ -39,8 +34,7 @@ export const CustomTextInput: React.FC<CustomTextInputProps> = ({
       error={error}
       style={styles.input}
       theme={{ colors: { primary: theme.colors.primary } }}
-      editable={editable}
-      disabled={disabled}
+      {...props}
     />
   );
 };

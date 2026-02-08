@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
-import { User } from '@/models/User';
+import { User } from '@/types/User';
 
 export const userStorage = {
   getUser: async (): Promise<User | null> => {
