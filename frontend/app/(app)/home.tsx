@@ -1,5 +1,6 @@
-import { CustomText, ScreenContainer } from "@/components";
+import { ScreenContainer } from "@/components";
 import { useEffect } from "react";
+import WalkPlanner from "@/components/WalkPlanner/WalkPlanner";
 
 export default function Home() {
   useEffect(() => {
@@ -7,8 +8,8 @@ export default function Home() {
   }, []);
 
   return (
-    <ScreenContainer>
-      <CustomText>Home screen</CustomText>
+    <ScreenContainer style={{ padding: 0 }}>
+      <WalkPlanner />
     </ScreenContainer>
   );
 }

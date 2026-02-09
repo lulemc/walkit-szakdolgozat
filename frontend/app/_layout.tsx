@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from "@/context/AuthProvider";
 import { lightTheme, darkTheme } from "@/theme/paperTheme";
 import { useColorScheme, View, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 function AppContent() {
   const { token, loading } = useAuth();
@@ -28,15 +29,17 @@ export default function RootLayout() {
   const theme = scheme === "dark" ? darkTheme : lightTheme;
 
   return (
-    <PaperProvider
-      theme={theme}
-      settings={{
-        icon: (props) => <Ionicons {...props} />,
-      }}
-    >
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </PaperProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <PaperProvider
+        theme={theme}
+        settings={{
+          icon: (props) => <Ionicons {...props} />,
+        }}
+      >
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </PaperProvider>
+    </GestureHandlerRootView>
   );
 }
