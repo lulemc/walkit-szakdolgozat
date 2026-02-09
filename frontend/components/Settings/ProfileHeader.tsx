@@ -1,7 +1,7 @@
 import { StyleSheet, View } from "react-native";
 import { CustomText } from "../CustomText";
 import { Avatar } from "react-native-paper";
-import { User } from "@/models/User";
+import { User } from "@/types/User";
 
 export default function ProfileHeader(user: User) {
   return (

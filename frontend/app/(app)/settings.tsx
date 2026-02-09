@@ -3,7 +3,7 @@ import AppSettings from "@/components/Settings/AppSettings";
 import ProfileHeader from "@/components/Settings/ProfileHeader";
 import ProfileSettings from "@/components/Settings/ProfileSettings";
 import { useAuth } from "@/context/AuthProvider";
-import { User } from "@/models/User";
+import { User } from "@/types/User";
 import { useEffect, useState } from "react";
 import { Divider } from "react-native-paper";
 import { userStorage } from "@/utils/userStorage";

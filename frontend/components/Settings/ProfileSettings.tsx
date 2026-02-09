@@ -6,7 +6,7 @@ import { PrimaryButton } from "../Button";
 import { CustomDatePicker } from "../Inputs/CustomDatePicker";
 import { CustomRadioButton } from "../Inputs/CustomRadioButton";
 import { activityLevelOptions, sexOptions } from "@/enums/enums";
-import { User } from "@/models/User";
+import { User } from "@/types/User";
 import UserService from "@/services/userService";
 import { userStorage } from "@/utils/userStorage";
 import ConfirmationModal from "../ConformationModal";

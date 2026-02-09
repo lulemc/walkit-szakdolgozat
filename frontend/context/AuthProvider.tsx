@@ -3,7 +3,7 @@ import { registerUser, loginUser } from "@/services/authApi";
 import { useRouter } from "expo-router";
 import { storage } from "@/utils/storage";
 import { userStorage } from "@/utils/userStorage";
-import { User } from "@/models/User";
+import { User } from "@/types/User";
 
 interface AuthContextType {
   token: string | null;
