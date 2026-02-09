@@ -38,25 +38,26 @@ describe('timeUtils', () => {
   });
 
   describe('calculateWalkDuration', () => {
-    it('calculates duration with default pace (12 min/km)', () => {
-      expect(calculateWalkDuration(5)).toBe(60);
-      expect(calculateWalkDuration(10)).toBe(120);
-      expect(calculateWalkDuration(2.5)).toBe(30);
+    it('calculates duration with default pace (11 min/km)', () => {
+      expect(calculateWalkDuration(5)).toBe(55); // 5 * 11 = 55
+      expect(calculateWalkDuration(10)).toBe(110); // 10 * 11 = 110
+      expect(calculateWalkDuration(2.5)).toBe(27.5); // 2.5 * 11 = 27.5
     });
 
     it('calculates duration with custom pace', () => {
-      expect(calculateWalkDuration(5, 10)).toBe(50); 
-      expect(calculateWalkDuration(5, 15)).toBe(75); 
+      expect(calculateWalkDuration(5, 10)).toBe(50); // 5 * 10 = 50
+      expect(calculateWalkDuration(5, 15)).toBe(75); // 5 * 15 = 75
+      expect(calculateWalkDuration(5, 12)).toBe(60); // 5 * 12 = 60
     });
 
     it('handles small distances', () => {
-      expect(calculateWalkDuration(0.5)).toBe(6);
-      expect(calculateWalkDuration(1)).toBe(12);
+      expect(calculateWalkDuration(0.5)).toBe(5.5); // 0.5 * 11 = 5.5
+      expect(calculateWalkDuration(1)).toBe(11); // 1 * 11 = 11
     });
 
     it('handles large distances', () => {
-      expect(calculateWalkDuration(20)).toBe(240);
-      expect(calculateWalkDuration(50)).toBe(600);
+      expect(calculateWalkDuration(20)).toBe(220); // 20 * 11 = 220
+      expect(calculateWalkDuration(50)).toBe(550); // 50 * 11 = 550
     });
   });
 

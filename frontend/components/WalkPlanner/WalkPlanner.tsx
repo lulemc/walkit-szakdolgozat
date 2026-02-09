@@ -16,7 +16,6 @@ import DistanceSelector from "@/components/WalkPlanner/DistanceSelector";
 export default function WalkPlannerScreen() {
   const theme = useTheme();
 
-  // Custom hooks for logic
   const {
     mapRef,
     scrollRef,
@@ -81,7 +80,6 @@ export default function WalkPlannerScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Map */}
       <WalkPlannerMap
         mapRef={mapRef as React.RefObject<any>}
         mapRegion={mapRegion}
@@ -92,7 +90,6 @@ export default function WalkPlannerScreen() {
         onMapPress={(event) => handleMapPress(event.nativeEvent.coordinate)}
       />
 
-      {/* Map Selection Mode Indicator */}
       {mapSelectionMode !== "none" && (
         <MapSelectionIndicator
           type={mapSelectionMode}
@@ -100,7 +97,6 @@ export default function WalkPlannerScreen() {
         />
       )}
 
-      {/* Draggable Bottom Panel */}
       <DraggablePanel
         panGesture={panGesture}
         animatedPanelStyle={animatedPanelStyle}
@@ -111,7 +107,6 @@ export default function WalkPlannerScreen() {
           Plan Your Walk
         </CustomText>
 
-        {/* Location Selection */}
         <View style={styles.section}>
           <CustomText variant="titleMedium" style={styles.sectionTitle}>
             📍 Location
@@ -130,7 +125,6 @@ export default function WalkPlannerScreen() {
           />
         </View>
 
-        {/* Route Type Section */}
         <View style={styles.section}>
           <CustomText variant="titleMedium" style={styles.sectionTitle}>
             🔄 Route Type
@@ -138,7 +132,6 @@ export default function WalkPlannerScreen() {
           <RouteTypeSelector value={routeType} onChange={setRouteType} />
         </View>
 
-        {/* Distance Selection Section */}
         <View style={styles.section}>
           <CustomText variant="titleMedium" style={styles.sectionTitle}>
             📏 Distance
@@ -149,7 +142,6 @@ export default function WalkPlannerScreen() {
           />
         </View>
 
-        {/* Action Buttons */}
         <View style={styles.actions}>
           <PrimaryButton
             mode="contained"

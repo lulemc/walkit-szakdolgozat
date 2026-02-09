@@ -1,4 +1,3 @@
-// components/WalkPlanner/WalkPlannerMap.tsx
 import React from "react";
 import { StyleSheet } from "react-native";
 import MapView, {
@@ -43,7 +42,6 @@ export default function WalkPlannerMap({
       showsCompass
       onPress={onMapPress}
     >
-      {/* Current Location Indicator */}
       {currentLocation && (
         <Marker
           coordinate={currentLocation}
@@ -54,7 +52,6 @@ export default function WalkPlannerMap({
         />
       )}
 
-      {/* Start Location Marker */}
       {startLocation && (
         <Marker
           coordinate={startLocation.coordinates}
@@ -64,7 +61,6 @@ export default function WalkPlannerMap({
         />
       )}
 
-      {/* Destination Marker */}
       {routeType === "point-to-point" && destinationLocation && (
         <Marker
           coordinate={destinationLocation.coordinates}
