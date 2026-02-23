@@ -1,19 +1,21 @@
-import React from "react";
 import { View, StyleSheet, TouchableOpacity } from "react-native";
-import { Card, useTheme } from "react-native-paper";
+import { Card } from "react-native-paper";
 import { CustomText } from "@/components/CustomText";
+import { PrimaryButton } from "@/components/Button";
 import { Route, routeService } from "@/services/routeService";
 import { Ionicons } from "@expo/vector-icons";
 
 interface RouteInfoCardProps {
   route: Route;
   onClose: () => void;
+  onStartWalk: () => void;
 }
 
-const RouteInfoCard: React.FC<RouteInfoCardProps> = ({ route, onClose }) => {
-  const theme = useTheme();
-
-  // Format data for display
+const RouteInfoCard: React.FC<RouteInfoCardProps> = ({
+  route,
+  onClose,
+  onStartWalk,
+}) => {
   const distance = routeService.formatDistance(route.totalDistance);
   const duration = routeService.formatDuration(route.estimatedDuration);
   const pace = routeService.calculatePace(
@@ -23,25 +25,15 @@ const RouteInfoCard: React.FC<RouteInfoCardProps> = ({ route, onClose }) => {
   const elevationGain = routeService.formatElevation(route.elevationGain);
   const elevationLoss = routeService.formatElevation(route.elevationLoss);
 
-  // Get score color based on value
   const getScoreColor = (score: number): string => {
-    if (score >= 80) return "#10B981"; // Green
-    if (score >= 60) return "#F59E0B"; // Orange
-    return "#6B7280"; // Gray
-  };
-
-  // DEBUG: Log when close is called
-  const handleClose = () => {
-    console.log("🔴 Close button pressed!");
-    console.log("🔴 onClose prop:", typeof onClose);
-    onClose();
-    console.log("✅ onClose() called");
+    if (score >= 80) return "#10B981";
+    if (score >= 60) return "#F59E0B";
+    return "#6B7280";
   };
 
   return (
     <Card style={styles.card} elevation={2}>
       <Card.Content>
-        {/* Header with Close Button */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <CustomText variant="titleMedium" style={styles.title}>
@@ -59,9 +51,8 @@ const RouteInfoCard: React.FC<RouteInfoCardProps> = ({ route, onClose }) => {
             </View>
           </View>
 
-          {/* Close Button */}
           <TouchableOpacity
-            onPress={handleClose}
+            onPress={onClose}
             style={styles.closeButton}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             activeOpacity={0.6}
@@ -70,7 +61,6 @@ const RouteInfoCard: React.FC<RouteInfoCardProps> = ({ route, onClose }) => {
           </TouchableOpacity>
         </View>
 
-        {/* Main Stats Grid */}
         <View style={styles.statsGrid}>
           <View style={styles.statItem}>
             <CustomText style={styles.statIcon}>📏</CustomText>
@@ -103,7 +93,6 @@ const RouteInfoCard: React.FC<RouteInfoCardProps> = ({ route, onClose }) => {
           </View>
         </View>
 
-        {/* Elevation (if available) */}
         {(route.elevationGain > 0 || route.elevationLoss > 0) && (
           <View style={styles.elevationSection}>
             <View style={styles.divider} />
@@ -133,7 +122,6 @@ const RouteInfoCard: React.FC<RouteInfoCardProps> = ({ route, onClose }) => {
           </View>
         )}
 
-        {/* Preferences Active */}
         {Object.values(route.preferences).some((v) => v) && (
           <>
             <View style={styles.divider} />
@@ -190,6 +178,16 @@ const RouteInfoCard: React.FC<RouteInfoCardProps> = ({ route, onClose }) => {
             </View>
           </>
         )}
+
+        <View style={styles.divider} />
+        <PrimaryButton
+          mode="contained"
+          onPress={onStartWalk}
+          style={styles.startButton}
+          icon="walk"
+        >
+          Start Walk
+        </PrimaryButton>
       </Card.Content>
     </Card>
   );
@@ -228,7 +226,7 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: 8,
-    backgroundColor: "#FEE2E2", // Light red background
+    backgroundColor: "#FEE2E2",
     borderRadius: 20,
   },
   statsGrid: {
@@ -303,6 +301,9 @@ const styles = StyleSheet.create({
   chipText: {
     fontSize: 12,
     color: "#374151",
+  },
+  startButton: {
+    marginTop: 4,
   },
 });
 

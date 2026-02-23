@@ -1,286 +1,210 @@
+// backend/src/services/routeService.js
+// HYBRID: Generate geometric circle waypoints, then let ORS find walkable paths between them
+
 import Route from "../models/Route.js";
-import openRouteService from "./openRouteService.js";
 import circularRouteGenerator from "./circularRouteGenerator.js";
 import osmOverpassService from "./osmOverpassService.js";
+import axios from "axios";
+
+const ORS_API_KEY = process.env.ORS_API_KEY;
+const ORS_BASE_URL = "https://api.openrouteservice.org/v2";
 
 class RouteService {
-  /**
-   * Generate a new walking route
-   * @param {Object} request - Route generation request
-   * @param {string} userId - User ID
-   * @returns {Promise<Object>} Generated route
-   */
-  async generateRoute(request, userId) {
-    // Validate request
-    this.validateRequest(request);
-
-    if (request.routeType === "circular") {
-      return await this.generateCircularRoute(request, userId);
-    } else {
-      return await this.generatePointToPointRoute(request, userId);
-    }
-  }
-
-  /**
-   * Generate a circular route that loops back to start
-   */
-  async generateCircularRoute(request, userId) {
-    const { startLocation, distance, preferences } = request;
-
-    console.log("\n🔄 Generating circular route:");
-    console.log("   Distance:", distance, "km");
-    console.log("   Preferences:", preferences);
-
-    // Step 1: Query OSM for features if preferences are enabled
-    let features = null;
-    const hasPreferences =
-      preferences &&
-      (preferences.parks || preferences.waterfront || preferences.scenic);
-
-    if (hasPreferences) {
-      const radiusMeters = (distance / (2 * Math.PI)) * 1000 * 1.5; // Search 1.5x radius
-      features = await osmOverpassService.getAllPreferenceFeatures(
-        startLocation,
-        radiusMeters,
-      );
-    }
-
-    // Step 2: Generate initial waypoints (preference-based or geometric)
-    let waypoints = await circularRouteGenerator.generateWaypoints(
-      startLocation,
-      distance,
-      preferences,
-      features,
-    );
-
-    // Step 3: Get route from OpenRouteService
-    let routeData = await openRouteService.getRoute(waypoints);
-    let actualDistanceKm = routeData.distance / 1000;
-
-    console.log(`   Initial route: ${actualDistanceKm.toFixed(2)}km`);
-
-    // Step 4: Adjust if needed (max 2 iterations)
-    let iterations = 0;
-    const maxIterations = 2;
-
-    while (
-      !circularRouteGenerator.isDistanceAcceptable(
-        actualDistanceKm,
-        distance,
-      ) &&
-      iterations < maxIterations
-    ) {
-      console.log(
-        `   Route distance ${actualDistanceKm.toFixed(2)}km not within tolerance, adjusting...`,
-      );
-
-      // Calculate current radius
-      const currentRadius = distance / (2 * Math.PI);
-
-      // Adjust radius
-      const newRadius = circularRouteGenerator.adjustRadius(
-        actualDistanceKm,
-        distance,
-        currentRadius,
-      );
-
-      // Regenerate waypoints with new radius
-      // For adjustment iterations, use geometric waypoints (faster)
-      waypoints = circularRouteGenerator.generateGeometricWaypoints(
-        startLocation,
-        newRadius * 1000,
-        distance,
-      );
-
-      // Get new route
-      routeData = await openRouteService.getRoute(waypoints);
-      actualDistanceKm = routeData.distance / 1000;
-      iterations++;
-    }
-
-    // Step 5: Calculate preference score
-    const preferenceScore = features
-      ? circularRouteGenerator.calculatePreferenceScore(
-          waypoints,
-          preferences,
-          features,
-        )
-      : this.calculateBasicPreferenceScore(preferences);
-
-    console.log(
-      `\n✅ Final route: ${actualDistanceKm.toFixed(2)}km (score: ${preferenceScore})`,
-    );
-
-    // Step 6: Save to database
-    const route = new Route({
-      userId,
-      type: "circular",
-      startLocation: {
-        latitude: startLocation.latitude,
-        longitude: startLocation.longitude,
-        address: "Start Location", // TODO: Reverse geocode in future
-      },
-      endLocation: {
-        latitude: startLocation.latitude,
-        longitude: startLocation.longitude,
-        address: "Start Location",
-      },
-      coordinates: routeData.coordinates,
-      totalDistance: routeData.distance,
-      estimatedDuration: routeData.duration,
-      preferenceScore,
-      preferences,
-    });
-
-    await route.save();
-
-    return route;
-  }
-
-  /**
-   * Generate a point-to-point route
-   */
-  async generatePointToPointRoute(request, userId) {
-    const { startLocation, destinationLocation, preferences } = request;
-
-    console.log("\n📍 Generating point-to-point route:");
-    console.log("   Start:", startLocation);
-    console.log("   Destination:", destinationLocation);
-
-    if (!destinationLocation) {
-      throw new Error("Destination required for point-to-point route");
-    }
-
-    // Get direct route
-    const routeData = await openRouteService.getRoute([
+  async generateRoute(routeData, userId) {
+    const {
       startLocation,
       destinationLocation,
-    ]);
+      distance,
+      routeType,
+      preferences,
+    } = routeData;
 
-    // Calculate preference score (basic for now)
-    const preferenceScore = this.calculateBasicPreferenceScore(preferences);
+    console.log("🎯 Generating route:", { routeType, distance, preferences });
 
-    console.log(
-      `✅ Route generated: ${(routeData.distance / 1000).toFixed(2)}km (score: ${preferenceScore})`,
-    );
+    let osmFeatures = null;
+    if (preferences && Object.values(preferences).some((v) => v)) {
+      const radiusMeters =
+        routeType === "circular"
+          ? ((distance * 1000) / (2 * Math.PI)) * 1.5
+          : distance * 1000;
 
-    // Save to database
+      osmFeatures = await osmOverpassService.getAllPreferenceFeatures(
+        startLocation,
+        radiusMeters,
+        preferences,
+      );
+    }
+
+    let coordinates, totalDistance, estimatedDuration, preferenceScore;
+
+    if (routeType === "circular") {
+      // HYBRID APPROACH: Generate waypoints on circle, then snap to roads
+      const radiusMeters = (distance * 1000) / (2 * Math.PI);
+
+      // Generate just 3-4 evenly-spaced waypoints on a circle
+      const waypoints = this.generateCircleWaypoints(
+        startLocation,
+        radiusMeters,
+        3,
+      );
+
+      console.log(`📍 Generated ${waypoints.length} circle waypoints`);
+
+      // Get walkable route through these waypoints
+      const routeResponse = await this.getOptimizedRoute(waypoints);
+
+      coordinates = routeResponse.coordinates;
+      totalDistance = routeResponse.distance;
+      estimatedDuration = routeResponse.duration;
+
+      preferenceScore = osmFeatures
+        ? circularRouteGenerator.calculatePreferenceScore(
+            waypoints,
+            preferences,
+            osmFeatures,
+          )
+        : 50;
+
+      console.log(
+        `✅ Circular route: ${coordinates.length} points, ${(totalDistance / 1000).toFixed(1)}km`,
+      );
+    } else {
+      // Point-to-point
+      const waypoints = [startLocation, destinationLocation];
+      const routeResponse = await this.getOptimizedRoute(waypoints);
+
+      coordinates = routeResponse.coordinates;
+      totalDistance = routeResponse.distance;
+      estimatedDuration = routeResponse.duration;
+      preferenceScore = 50;
+    }
+
     const route = new Route({
       userId,
-      type: "point-to-point",
+      type: routeType,
       startLocation: {
         latitude: startLocation.latitude,
         longitude: startLocation.longitude,
-        address: "Start Location",
+        address: routeData.startAddress || "Start Location",
       },
       endLocation: {
-        latitude: destinationLocation.latitude,
-        longitude: destinationLocation.longitude,
-        address: "Destination",
+        latitude: destinationLocation?.latitude || startLocation.latitude,
+        longitude: destinationLocation?.longitude || startLocation.longitude,
+        address:
+          routeData.endAddress || routeData.startAddress || "End Location",
       },
-      coordinates: routeData.coordinates,
-      totalDistance: routeData.distance,
-      estimatedDuration: routeData.duration,
+      coordinates,
+      totalDistance,
+      estimatedDuration,
       preferenceScore,
-      preferences,
+      preferences: preferences || {},
+      elevationGain: 0,
+      elevationLoss: 0,
+      maxElevation: null,
+      minElevation: null,
     });
 
     await route.save();
+    console.log("✅ Route saved to database");
 
     return route;
   }
 
   /**
-   * Get user's saved routes
+   * Generate evenly-spaced waypoints on a circle
+   * SIMPLE: Just geometric points, ORS will find walkable paths
    */
+  generateCircleWaypoints(center, radiusMeters, count) {
+    const waypoints = [center]; // Start
+
+    // Random starting angle for variation
+    const startAngle = Math.random() * (2 * Math.PI);
+    const angleStep = (2 * Math.PI) / count;
+
+    for (let i = 0; i < count; i++) {
+      const angle = startAngle + i * angleStep;
+
+      // Small random variation (±10%)
+      const radius = radiusMeters * (0.9 + Math.random() * 0.2);
+
+      const lat = center.latitude + (radius / 111320) * Math.cos(angle);
+      const lng =
+        center.longitude +
+        (radius / (111320 * Math.cos((center.latitude * Math.PI) / 180))) *
+          Math.sin(angle);
+
+      waypoints.push({ latitude: lat, longitude: lng });
+    }
+
+    waypoints.push(center); // End at start
+
+    return waypoints;
+  }
+
+  /**
+   * Get route from ORS - snaps to actual walkable paths
+   */
+  async getOptimizedRoute(waypoints) {
+    try {
+      const coordinates = waypoints.map((wp) => [wp.longitude, wp.latitude]);
+
+      console.log(
+        `🗺️  Requesting walkable route through ${coordinates.length} waypoints`,
+      );
+
+      const response = await axios.post(
+        `${ORS_BASE_URL}/directions/foot-walking/geojson`,
+        {
+          coordinates,
+          // Add preference for recommended (not fastest) paths
+          preference: "recommended",
+        },
+        {
+          headers: {
+            Authorization: ORS_API_KEY,
+            "Content-Type": "application/json",
+          },
+          timeout: 30000,
+        },
+      );
+
+      const route = response.data.features[0];
+      const geometry = route.geometry;
+      const properties = route.properties;
+
+      const routeCoordinates = geometry.coordinates.map((coord) => ({
+        latitude: coord[1],
+        longitude: coord[0],
+      }));
+
+      console.log(
+        `✅ ORS: ${routeCoordinates.length} points, ${(properties.summary.distance / 1000).toFixed(1)}km, ${(properties.summary.duration / 60).toFixed(0)}min`,
+      );
+
+      return {
+        coordinates: routeCoordinates,
+        distance: properties.summary.distance,
+        duration: properties.summary.duration / 60,
+      };
+    } catch (error) {
+      console.error("❌ Error from ORS:");
+      console.error("   Status:", error.response?.status);
+      console.error("   Data:", error.response?.data);
+
+      throw new Error("Failed to generate walkable route. Please try again.");
+    }
+  }
+
   async getUserRoutes(userId) {
-    return await Route.find({ userId })
-      .sort({ createdAt: -1 })
-      .limit(50)
-      .exec();
+    return await Route.find({ userId }).sort({ createdAt: -1 });
   }
 
-  /**
-   * Get single route by ID
-   */
   async getRoute(routeId, userId) {
-    return await Route.findOne({ _id: routeId, userId }).exec();
+    return await Route.findOne({ _id: routeId, userId });
   }
 
-  /**
-   * Delete a route
-   */
   async deleteRoute(routeId, userId) {
-    const result = await Route.deleteOne({ _id: routeId, userId }).exec();
-    return result.deletedCount > 0;
-  }
-
-  /**
-   * Validate route generation request
-   */
-  validateRequest(request) {
-    // Validate coordinates
-    if (!this.isValidCoordinate(request.startLocation)) {
-      throw new Error("Invalid start location coordinates");
-    }
-
-    if (
-      request.routeType === "point-to-point" &&
-      request.destinationLocation &&
-      !this.isValidCoordinate(request.destinationLocation)
-    ) {
-      throw new Error("Invalid destination coordinates");
-    }
-
-    // Validate distance for circular routes
-    if (request.routeType === "circular") {
-      if (request.distance <= 0) {
-        throw new Error("Distance must be greater than 0");
-      }
-
-      if (request.distance > 50) {
-        throw new Error("Distance cannot exceed 50 km");
-      }
-    }
-
-    // Validate route type
-    if (!["circular", "point-to-point"].includes(request.routeType)) {
-      throw new Error("Invalid route type");
-    }
-  }
-
-  /**
-   * Validate coordinate
-   */
-  isValidCoordinate(coord) {
-    return (
-      typeof coord.latitude === "number" &&
-      typeof coord.longitude === "number" &&
-      coord.latitude >= -90 &&
-      coord.latitude <= 90 &&
-      coord.longitude >= -180 &&
-      coord.longitude <= 180
-    );
-  }
-
-  /**
-   * Calculate basic preference score (fallback)
-   */
-  calculateBasicPreferenceScore(preferences) {
-    let score = 50; // Base score
-
-    // Count enabled preferences
-    const enabledCount = [
-      preferences.parks,
-      preferences.waterfront,
-      preferences.scenic,
-      preferences.avoidHighways,
-    ].filter(Boolean).length;
-
-    // Add 10 points for each preference
-    score += enabledCount * 10;
-
-    return Math.min(score, 100);
+    return await Route.findOneAndDelete({ _id: routeId, userId });
   }
 }
 

@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, RefObject } from "react";
-import { View, StyleSheet, ActivityIndicator } from "react-native";
+import { View, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { useTheme } from "react-native-paper";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { CustomText } from "@/components/CustomText";
 import { PrimaryButton } from "@/components/Button";
 import { useWalkPlanner } from "@/hooks/useWalkPlanner";
@@ -11,10 +13,20 @@ import DraggablePanel from "@/components/WalkPlanner/DraggablePanel";
 import LocationSelector from "@/components/WalkPlanner/LocationSelector";
 import RouteTypeSelector from "@/components/WalkPlanner/RouteTypeSelector";
 import DistanceSelector from "@/components/WalkPlanner/DistanceSelector";
+import PreferencesSelector from "@/components/WalkPlanner/PreferencesSelector";
 import RouteInfoCard from "@/components/WalkPlanner/RouteInfoCard";
+
+type RootStackParamList = {
+  Home: undefined;
+  WalkPlanner: undefined;
+  ActiveWalk: { route: any };
+};
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function WalkPlannerScreen() {
   const theme = useTheme();
+  const navigation = useNavigation<NavigationProp>();
 
   const {
     mapRef,
@@ -51,9 +63,8 @@ export default function WalkPlannerScreen() {
   });
 
   const [cardVisible, setCardVisible] = useState(true);
-  const hasCollapsed = useRef(false); // Track if we've already collapsed for this route
+  const hasCollapsed = useRef(false);
 
-  // Collapse panel after route is generated (only once per route)
   useEffect(() => {
     if (generatedRoute && !isGeneratingRoute && !hasCollapsed.current) {
       setTimeout(() => {
@@ -64,11 +75,10 @@ export default function WalkPlannerScreen() {
       setCardVisible(true);
     }
 
-    // Reset when route is cleared
     if (!generatedRoute) {
       hasCollapsed.current = false;
     }
-  }, [generatedRoute, isGeneratingRoute]); // Remove collapsePanel from deps
+  }, [generatedRoute, isGeneratingRoute]);
 
   const canGenerateRoute = (): boolean => {
     if (!startLocation) return false;
@@ -82,9 +92,20 @@ export default function WalkPlannerScreen() {
   };
 
   const handleGenerateRoute = async () => {
-    hasCollapsed.current = false; // Reset for new route
+    hasCollapsed.current = false;
     setCardVisible(true);
     await generateRoute();
+  };
+
+  const handleStartWalk = () => {
+    if (!generatedRoute) {
+      Alert.alert("Error", "No route to start");
+      return;
+    }
+
+    navigation.navigate("ActiveWalk", {
+      route: generatedRoute,
+    });
   };
 
   if (loading) {
@@ -118,10 +139,13 @@ export default function WalkPlannerScreen() {
         />
       )}
 
-      {/* Route Info Card */}
       {generatedRoute && !isGeneratingRoute && cardVisible && (
         <View style={styles.routeInfoContainer}>
-          <RouteInfoCard route={generatedRoute} onClose={handleCloseInfoCard} />
+          <RouteInfoCard
+            route={generatedRoute}
+            onClose={handleCloseInfoCard}
+            onStartWalk={handleStartWalk} // NEW
+          />
         </View>
       )}
 
@@ -167,6 +191,16 @@ export default function WalkPlannerScreen() {
           <DistanceSelector
             value={selectedDistance}
             onChange={setSelectedDistance}
+          />
+        </View>
+
+        <View style={styles.section}>
+          <CustomText variant="titleMedium" style={styles.sectionTitle}>
+            ⚙️ Preferences
+          </CustomText>
+          <PreferencesSelector
+            preferences={preferences}
+            onChange={setPreferences}
           />
         </View>
 

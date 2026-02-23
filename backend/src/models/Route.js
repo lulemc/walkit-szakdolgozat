@@ -101,7 +101,7 @@ routeSchema.virtual("distanceKm").get(function () {
 });
 
 routeSchema.virtual("totalElevationChange").get(function () {
-  return this.elevationGain + this.elevationLoss;
+  return this.elevationGain;
 });
 
 routeSchema.set("toJSON", { virtuals: true });
