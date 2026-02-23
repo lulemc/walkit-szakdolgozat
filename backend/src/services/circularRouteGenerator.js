@@ -112,7 +112,7 @@ class CircularRouteGenerator {
       );
     }
 
-    // NEW: Uphill/Mountain preferences
+    // Uphill/Mountain preferences
     if (preferences.uphill && features.elevation.length > 0) {
       const elevatedPoints = features.elevation
         .filter((f) => f.elevation && f.elevation > 0)
@@ -132,7 +132,7 @@ class CircularRouteGenerator {
       );
     }
 
-    // NEW: Mountain trails
+    // Mountain trails
     if (preferences.mountain && features.trails.length > 0) {
       const nearbyTrails = osmOverpassService.filterByDistanceRange(
         features.trails,
@@ -343,7 +343,7 @@ class CircularRouteGenerator {
       }
     }
 
-    // NEW: Uphill
+    // Uphill
     if (preferences.uphill) {
       totalPreferences++;
       const elevationNear = this.countFeaturesNearWaypoints(
@@ -360,7 +360,7 @@ class CircularRouteGenerator {
       }
     }
 
-    // NEW: Mountain trails
+    // Mountain trails
     if (preferences.mountain) {
       totalPreferences++;
       const trailsNear = this.countFeaturesNearWaypoints(
@@ -376,7 +376,7 @@ class CircularRouteGenerator {
         );
       }
     }
-    // NEW: Quiet Streets
+    // Quiet Streets
     if (preferences.quietStreets) {
       totalPreferences++;
       const quietNear = this.countFeaturesNearWaypoints(
@@ -393,7 +393,7 @@ class CircularRouteGenerator {
       }
     }
 
-    // NEW: Beach/Coast
+    // Beach/Coast
     if (preferences.beach) {
       totalPreferences++;
       const beachesNear = this.countFeaturesNearWaypoints(

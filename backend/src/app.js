@@ -41,6 +41,6 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // API routes
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
-app.use("/api/routes", routeRoutes); // NEW
+app.use("/api/routes", routeRoutes);
 
 export default app;

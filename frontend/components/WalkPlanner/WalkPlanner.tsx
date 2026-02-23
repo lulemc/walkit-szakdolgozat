@@ -1,9 +1,8 @@
-import React from "react";
-import { View, StyleSheet, Alert, ActivityIndicator } from "react-native";
+import { useState, useEffect, useRef, RefObject } from "react";
+import { View, StyleSheet, ActivityIndicator } from "react-native";
 import { useTheme } from "react-native-paper";
 import { CustomText } from "@/components/CustomText";
 import { PrimaryButton } from "@/components/Button";
-import { formatDuration, calculateWalkDuration } from "@/utils/timeUtils";
 import { useWalkPlanner } from "@/hooks/useWalkPlanner";
 import { useDraggablePanel } from "@/hooks/useDraggablePanel";
 import WalkPlannerMap from "@/components/WalkPlanner/WalkPlannerMap";
@@ -12,6 +11,7 @@ import DraggablePanel from "@/components/WalkPlanner/DraggablePanel";
 import LocationSelector from "@/components/WalkPlanner/LocationSelector";
 import RouteTypeSelector from "@/components/WalkPlanner/RouteTypeSelector";
 import DistanceSelector from "@/components/WalkPlanner/DistanceSelector";
+import RouteInfoCard from "@/components/WalkPlanner/RouteInfoCard";
 
 export default function WalkPlannerScreen() {
   const theme = useTheme();
@@ -38,33 +38,53 @@ export default function WalkPlannerScreen() {
     handleSearchLocation,
     handleSelectPlace,
     scrollToTop,
+    preferences,
+    setPreferences,
+    isGeneratingRoute,
+    generatedRoute,
+    generateRoute,
+    clearRoute,
   } = useWalkPlanner();
 
-  const { panGesture, animatedPanelStyle } = useDraggablePanel({
+  const { panGesture, animatedPanelStyle, collapsePanel } = useDraggablePanel({
     onExpand: scrollToTop,
   });
 
-  const handleContinue = () => {
-    if (!startLocation) {
-      Alert.alert("Error", "Please select a start location");
-      return;
+  const [cardVisible, setCardVisible] = useState(true);
+  const hasCollapsed = useRef(false); // Track if we've already collapsed for this route
+
+  // Collapse panel after route is generated (only once per route)
+  useEffect(() => {
+    if (generatedRoute && !isGeneratingRoute && !hasCollapsed.current) {
+      setTimeout(() => {
+        collapsePanel?.();
+      }, 300);
+
+      hasCollapsed.current = true;
+      setCardVisible(true);
     }
 
-    if (routeType === "point-to-point" && !destinationLocation) {
-      Alert.alert(
-        "Error",
-        "Please select a destination for point-to-point route",
-      );
-      return;
+    // Reset when route is cleared
+    if (!generatedRoute) {
+      hasCollapsed.current = false;
     }
+  }, [generatedRoute, isGeneratingRoute]); // Remove collapsePanel from deps
 
-    const summary = `Route Type: ${routeType === "circular" ? "Circular Loop" : "Point-to-Point"}\nDistance: ${selectedDistance.toFixed(1)} km\nEstimated time: ${formatDuration(calculateWalkDuration(selectedDistance))}\n\nStart: ${startLocation.name}\n${startLocation.address}${
-      routeType === "point-to-point" && destinationLocation
-        ? `\n\nDestination: ${destinationLocation.name}\n${destinationLocation.address}`
-        : ""
-    }`;
+  const canGenerateRoute = (): boolean => {
+    if (!startLocation) return false;
+    if (routeType === "point-to-point" && !destinationLocation) return false;
+    if (isGeneratingRoute) return false;
+    return true;
+  };
 
-    Alert.alert("Route Summary", summary);
+  const handleCloseInfoCard = () => {
+    setCardVisible(false);
+  };
+
+  const handleGenerateRoute = async () => {
+    hasCollapsed.current = false; // Reset for new route
+    setCardVisible(true);
+    await generateRoute();
   };
 
   if (loading) {
@@ -81,12 +101,13 @@ export default function WalkPlannerScreen() {
   return (
     <View style={styles.container}>
       <WalkPlannerMap
-        mapRef={mapRef as React.RefObject<any>}
+        mapRef={mapRef as RefObject<any>}
         mapRegion={mapRegion}
         currentLocation={currentLocation}
         startLocation={startLocation}
         destinationLocation={destinationLocation}
         routeType={routeType}
+        generatedRoute={generatedRoute}
         onMapPress={(event) => handleMapPress(event.nativeEvent.coordinate)}
       />
 
@@ -97,10 +118,17 @@ export default function WalkPlannerScreen() {
         />
       )}
 
+      {/* Route Info Card */}
+      {generatedRoute && !isGeneratingRoute && cardVisible && (
+        <View style={styles.routeInfoContainer}>
+          <RouteInfoCard route={generatedRoute} onClose={handleCloseInfoCard} />
+        </View>
+      )}
+
       <DraggablePanel
         panGesture={panGesture}
         animatedPanelStyle={animatedPanelStyle}
-        scrollRef={scrollRef as React.RefObject<any>}
+        scrollRef={scrollRef as RefObject<any>}
         scrollEnabled={mapSelectionMode === "none"}
       >
         <CustomText variant="titleLarge" style={styles.title}>
@@ -145,11 +173,28 @@ export default function WalkPlannerScreen() {
         <View style={styles.actions}>
           <PrimaryButton
             mode="contained"
-            onPress={handleContinue}
+            onPress={handleGenerateRoute}
+            disabled={!canGenerateRoute()}
+            loading={isGeneratingRoute}
             style={styles.button}
           >
-            Continue
+            {isGeneratingRoute
+              ? "Generating Route..."
+              : generatedRoute
+                ? "Regenerate Route"
+                : "Generate Route"}
           </PrimaryButton>
+
+          {generatedRoute && !isGeneratingRoute && (
+            <PrimaryButton
+              mode="outlined"
+              onPress={clearRoute}
+              style={styles.button}
+              textColor={theme.colors.error}
+            >
+              Clear Route
+            </PrimaryButton>
+          )}
         </View>
       </DraggablePanel>
     </View>
@@ -168,6 +213,13 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 12,
+  },
+  routeInfoContainer: {
+    position: "absolute",
+    top: 80,
+    left: 0,
+    right: 0,
+    zIndex: 10,
   },
   title: {
     marginBottom: 24,

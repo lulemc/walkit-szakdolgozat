@@ -1,11 +1,8 @@
-import React from "react";
+import React, { useEffect } from "react";
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from "react-native-maps";
 import { StyleSheet } from "react-native";
-import MapView, {
-  Marker,
-  PROVIDER_GOOGLE,
-  MapPressEvent,
-} from "react-native-maps";
-import type { Coordinates, Location } from "@/types/walkPlanner";
+import type { Coordinates, Location } from "@/services/GooglePlacesService";
+import type { Route } from "@/services/routeService";
 
 interface WalkPlannerMapProps {
   mapRef: React.RefObject<MapView>;
@@ -19,62 +16,99 @@ interface WalkPlannerMapProps {
   startLocation: Location | null;
   destinationLocation: Location | null;
   routeType: "circular" | "point-to-point";
-  onMapPress: (event: MapPressEvent) => void;
+  generatedRoute?: Route | null;
+  onMapPress: (event: any) => void;
 }
 
-export default function WalkPlannerMap({
+const WalkPlannerMap: React.FC<WalkPlannerMapProps> = ({
   mapRef,
   mapRegion,
   currentLocation,
   startLocation,
   destinationLocation,
   routeType,
+  generatedRoute,
   onMapPress,
-}: WalkPlannerMapProps) {
+}) => {
+  useEffect(() => {
+    if (
+      generatedRoute &&
+      generatedRoute.coordinates.length > 0 &&
+      mapRef.current
+    ) {
+      // Add small delay to ensure map is ready
+      setTimeout(() => {
+        const coordinates = generatedRoute.coordinates.map((coord) => ({
+          latitude: coord.latitude,
+          longitude: coord.longitude,
+        }));
+
+        mapRef.current?.fitToCoordinates(coordinates, {
+          edgePadding: {
+            top: 100,
+            right: 50,
+            bottom: 300,
+            left: 50,
+          },
+          animated: true,
+        });
+      }, 300);
+    }
+  }, [generatedRoute, mapRef]);
+
   return (
     <MapView
       ref={mapRef}
+      provider={PROVIDER_GOOGLE}
       style={styles.map}
       initialRegion={mapRegion}
-      provider={PROVIDER_GOOGLE}
       showsUserLocation
       showsMyLocationButton
       showsCompass
+      showsScale
       onPress={onMapPress}
     >
-      {currentLocation && (
-        <Marker
-          coordinate={currentLocation}
-          title="Current Location"
-          description="You are here"
-          pinColor="blue"
-          opacity={0.6}
-        />
-      )}
-
+      {/* START MARKER */}
       {startLocation && (
         <Marker
           coordinate={startLocation.coordinates}
-          title={startLocation.name}
+          title={startLocation.name || "Start Location"}
           description={startLocation.address}
           pinColor="green"
         />
       )}
 
+      {/* DESTINATION MARKER (only for point-to-point) */}
       {routeType === "point-to-point" && destinationLocation && (
         <Marker
           coordinate={destinationLocation.coordinates}
-          title={destinationLocation.name}
+          title={destinationLocation.name || "Destination"}
           description={destinationLocation.address}
           pinColor="red"
         />
       )}
+
+      {/* NEW: ROUTE POLYLINE */}
+      {generatedRoute && generatedRoute.coordinates.length > 0 && (
+        <Polyline
+          coordinates={generatedRoute.coordinates.map((coord) => ({
+            latitude: coord.latitude,
+            longitude: coord.longitude,
+          }))}
+          strokeColor="#007AFF" // iOS blue
+          strokeWidth={4}
+          lineCap="round"
+          lineJoin="round"
+        />
+      )}
     </MapView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   map: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
   },
 });
+
+export default WalkPlannerMap;

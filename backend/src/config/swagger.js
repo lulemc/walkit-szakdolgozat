@@ -44,7 +44,7 @@ const swaggerSpec = swaggerJSDoc({
             token: { type: "string" },
           },
         },
-        // NEW: Route schemas
+        // Route schemas
         Coordinates: {
           type: "object",
           required: ["latitude", "longitude"],
@@ -172,7 +172,7 @@ const swaggerSpec = swaggerJSDoc({
                 "Score based on how well route matches preferences (0-100)",
             },
             preferences: { $ref: "#/components/schemas/RoutePreferences" },
-            // NEW elevation fields
+            // elevation fields
             elevationGain: {
               type: "number",
               example: 150,
@@ -254,7 +254,7 @@ const swaggerSpec = swaggerJSDoc({
           },
         },
       },
-      // NEW: Route endpoints
+      // Route endpoints
       "/api/routes/generate": {
         post: {
           summary: "Generate a new walking route",
