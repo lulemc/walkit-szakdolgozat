@@ -7,4 +7,7 @@ export const colors = {
   error: '#fc741d',
   grey: '#3a3a3a',
   darkGreen: '#8eb198',
+  lightGrey: '#6B7280',
+  secondBeige: '#F0F9FF',
+  darkerGrey: '#374151',
 };

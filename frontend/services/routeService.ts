@@ -67,12 +67,12 @@ class RouteService {
    * Generate a new walking route
    */
   async generateRoute(request: GenerateRouteRequest): Promise<Route> {
-    const response = await api.post<GenerateRouteResponse>(
-      '/routes/generate',
-      request
-    );
-    return response.data.route;
-  }
+  const response = await api.post<any>(
+    '/routes/generate',
+    request
+  );
+  return response.data.data;  // ✅ CORRECT - backend returns 'data'
+}
 
   /**
    * Get all routes for the current user

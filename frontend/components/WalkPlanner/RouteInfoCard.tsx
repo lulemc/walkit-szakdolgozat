@@ -4,6 +4,7 @@ import { CustomText } from "@/components/CustomText";
 import { PrimaryButton } from "@/components/Button";
 import { Route, routeService } from "@/services/routeService";
 import { Ionicons } from "@expo/vector-icons";
+import { colors } from "@/theme/colors";
 
 interface RouteInfoCardProps {
   route: Route;
@@ -26,9 +27,9 @@ const RouteInfoCard: React.FC<RouteInfoCardProps> = ({
   const elevationLoss = routeService.formatElevation(route.elevationLoss);
 
   const getScoreColor = (score: number): string => {
-    if (score >= 80) return "#10B981";
-    if (score >= 60) return "#F59E0B";
-    return "#6B7280";
+    if (score >= 80) return colors.primary;
+    if (score >= 60) return colors.error;
+    return colors.grey;
   };
 
   return (
@@ -57,7 +58,7 @@ const RouteInfoCard: React.FC<RouteInfoCardProps> = ({
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             activeOpacity={0.6}
           >
-            <Ionicons name="close-circle" size={28} color="#EF4444" />
+            <Ionicons name="close-circle" size={28} color={colors.error} />
           </TouchableOpacity>
         </View>
 
@@ -225,8 +226,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   closeButton: {
-    padding: 8,
-    backgroundColor: "#FEE2E2",
     borderRadius: 20,
   },
   statsGrid: {
@@ -244,7 +243,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   statLabel: {
-    color: "#6B7280",
+    color: colors.lightGrey,
     marginBottom: 4,
   },
   statValue: {
@@ -252,7 +251,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: colors.beige,
     marginVertical: 12,
   },
   elevationSection: {
@@ -274,7 +273,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   elevationLabel: {
-    color: "#6B7280",
+    color: colors.lightGrey,
     marginBottom: 2,
   },
   elevationValue: {
@@ -284,7 +283,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   preferencesLabel: {
-    color: "#6B7280",
+    color: colors.lightGrey,
     marginBottom: 8,
   },
   preferenceChips: {
@@ -293,7 +292,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chip: {
-    backgroundColor: "#F3F4F6",
+    backgroundColor: colors.beige,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,

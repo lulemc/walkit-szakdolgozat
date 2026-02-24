@@ -1,6 +1,3 @@
-// backend/src/services/routeService.js
-// HYBRID: Generate geometric circle waypoints, then let ORS find walkable paths between them
-
 import Route from "../models/Route.js";
 import circularRouteGenerator from "./circularRouteGenerator.js";
 import osmOverpassService from "./osmOverpassService.js";
@@ -41,7 +38,6 @@ class RouteService {
       // HYBRID APPROACH: Generate waypoints on circle, then snap to roads
       const radiusMeters = (distance * 1000) / (2 * Math.PI);
 
-      // Generate just 3-4 evenly-spaced waypoints on a circle
       const waypoints = this.generateCircleWaypoints(
         startLocation,
         radiusMeters,
@@ -50,7 +46,6 @@ class RouteService {
 
       console.log(`📍 Generated ${waypoints.length} circle waypoints`);
 
-      // Get walkable route through these waypoints
       const routeResponse = await this.getOptimizedRoute(waypoints);
 
       coordinates = routeResponse.coordinates;
@@ -69,7 +64,6 @@ class RouteService {
         `✅ Circular route: ${coordinates.length} points, ${(totalDistance / 1000).toFixed(1)}km`,
       );
     } else {
-      // Point-to-point
       const waypoints = [startLocation, destinationLocation];
       const routeResponse = await this.getOptimizedRoute(waypoints);
 
@@ -117,14 +111,12 @@ class RouteService {
   generateCircleWaypoints(center, radiusMeters, count) {
     const waypoints = [center]; // Start
 
-    // Random starting angle for variation
     const startAngle = Math.random() * (2 * Math.PI);
     const angleStep = (2 * Math.PI) / count;
 
     for (let i = 0; i < count; i++) {
       const angle = startAngle + i * angleStep;
 
-      // Small random variation (±10%)
       const radius = radiusMeters * (0.9 + Math.random() * 0.2);
 
       const lat = center.latitude + (radius / 111320) * Math.cos(angle);
@@ -136,7 +128,7 @@ class RouteService {
       waypoints.push({ latitude: lat, longitude: lng });
     }
 
-    waypoints.push(center); // End at start
+    waypoints.push(center);
 
     return waypoints;
   }
@@ -156,7 +148,6 @@ class RouteService {
         `${ORS_BASE_URL}/directions/foot-walking/geojson`,
         {
           coordinates,
-          // Add preference for recommended (not fastest) paths
           preference: "recommended",
         },
         {

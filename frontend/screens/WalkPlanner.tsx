@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef, RefObject } from "react";
 import { View, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { useTheme } from "react-native-paper";
-import { useNavigation } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { CustomText } from "@/components/CustomText";
 import { PrimaryButton } from "@/components/Button";
 import { useWalkPlanner } from "@/hooks/useWalkPlanner";
@@ -15,18 +13,16 @@ import RouteTypeSelector from "@/components/WalkPlanner/RouteTypeSelector";
 import DistanceSelector from "@/components/WalkPlanner/DistanceSelector";
 import PreferencesSelector from "@/components/WalkPlanner/PreferencesSelector";
 import RouteInfoCard from "@/components/WalkPlanner/RouteInfoCard";
+import type { Route } from "@/services/routeService";
 
-type RootStackParamList = {
-  Home: undefined;
-  WalkPlanner: undefined;
-  ActiveWalk: { route: any };
-};
+interface WalkPlannerScreenProps {
+  onStartWalk?: (route: Route) => void; // NEW: Callback for starting walk
+}
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
-
-export default function WalkPlannerScreen() {
+export default function WalkPlannerScreen({
+  onStartWalk,
+}: WalkPlannerScreenProps) {
   const theme = useTheme();
-  const navigation = useNavigation<NavigationProp>();
 
   const {
     mapRef,
@@ -97,15 +93,18 @@ export default function WalkPlannerScreen() {
     await generateRoute();
   };
 
+  // UPDATED: Use callback instead of navigation
   const handleStartWalk = () => {
     if (!generatedRoute) {
       Alert.alert("Error", "No route to start");
       return;
     }
 
-    navigation.navigate("ActiveWalk", {
-      route: generatedRoute,
-    });
+    if (onStartWalk) {
+      onStartWalk(generatedRoute);
+    } else {
+      Alert.alert("Info", "Walk tracking will start here");
+    }
   };
 
   if (loading) {
@@ -144,7 +143,7 @@ export default function WalkPlannerScreen() {
           <RouteInfoCard
             route={generatedRoute}
             onClose={handleCloseInfoCard}
-            onStartWalk={handleStartWalk} // NEW
+            onStartWalk={handleStartWalk}
           />
         </View>
       )}

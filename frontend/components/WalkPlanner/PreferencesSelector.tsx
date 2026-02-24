@@ -2,6 +2,7 @@ import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { Switch, useTheme } from "react-native-paper";
 import { CustomText } from "@/components/CustomText";
 import type { RoutePreferences } from "@/services/routeService";
+import { colors } from "@/theme/colors";
 
 interface PreferencesSelectorProps {
   preferences: RoutePreferences;
@@ -146,12 +147,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: "#E5E7EB",
+    borderColor: colors.secondBeige,
     overflow: "hidden",
   },
   preferenceItemActive: {
-    borderColor: "#007AFF",
-    backgroundColor: "#F0F9FF",
+    borderColor: colors.primary,
+    backgroundColor: colors.secondBeige,
   },
   preferenceContent: {
     flexDirection: "row",
@@ -174,25 +175,25 @@ const styles = StyleSheet.create({
   },
   preferenceLabel: {
     fontWeight: "500",
-    color: "#374151",
+    color: colors.darkerGrey,
   },
   preferenceLabelActive: {
-    color: "#007AFF",
+    color: colors.primary,
     fontWeight: "600",
   },
   preferenceDescription: {
-    color: "#6B7280",
+    color: colors.lightGrey,
     fontSize: 12,
   },
   activeCount: {
     marginTop: 8,
     padding: 8,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: colors.secondBeige,
     borderRadius: 8,
     alignItems: "center",
   },
   activeCountText: {
-    color: "#6B7280",
+    color: colors.lightGrey,
     fontWeight: "500",
   },
 });

@@ -2,8 +2,32 @@ import mongoose from "mongoose";
 
 const coordinateSchema = new mongoose.Schema(
   {
-    latitude: { type: Number, required: true },
-    longitude: { type: Number, required: true },
+    latitude: {
+      type: Number,
+      required: true,
+    },
+    longitude: {
+      type: Number,
+      required: true,
+    },
+  },
+  { _id: false },
+);
+
+const locationSchema = new mongoose.Schema(
+  {
+    latitude: {
+      type: Number,
+      required: true,
+    },
+    longitude: {
+      type: Number,
+      required: true,
+    },
+    address: {
+      type: String,
+      required: true,
+    },
   },
   { _id: false },
 );
@@ -18,7 +42,7 @@ const routeSchema = new mongoose.Schema(
     },
     name: {
       type: String,
-      trim: true,
+      default: null,
     },
     type: {
       type: String,
@@ -26,34 +50,24 @@ const routeSchema = new mongoose.Schema(
       required: true,
     },
     startLocation: {
-      latitude: { type: Number, required: true },
-      longitude: { type: Number, required: true },
-      address: { type: String, required: true },
+      type: locationSchema,
+      required: true,
     },
     endLocation: {
-      latitude: { type: Number, required: true },
-      longitude: { type: Number, required: true },
-      address: { type: String, required: true },
+      type: locationSchema,
+      required: true,
     },
     coordinates: {
       type: [coordinateSchema],
       required: true,
-      validate: {
-        validator: function (arr) {
-          return arr.length >= 2;
-        },
-        message: "Route must have at least 2 coordinates",
-      },
     },
     totalDistance: {
       type: Number,
       required: true,
-      min: 0,
     },
     estimatedDuration: {
       type: Number,
       required: true,
-      min: 0,
     },
     preferenceScore: {
       type: Number,
@@ -68,16 +82,16 @@ const routeSchema = new mongoose.Schema(
       scenic: { type: Boolean, default: false },
       uphill: { type: Boolean, default: false },
       mountain: { type: Boolean, default: false },
+      quietStreets: { type: Boolean, default: false },
+      beach: { type: Boolean, default: false },
     },
     elevationGain: {
       type: Number,
       default: 0,
-      min: 0,
     },
     elevationLoss: {
       type: Number,
       default: 0,
-      min: 0,
     },
     maxElevation: {
       type: Number,
@@ -87,24 +101,37 @@ const routeSchema = new mongoose.Schema(
       type: Number,
       default: null,
     },
+    // NEW: Favorites support
+    isFavorite: {
+      type: Boolean,
+      default: false,
+      index: true, // Index for efficient queries
+    },
+    favoritedAt: {
+      type: Date,
+      default: null,
+    },
+    // Track when route was actually walked
+    lastWalkedAt: {
+      type: Date,
+      default: null,
+    },
+    walkCount: {
+      type: Number,
+      default: 0,
+    },
   },
-  { timestamps: true },
+  {
+    timestamps: true,
+  },
 );
 
+// Compound index for efficient favorite queries
+routeSchema.index({ userId: 1, isFavorite: 1, favoritedAt: -1 });
+
+// Compound index for recent routes
 routeSchema.index({ userId: 1, createdAt: -1 });
-routeSchema.index({ type: 1 });
-routeSchema.index({ "preferences.uphill": 1 });
-routeSchema.index({ "preferences.mountain": 1 });
-
-routeSchema.virtual("distanceKm").get(function () {
-  return (this.totalDistance / 1000).toFixed(2);
-});
-
-routeSchema.virtual("totalElevationChange").get(function () {
-  return this.elevationGain;
-});
-
-routeSchema.set("toJSON", { virtuals: true });
 
 const Route = mongoose.model("Route", routeSchema);
+
 export default Route;
