@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, StyleSheet } from "react-native";
 import { useTheme } from "react-native-paper";
 import Slider from "@react-native-community/slider";
@@ -20,7 +20,7 @@ export default function DistanceSelector({
   max = 30,
 }: DistanceSelectorProps) {
   const theme = useTheme();
-  const [inputValue, setInputValue] = React.useState(value.toString());
+  const [inputValue, setInputValue] = useState(value.toString());
 
   const handleSliderChange = (newValue: number) => {
     const roundedValue = Math.round(newValue * 10) / 10;

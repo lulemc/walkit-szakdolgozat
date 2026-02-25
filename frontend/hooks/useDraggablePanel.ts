@@ -69,8 +69,24 @@ export const useDraggablePanel = ({
     height: panelHeight.value,
   }));
 
+ const collapsePanel = () => {
+    panelHeight.value = withSpring(minHeight, {
+      damping: 20,
+      stiffness: 90,
+    });
+  };
+  
+  const expandPanel = () => {
+    panelHeight.value = withSpring(maxHeight, {
+      damping: 20,
+      stiffness: 90,
+    });
+  };
+  
   return {
     panGesture,
     animatedPanelStyle,
+    collapsePanel,
+    expandPanel
   };
 };

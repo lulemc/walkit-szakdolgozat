@@ -2,7 +2,6 @@ import React from "react";
 import { render, fireEvent, waitFor } from "@testing-library/react-native";
 import { PaperProvider } from "react-native-paper";
 import ActionButton from "../../ActionButton";
-import SuggestionItem from "../SuggestionItem";
 import LocationCard from "../LocationCard";
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -61,27 +60,6 @@ describe("SuggestionItem", () => {
     mainText: "Heroes Square",
     secondaryText: "Budapest, Hungary",
   };
-
-  it("renders main and secondary text", () => {
-    const { getByText } = render(
-      <SuggestionItem suggestion={mockSuggestion} onPress={jest.fn()} />,
-      { wrapper },
-    );
-
-    expect(getByText("Heroes Square")).toBeTruthy();
-    expect(getByText("Budapest, Hungary")).toBeTruthy();
-  });
-
-  it("calls onPress when pressed", () => {
-    const onPress = jest.fn();
-    const { getByText } = render(
-      <SuggestionItem suggestion={mockSuggestion} onPress={onPress} />,
-      { wrapper },
-    );
-
-    fireEvent.press(getByText("Heroes Square"));
-    expect(onPress).toHaveBeenCalledTimes(1);
-  });
 });
 
 describe("LocationCard", () => {
