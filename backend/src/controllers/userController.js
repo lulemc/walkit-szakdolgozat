@@ -21,7 +21,6 @@ export const updateUser = async (req, res) => {
   try {
     const updateData = {};
 
-    // Only update fields that are provided
     if (req.body.name !== undefined) updateData.name = req.body.name;
     if (req.body.email !== undefined) updateData.email = req.body.email;
     if (req.body.dateOfBirth !== undefined)

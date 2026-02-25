@@ -267,8 +267,8 @@ describe("User controller", () => {
     };
 
     User.findById.mockResolvedValue(mockUser);
-    bcrypt.compare.mockResolvedValueOnce(true); // current password is correct
-    bcrypt.compare.mockResolvedValueOnce(false); // new password is different
+    bcrypt.compare.mockResolvedValueOnce(true);
+    bcrypt.compare.mockResolvedValueOnce(false);
     bcrypt.hash.mockResolvedValue("new-hash");
     jwt.sign.mockReturnValue("new-jwt-token");
 
@@ -295,7 +295,6 @@ describe("User controller", () => {
       params: { id: "123" },
       body: {
         currentPassword: "oldPassword123",
-        // newPassword is missing
       },
     };
 
@@ -372,8 +371,8 @@ describe("User controller", () => {
     };
 
     User.findById.mockResolvedValue(mockUser);
-    bcrypt.compare.mockResolvedValueOnce(true); // current password is correct
-    bcrypt.compare.mockResolvedValueOnce(true); // new password is same
+    bcrypt.compare.mockResolvedValueOnce(true);
+    bcrypt.compare.mockResolvedValueOnce(true);
 
     await changePassword(req, res);
 
@@ -400,8 +399,8 @@ describe("User controller", () => {
     };
 
     User.findById.mockResolvedValue(mockUser);
-    bcrypt.compare.mockResolvedValueOnce(true); // current password is correct
-    bcrypt.compare.mockResolvedValueOnce(false); // new password is different
+    bcrypt.compare.mockResolvedValueOnce(true);
+    bcrypt.compare.mockResolvedValueOnce(false);
 
     await changePassword(req, res);
 

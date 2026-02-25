@@ -3,8 +3,8 @@ import { View, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { useTheme } from "react-native-paper";
 import { CustomText } from "@/components/CustomText";
 import { CustomTextInput } from "@/components/Inputs/CustomTextInput";
-import SuggestionItem from "./SuggestionItem";
 import type { PlaceSuggestion } from "@/types/walkPlanner";
+import SuggestionItem from "./SuggestionItem";
 
 interface SearchCardProps {
   value: string;
