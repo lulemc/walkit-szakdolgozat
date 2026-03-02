@@ -12,6 +12,16 @@
       "supportsTablet": true,
        "config": {
         "googleMapsApiKey": "AIzaSyBmTTxZ5x_NIQlKyIGJaf3aqNZTgRxFLh8"
+      },
+            "bundleIdentifier": "com.walkit.app",
+  "infoPlist": {
+        "NSHealthShareUsageDescription": "We need access to your health data to show your walking statistics and track your progress.",
+        "NSHealthUpdateUsageDescription": "We need access to update your health data with your walking activities.",
+        "UIBackgroundModes": ["fetch"]
+      },
+      "entitlements": {
+        "com.apple.developer.healthkit": true,
+        "com.apple.developer.healthkit.access": []
       }
     },
     "android": {
