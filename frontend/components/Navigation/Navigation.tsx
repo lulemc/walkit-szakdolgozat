@@ -1,5 +1,6 @@
 import Home from "@/app/(app)/home";
 import Settings from "@/app/(app)/settings";
+import Statistics from "@/app/(app)/statistics";
 import { ScreenContainer } from "@/components";
 import { ReactNode, useState } from "react";
 import { BottomNavigation, useTheme } from "react-native-paper";
@@ -17,6 +18,12 @@ const routesArray: BaseRoute[] = [
     unfocusedIcon: "home-outline",
   },
   {
+    key: "statistics",
+    title: "Statistics",
+    focusedIcon: "pie-chart",
+    unfocusedIcon: "pie-chart-outline",
+  },
+  {
     key: "settings",
     title: "Settings",
     focusedIcon: "settings",
@@ -32,6 +39,7 @@ export const Navigation: React.FC<NavigationProps> = ({ children }) => {
   const renderScene = BottomNavigation.SceneMap({
     home: () => <Home />,
     settings: () => <Settings />,
+    statistics: () => <Statistics />,
   });
 
   return (

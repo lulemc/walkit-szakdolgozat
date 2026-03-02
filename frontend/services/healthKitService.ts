@@ -1,6 +1,6 @@
-import AppleHealthKit from 'react-native-health';
 import { Platform } from 'react-native';
-
+// @ts-ignore
+import AppleHealthKit, {HealthKitPermissions}  from 'react-native-health';
 
 export interface HealthData {
   steps: number;
@@ -28,48 +28,31 @@ export class HealthKitError extends Error {
   }
 }
 
-interface HealthKitPermissions {
-  permissions: {
-    read: string[];
-    write: string[];
-  };
-}
-
-const permissions: HealthKitPermissions = {
+const permissions = {
   permissions: {
     read: [
-      'StepCount',
-      'DistanceWalkingRunning',
-      'ActiveEnergyBurned',
+      AppleHealthKit.Constants.Permissions.StepCount,
+      AppleHealthKit.Constants.Permissions.DistanceWalkingRunning,
+      AppleHealthKit.Constants.Permissions.ActiveEnergyBurned,
     ],
     write: [],
   },
-};
+ } as HealthKitPermissions;
+
 
 class HealthKitService {
   private isInitialized = false;
 
-  /**
-   * Check if Apple Health is available on this device
-   */
+  
   async isAvailable(): Promise<boolean> {
-    if (Platform.OS !== 'ios') {
-      console.log('[HealthKit] Not available - not iOS platform');
-      return false;
-    }
-
-    return new Promise((resolve) => {
-      (AppleHealthKit as any).isAvailable((error: any, available: boolean) => {
-        if (error) {
-          console.error('[HealthKit] Error checking availability:', error);
-          resolve(false);
-        } else {
-          console.log('[HealthKit] Available:', available);
-          resolve(available);
-        }
-      });
-    });
+  if (Platform.OS !== 'ios') {
+    console.log('[HealthKit] Not available - not iOS platform');
+    return false;
   }
+  
+  console.log('[HealthKit] Available - iOS platform');
+  return true;
+}
 
   /**
    * Request permissions to access health data
@@ -81,7 +64,7 @@ class HealthKitService {
     }
 
     return new Promise((resolve) => {
-      (AppleHealthKit as any).initHealthKit(permissions, (error: any) => {
+      AppleHealthKit.initHealthKit(permissions, (error: string) => {
         if (error) {
           console.error('[HealthKit] Permission error:', error);
           this.isInitialized = false;
@@ -134,7 +117,7 @@ class HealthKitService {
    */
   private getSteps(options: { startDate: string; endDate: string }): Promise<number> {
     return new Promise((resolve) => {
-      (AppleHealthKit as any).getStepCount(
+      AppleHealthKit.getStepCount(
         options,
         (error: any, results: any) => {
           if (error) {
@@ -156,7 +139,7 @@ class HealthKitService {
    */
   private getDistance(options: { startDate: string; endDate: string }): Promise<number> {
     return new Promise((resolve) => {
-      (AppleHealthKit as any).getDistanceWalkingRunning(
+      AppleHealthKit.getDistanceWalkingRunning(
         options,
         (error: any, results: any) => {
           if (error) {
@@ -178,7 +161,7 @@ class HealthKitService {
    */
   private getCalories(options: { startDate: string; endDate: string }): Promise<number> {
     return new Promise((resolve) => {
-      (AppleHealthKit as any).getActiveEnergyBurned(
+      AppleHealthKit.getActiveEnergyBurned(
         options,
         (error: any, results: any) => {
           if (error) {

@@ -1,5 +1,11 @@
 import React, { useState } from "react";
-import { View, ScrollView, RefreshControl, StyleSheet } from "react-native";
+import {
+  View,
+  ScrollView,
+  RefreshControl,
+  StyleSheet,
+  Text,
+} from "react-native";
 import { useHealthData } from "@/hooks/useHealthData";
 import { StatisticsHeader } from "@/components/Statistics/StatisticsHeader";
 import { LoadingState } from "@/components/Statistics/LoadingState";
@@ -63,7 +69,7 @@ export default function StatisticsScreen() {
         {/* Today's Highlights - Will add in Phase 2 */}
         <View style={styles.placeholder}>
           <View style={styles.placeholderText}>
-            <Text style={styles.placeholderTitle}>Today's Stats:</Text>
+            <Text style={styles.placeholderTitle}>Today&#39;s Stats:</Text>
             <Text style={styles.placeholderItem}>
               👟 Steps: {todayStats.steps.toLocaleString()}
             </Text>

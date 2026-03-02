@@ -9,6 +9,7 @@ interface UseHealthDataReturn {
   error: Error | null;
   refetch: () => Promise<void>;
   hasPermission: boolean;
+  requestPermission: () => Promise<boolean>;
 }
 
 export const useHealthData = (): UseHealthDataReturn => {
@@ -19,39 +20,72 @@ export const useHealthData = (): UseHealthDataReturn => {
   const [error, setError] = useState<Error | null>(null);
   const [hasPermission, setHasPermission] = useState(false);
 
+  // Combined function that ensures permissions then fetches
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      console.log('[useHealthData] Fetching health data...');
+      console.log('[useHealthData] Checking availability...');
+      
+      // Step 1: Check availability
+      const available = await healthKitService.isAvailable();
+      if (!available) {
+        throw new Error('Health data is not available on this device');
+      }
 
-      // Fetch all data in parallel
+      // Step 2: Request permissions (safe to call multiple times)
+      console.log('[useHealthData] Requesting permissions...');
+      const granted = await healthKitService.requestPermissions();
+      
+      if (!granted) {
+        setHasPermission(false);
+        throw new Error('Health data permission denied');
+      }
+
+      setHasPermission(true);
+      
+      // Step 3: Fetch data
+      console.log('[useHealthData] Fetching health data...');
       const [today, week, month] = await Promise.all([
         healthKitService.getTodayStats(),
         healthKitService.getWeekStats(),
         healthKitService.getMonthStats(),
       ]);
 
-      console.log('[useHealthData] Data fetched successfully:', {
-        today,
-        weekDays: week.length,
-        monthDays: month.length,
-      });
+      console.log('[useHealthData] Data fetched successfully');
 
       setTodayStats(today);
       setWeekStats(week);
       setMonthStats(month);
-      setHasPermission(true);
+      
     } catch (err) {
-      console.error('[useHealthData] Error fetching data:', err);
+      console.error('[useHealthData] Error:', err);
       setError(err as Error);
-      setHasPermission(false);
     } finally {
       setLoading(false);
     }
   }, []);
 
+  // Request permission separately (for retry button)
+  const requestPermission = useCallback(async (): Promise<boolean> => {
+    try {
+      const granted = await healthKitService.requestPermissions();
+      setHasPermission(granted);
+      
+      if (granted) {
+        // Auto-fetch after permission granted
+        await fetchData();
+      }
+      
+      return granted;
+    } catch (error) {
+      console.error('[useHealthData] Permission error:', error);
+      return false;
+    }
+  }, [fetchData]);
+
+  // Initialize on mount
   useEffect(() => {
     fetchData();
   }, [fetchData]);
@@ -62,7 +96,8 @@ export const useHealthData = (): UseHealthDataReturn => {
     monthStats,
     loading,
     error,
-    refetch: fetchData,
+    refetch: fetchData, // This now includes permission check
     hasPermission,
+    requestPermission,
   };
 };
