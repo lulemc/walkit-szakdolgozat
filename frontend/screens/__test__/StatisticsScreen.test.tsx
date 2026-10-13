@@ -41,6 +41,9 @@ const healthState = (overrides: Partial<UseHealthDataReturn> = {}): UseHealthDat
     refreshing: false,
     lastUpdated: new Date(),
     refresh: jest.fn().mockResolvedValue(undefined),
+    providerName: "Apple Health",
+    openSettings: jest.fn().mockResolvedValue(undefined),
+    openInstallPage: jest.fn().mockResolvedValue(undefined),
     ...overrides,
   };
 };
@@ -56,6 +59,15 @@ describe("StatisticsScreen", () => {
     mockedUseHealthData.mockReturnValue(healthState({ status: "unavailable" }));
     const { getByText } = renderWithTheme(<StatisticsScreen />);
     expect(getByText("Apple Health isn't available")).toBeTruthy();
+  });
+
+  it("offers to install Health Connect when it's missing", () => {
+    const state = healthState({ status: "notInstalled", providerName: "Health Connect" });
+    mockedUseHealthData.mockReturnValue(state);
+    const { getByText } = renderWithTheme(<StatisticsScreen />);
+
+    fireEvent.press(getByText("Get Health Connect"));
+    expect(state.openInstallPage).toHaveBeenCalled();
   });
 
   it("retries from the error state", () => {

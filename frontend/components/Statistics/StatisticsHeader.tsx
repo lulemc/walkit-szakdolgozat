@@ -6,9 +6,13 @@ import { CustomText } from "../CustomText";
 
 interface StatisticsHeaderProps {
   lastUpdated: Date | null;
+  providerName: string;
 }
 
-export const StatisticsHeader: React.FC<StatisticsHeaderProps> = ({ lastUpdated }) => {
+export const StatisticsHeader: React.FC<StatisticsHeaderProps> = ({
+  lastUpdated,
+  providerName,
+}) => {
   const theme = useTheme();
 
   return (
@@ -19,7 +23,7 @@ export const StatisticsHeader: React.FC<StatisticsHeaderProps> = ({ lastUpdated 
       <CustomText variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
         {lastUpdated
           ? `Updated ${formatLastUpdated(lastUpdated)} · pull down to refresh`
-          : "Your activity from Apple Health"}
+          : `Your activity from ${providerName}`}
       </CustomText>
     </View>
   );

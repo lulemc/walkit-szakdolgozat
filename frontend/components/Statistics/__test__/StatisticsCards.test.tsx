@@ -94,8 +94,17 @@ describe("ChartCard", () => {
 
 describe("StatisticsHeader", () => {
   it("shows when the data was last updated", () => {
-    const { getByText } = renderWithTheme(<StatisticsHeader lastUpdated={new Date()} />);
+    const { getByText } = renderWithTheme(
+      <StatisticsHeader lastUpdated={new Date()} providerName="Apple Health" />,
+    );
     expect(getByText("Statistics")).toBeTruthy();
     expect(getByText("Updated just now · pull down to refresh")).toBeTruthy();
+  });
+
+  it("names the provider before the first update", () => {
+    const { getByText } = renderWithTheme(
+      <StatisticsHeader lastUpdated={null} providerName="Health Connect" />,
+    );
+    expect(getByText("Your activity from Health Connect")).toBeTruthy();
   });
 });

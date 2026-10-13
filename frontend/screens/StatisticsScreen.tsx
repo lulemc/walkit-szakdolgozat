@@ -53,6 +53,9 @@ export default function StatisticsScreen() {
     refreshing,
     lastUpdated,
     refresh,
+    providerName,
+    openSettings,
+    openInstallPage,
   } = useHealthData();
 
   if (status === "loading") {
@@ -60,11 +63,21 @@ export default function StatisticsScreen() {
   }
 
   if (status !== "ready") {
-    return <ErrorState variant={status} error={error} onRetry={refresh} retrying={refreshing} />;
+    return (
+      <ErrorState
+        variant={status}
+        providerName={providerName}
+        error={error}
+        onRetry={refresh}
+        onOpenSettings={openSettings}
+        onInstall={openInstallPage}
+        retrying={refreshing}
+      />
+    );
   }
 
   if (!today || !hasAnyActivity(month)) {
-    return <EmptyState onRefresh={refresh} refreshing={refreshing} />;
+    return <EmptyState providerName={providerName} onRefresh={refresh} refreshing={refreshing} />;
   }
 
   return (
@@ -81,7 +94,7 @@ export default function StatisticsScreen() {
         />
       }
     >
-      <StatisticsHeader lastUpdated={lastUpdated} />
+      <StatisticsHeader lastUpdated={lastUpdated} providerName={providerName} />
 
       {error ? (
         <CustomText custom="error" variant="bodySmall" style={styles.notice}>
