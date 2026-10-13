@@ -1,18 +1,21 @@
 /* eslint-disable import/first */
-jest.mock("@/services/healthKitService", () => ({
-  healthKitService: {
-    isAvailable: jest.fn(),
-    requestPermissions: jest.fn(),
+jest.mock("@/services/health/healthService", () => ({
+  healthService: {
+    displayName: "Apple Health",
+    connect: jest.fn(),
     getHourlySteps: jest.fn(),
     getDailyStats: jest.fn(),
+    openSettings: jest.fn(),
+    openInstallPage: jest.fn(),
   },
 }));
 
 import { act, renderHook, waitFor } from "@testing-library/react-native";
-import { healthKitService } from "@/services/healthKitService";
+import { healthService } from "@/services/health/healthService";
+import { HealthErrorCode, HealthServiceError } from "@/services/health/types";
 import { useHealthData } from "../useHealthData";
 
-const kit = healthKitService as jest.Mocked<typeof healthKitService>;
+const service = healthService as jest.Mocked<typeof healthService>;
 
 const days = (stepsList: number[]) =>
   stepsList.map((steps, index) => ({
@@ -24,98 +27,76 @@ const days = (stepsList: number[]) =>
 
 const hourly = Array.from({ length: 24 }, (_, hour) => ({ hour, steps: hour === 9 ? 500 : 0 }));
 
+const failWith = (code: HealthErrorCode) =>
+  new HealthServiceError(code, code, "apple-health");
+
 describe("useHealthData", () => {
-  const originalEnv = process.env.EXPO_PUBLIC_USE_MOCK_HEALTH;
-
-  afterEach(() => {
-    process.env.EXPO_PUBLIC_USE_MOCK_HEALTH = originalEnv;
+  beforeEach(() => {
     jest.clearAllMocks();
+    service.connect.mockResolvedValue(undefined);
+    service.getHourlySteps.mockResolvedValue(hourly);
+    service.getDailyStats.mockResolvedValue(days([...Array(28).fill(6000), 8000, 12000]));
   });
 
-  describe("mock mode (default)", () => {
-    beforeEach(() => {
-      delete process.env.EXPO_PUBLIC_USE_MOCK_HEALTH;
-    });
+  it("derives today, week, summaries, trends and streak", async () => {
+    const { result } = renderHook(() => useHealthData());
 
-    it("becomes ready with generated data and never touches HealthKit", async () => {
-      const { result } = renderHook(() => useHealthData());
+    await waitFor(() => expect(result.current.status).toBe("ready"));
 
-      await waitFor(() => expect(result.current.status).toBe("ready"));
-
-      expect(result.current.month).toHaveLength(30);
-      expect(result.current.week).toHaveLength(7);
-      expect(result.current.hourly).toHaveLength(24);
-      expect(result.current.lastUpdated).toBeInstanceOf(Date);
-      expect(kit.isAvailable).not.toHaveBeenCalled();
-    });
+    expect(service.getDailyStats).toHaveBeenCalledWith(30);
+    expect(result.current.today?.steps).toBe(12000);
+    expect(result.current.yesterday?.steps).toBe(8000);
+    expect(result.current.week).toHaveLength(7);
+    expect(result.current.weekSummary?.totalSteps).toBe(5 * 6000 + 8000 + 12000);
+    expect(result.current.trends.steps).toBe(50);
+    expect(result.current.streak).toBe(30);
+    expect(result.current.lastUpdated).toBeInstanceOf(Date);
   });
 
-  describe("Apple Health mode", () => {
-    beforeEach(() => {
-      process.env.EXPO_PUBLIC_USE_MOCK_HEALTH = "false";
-      kit.isAvailable.mockResolvedValue(true);
-      kit.requestPermissions.mockResolvedValue(true);
-      kit.getHourlySteps.mockResolvedValue(hourly);
-      kit.getDailyStats.mockResolvedValue(days([...Array(28).fill(6000), 8000, 12000]));
-    });
+  it.each([
+    [HealthErrorCode.UNSUPPORTED_PLATFORM, "unavailable"],
+    [HealthErrorCode.NOT_INSTALLED, "notInstalled"],
+    [HealthErrorCode.UPDATE_REQUIRED, "notInstalled"],
+    [HealthErrorCode.PERMISSION_DENIED, "denied"],
+  ])("maps %s to the %s status", async (code, status) => {
+    service.connect.mockRejectedValue(failWith(code));
+    const { result } = renderHook(() => useHealthData());
 
-    it("is unavailable when HealthKit is missing", async () => {
-      kit.isAvailable.mockResolvedValue(false);
-      const { result } = renderHook(() => useHealthData());
+    await waitFor(() => expect(result.current.status).toBe(status));
+    expect(result.current.error).toBeNull();
+  });
 
-      await waitFor(() => expect(result.current.status).toBe("unavailable"));
-    });
+  it("shows the error state when the first load fails", async () => {
+    service.getDailyStats.mockRejectedValue(failWith(HealthErrorCode.FETCH_FAILED));
+    const { result } = renderHook(() => useHealthData());
 
-    it("is denied when HealthKit initialisation fails", async () => {
-      kit.requestPermissions.mockResolvedValue(false);
-      const { result } = renderHook(() => useHealthData());
+    await waitFor(() => expect(result.current.status).toBe("error"));
+    expect(result.current.error?.message).toBe(HealthErrorCode.FETCH_FAILED);
+  });
 
-      await waitFor(() => expect(result.current.status).toBe("denied"));
-    });
+  it("keeps the last data when a refresh fails", async () => {
+    const { result } = renderHook(() => useHealthData());
+    await waitFor(() => expect(result.current.status).toBe("ready"));
 
-    it("derives today, week, summaries, trends and streak", async () => {
-      const { result } = renderHook(() => useHealthData());
+    service.getDailyStats.mockRejectedValue(new Error("offline"));
+    await act(() => result.current.refresh());
 
-      await waitFor(() => expect(result.current.status).toBe("ready"));
+    expect(result.current.status).toBe("ready");
+    expect(result.current.error?.message).toBe("offline");
+    expect(result.current.today?.steps).toBe(12000);
+    expect(result.current.refreshing).toBe(false);
+  });
 
-      expect(kit.getDailyStats).toHaveBeenCalledWith(30);
-      expect(result.current.today?.steps).toBe(12000);
-      expect(result.current.yesterday?.steps).toBe(8000);
-      expect(result.current.week).toHaveLength(7);
-      expect(result.current.weekSummary?.totalSteps).toBe(5 * 6000 + 8000 + 12000);
-      expect(result.current.trends.steps).toBe(50);
-      expect(result.current.streak).toBe(30);
-    });
+  it("exposes the provider name and its actions", async () => {
+    const { result } = renderHook(() => useHealthData());
+    await waitFor(() => expect(result.current.status).toBe("ready"));
 
-    it("shows the error state when the first load fails", async () => {
-      kit.getDailyStats.mockRejectedValue(new Error("boom"));
-      const { result } = renderHook(() => useHealthData());
+    expect(result.current.providerName).toBe("Apple Health");
 
-      await waitFor(() => expect(result.current.status).toBe("error"));
-      expect(result.current.error?.message).toBe("boom");
-    });
+    await act(() => result.current.openSettings());
+    await act(() => result.current.openInstallPage());
 
-    it("keeps the last data when a refresh fails", async () => {
-      const { result } = renderHook(() => useHealthData());
-      await waitFor(() => expect(result.current.status).toBe("ready"));
-
-      kit.getDailyStats.mockRejectedValue(new Error("offline"));
-      await act(() => result.current.refresh());
-
-      expect(result.current.status).toBe("ready");
-      expect(result.current.error?.message).toBe("offline");
-      expect(result.current.today?.steps).toBe(12000);
-      expect(result.current.refreshing).toBe(false);
-    });
-
-    it("requests permission only once across refreshes", async () => {
-      const { result } = renderHook(() => useHealthData());
-      await waitFor(() => expect(result.current.status).toBe("ready"));
-
-      await act(() => result.current.refresh());
-
-      expect(kit.requestPermissions).toHaveBeenCalledTimes(1);
-      expect(kit.getDailyStats).toHaveBeenCalledTimes(2);
-    });
+    expect(service.openSettings).toHaveBeenCalled();
+    expect(service.openInstallPage).toHaveBeenCalled();
   });
 });
