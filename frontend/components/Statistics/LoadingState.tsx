@@ -1,81 +1,88 @@
-import React from "react";
-import { View, StyleSheet, Dimensions } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Animated, Easing, StyleSheet, View } from "react-native";
+import { useTheme } from "react-native-paper";
+import { ScreenContainer } from "../ScreenContainer";
 
-const { width } = Dimensions.get("window");
+const PULSE_MS = 700;
 
 export const LoadingState: React.FC = () => {
+  const theme = useTheme();
+  const [opacity] = useState(() => new Animated.Value(1));
+
+  useEffect(() => {
+    const timing = (toValue: number) =>
+      Animated.timing(opacity, {
+        toValue,
+        duration: PULSE_MS,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: true,
+      });
+    const pulse = Animated.loop(Animated.sequence([timing(0.45), timing(1)]));
+
+    pulse.start();
+    return () => pulse.stop();
+  }, [opacity]);
+
+  const block = [styles.block, { backgroundColor: theme.colors.surfaceVariant }];
+
   return (
-    <View style={styles.container}>
-      {/* Header Skeleton */}
-      <View style={styles.header}>
-        <View style={[styles.skeleton, styles.titleSkeleton]} />
-        <View style={[styles.skeleton, styles.subtitleSkeleton]} />
-      </View>
-
-      {/* Today's Cards Skeleton */}
-      <View style={styles.cardsContainer}>
-        <View style={[styles.skeleton, styles.cardSkeleton]} />
-        <View style={[styles.skeleton, styles.cardSkeleton]} />
-        <View style={[styles.skeleton, styles.cardSkeleton]} />
-      </View>
-
-      {/* Tabs Skeleton */}
-      <View style={styles.tabsContainer}>
-        <View style={[styles.skeleton, styles.tabSkeleton]} />
-        <View style={[styles.skeleton, styles.tabSkeleton]} />
-        <View style={[styles.skeleton, styles.tabSkeleton]} />
-      </View>
-
-      {/* Chart Skeleton */}
-      <View style={[styles.skeleton, styles.chartSkeleton]} />
-    </View>
+    <ScreenContainer scrollable style={styles.screen}>
+      <Animated.View
+        style={{ opacity }}
+        testID="statistics-loading"
+        accessibilityLabel="Loading statistics"
+        accessibilityRole="progressbar"
+      >
+        <View style={[block, styles.title]} />
+        <View style={[block, styles.subtitle]} />
+        <View style={[block, styles.hero]} />
+        <View style={styles.row}>
+          <View style={[block, styles.metric]} />
+          <View style={[block, styles.metric]} />
+        </View>
+        <View style={[block, styles.tabs]} />
+        <View style={[block, styles.chart]} />
+      </Animated.View>
+    </ScreenContainer>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F9FAFB",
+  screen: {
     padding: 16,
   },
-  header: {
-    marginBottom: 24,
+  block: {
+    borderRadius: 12,
+    marginBottom: 16,
   },
-  skeleton: {
-    backgroundColor: "#E5E7EB",
-    borderRadius: 8,
-  },
-  titleSkeleton: {
-    width: 150,
+  title: {
+    width: "45%",
     height: 28,
     marginBottom: 8,
   },
-  subtitleSkeleton: {
-    width: 100,
+  subtitle: {
+    width: "65%",
     height: 16,
   },
-  cardsContainer: {
-    marginBottom: 24,
-  },
-  cardSkeleton: {
-    width: width - 32,
-    height: 120,
-    marginBottom: 12,
+  hero: {
+    height: 170,
     borderRadius: 16,
   },
-  tabsContainer: {
+  row: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 24,
+    gap: 12,
   },
-  tabSkeleton: {
-    width: (width - 48) / 3,
+  metric: {
+    flex: 1,
+    height: 110,
+    borderRadius: 16,
+  },
+  tabs: {
     height: 40,
     borderRadius: 20,
   },
-  chartSkeleton: {
-    width: width - 32,
-    height: 250,
+  chart: {
+    height: 260,
     borderRadius: 16,
   },
 });

@@ -1,81 +1,86 @@
-// frontend/src/components/Statistics/MonthlyChart.tsx
-// Improved monthly chart with area fill and data points
-
 import React from "react";
-import { View, StyleSheet } from "react-native";
+import { View } from "react-native";
 import { LineChart } from "react-native-gifted-charts";
+import { useTheme } from "react-native-paper";
+import type { HealthData } from "@/services/healthKitService";
+import { formatCompactNumber } from "@/utils/healthFormatters";
+import { AxisLabels } from "./AxisLabels";
+import { CHART_SECTIONS, fitLine, niceMax, pointX, Y_AXIS_WIDTH } from "./chartLayout";
 
 interface MonthlyChartProps {
-  data: Array<{ date: Date; steps: number }>;
+  data: HealthData[];
+  goal: number;
+  width: number;
 }
 
-export const MonthlyChart: React.FC<MonthlyChartProps> = ({ data }) => {
-  const chartData = data.map((item, index) => ({
-    value: item.steps,
-    label: index % 5 === 0 ? `${index + 1}` : "",
-    labelTextStyle: { color: "#6B7280", fontSize: 10 },
-    dataPointText:
-      index === data.length - 1 ? `${(item.steps / 1000).toFixed(1)}k` : "",
-    dataPointLabelComponent:
-      index === data.length - 1
-        ? () => (
-            <View style={styles.dataPointLabel}>
-              {/* Last point indicator */}
-            </View>
-          )
-        : undefined,
-  }));
+const CHART_HEIGHT = 180;
+const LABEL_EVERY_DAYS = 7;
+
+const formatDayMonth = (date: Date) => `${date.getDate()}/${date.getMonth() + 1}`;
+
+export const MonthlyChart: React.FC<MonthlyChartProps> = ({ data, goal, width }) => {
+  const theme = useTheme();
+  const layout = fitLine(width, data.length);
+  const axisText = { color: theme.colors.onSurfaceVariant, fontSize: 10 };
+
+  // Label every 7th day plus the last one, skipping it if it would crowd the previous label
+  const lastIndex = data.length - 1;
+  const labelIndexes = data
+    .map((_, index) => index)
+    .filter((index) => index % LABEL_EVERY_DAYS === 0 && lastIndex - index >= 3);
+  if (lastIndex >= 0) labelIndexes.push(lastIndex);
 
   return (
-    <View style={styles.container}>
+    <View>
       <LineChart
-        data={chartData}
-        width={300}
-        height={220}
-        color="#007AFF"
-        thickness={3}
-        curved
+        data={data.map((day) => ({ value: day.steps }))}
+        width={layout.chartWidth}
+        height={CHART_HEIGHT}
+        spacing={layout.spacing}
+        initialSpacing={layout.initialSpacing}
+        endSpacing={layout.initialSpacing}
+        disableScroll
         areaChart
-        startFillColor="rgba(0, 122, 255, 0.3)"
-        endFillColor="rgba(0, 122, 255, 0.05)"
-        startOpacity={0.9}
-        endOpacity={0.2}
-        hideRules
-        hideYAxisText={false}
-        yAxisColor="#E5E7EB"
+        curved
+        color={theme.colors.primary}
+        thickness={3}
+        startFillColor={theme.colors.primary}
+        endFillColor={theme.colors.primary}
+        startOpacity={0.35}
+        endOpacity={0.02}
+        hideDataPoints
+        maxValue={niceMax(
+          data.map((d) => d.steps),
+          goal * 1.1,
+        )}
+        noOfSections={CHART_SECTIONS}
+        yAxisLabelWidth={Y_AXIS_WIDTH}
         yAxisThickness={0}
-        yAxisTextStyle={{ color: "#6B7280", fontSize: 10 }}
-        xAxisColor="#E5E7EB"
-        xAxisThickness={1}
-        xAxisLabelTextStyle={{ color: "#6B7280", fontSize: 10 }}
-        noOfSections={4}
-        maxValue={Math.max(...data.map((d) => d.steps)) * 1.15}
+        yAxisTextStyle={axisText}
+        xAxisColor={theme.colors.outlineVariant}
+        xAxisLabelsHeight={0}
+        rulesType="dashed"
+        rulesColor={theme.colors.outlineVariant}
+        formatYLabel={(label) => formatCompactNumber(Number(label))}
+        showReferenceLine1
+        referenceLine1Position={goal}
+        referenceLine1Config={{
+          color: theme.colors.onSurfaceVariant,
+          type: "dashed",
+          dashWidth: 4,
+          dashGap: 4,
+          thickness: 1,
+          labelText: "Goal",
+          labelTextStyle: axisText,
+        }}
         isAnimated
-        animationDuration={1200}
-        animateOnDataChange
-        dataPointsHeight={6}
-        dataPointsWidth={6}
-        dataPointsColor="#007AFF"
-        dataPointsRadius={3}
-        hideDataPoints={false}
-        showVerticalLines={false}
-        verticalLinesColor="#E5E7EB"
-        spacing={10}
-        initialSpacing={10}
-        endSpacing={20}
+      />
+      <AxisLabels
+        labels={labelIndexes.map((index) => ({
+          x: pointX(layout, index),
+          text: formatDayMonth(data[index].date),
+        }))}
       />
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    paddingVertical: 10,
-  },
-  dataPointLabel: {
-    backgroundColor: "#007AFF",
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-});

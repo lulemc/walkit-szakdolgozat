@@ -91,11 +91,20 @@ export const formatLastUpdated = (date: Date): string => {
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
   
-  if (diffMins < 1) return 'Just now';
+  if (diffMins < 1) return 'just now';
   if (diffMins < 60) return `${diffMins} min ago`;
   
   const diffHours = Math.floor(diffMins / 60);
   if (diffHours < 24) return `${diffHours}h ago`;
   
   return formatDate(date);
+};
+
+/**
+ * Compact number for chart axes: 950 → "950", 12400 → "12.4k"
+ */
+export const formatCompactNumber = (value: number): string => {
+  if (value < 1000) return `${Math.round(value)}`;
+  const thousands = value / 1000;
+  return `${Number.isInteger(thousands) ? thousands : thousands.toFixed(1)}k`;
 };

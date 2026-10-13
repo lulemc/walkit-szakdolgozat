@@ -1,76 +1,73 @@
-// frontend/src/components/Statistics/WeeklyChart.tsx
-// Improved weekly chart with gradient bars
-
 import React from "react";
-import { View, StyleSheet, Text } from "react-native";
 import { BarChart } from "react-native-gifted-charts";
+import { useTheme } from "react-native-paper";
+import type { HealthData } from "@/services/healthKitService";
+import { colors } from "@/theme/colors";
+import { formatCompactNumber, getDayAbbreviation } from "@/utils/healthFormatters";
+import { CHART_SECTIONS, fitBars, niceMax, Y_AXIS_WIDTH } from "./chartLayout";
 
 interface WeeklyChartProps {
-  data: Array<{ date: Date; steps: number }>;
+  data: HealthData[];
+  goal: number;
+  width: number;
 }
 
-export const WeeklyChart: React.FC<WeeklyChartProps> = ({ data }) => {
-  const dayNames = ["S", "M", "T", "W", "T", "F", "S"];
-  const dayNamesFull = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const CHART_HEIGHT = 200;
 
-  const chartData = data.map((item, index) => {
+export const WeeklyChart: React.FC<WeeklyChartProps> = ({ data, goal, width }) => {
+  const theme = useTheme();
+  const layout = fitBars(width, data.length, 0.55);
+  const axisText = { color: theme.colors.onSurfaceVariant, fontSize: 10 };
+
+  const chartData = data.map((day, index) => {
     const isToday = index === data.length - 1;
-    const steps = item.steps;
-
     return {
-      value: steps,
-      label: dayNames[item.date.getDay()],
-      frontColor: isToday ? "#007AFF" : "#60A5FA",
-      gradientColor: isToday ? "#4DA3FF" : "#93C5FD",
+      value: day.steps,
+      label: getDayAbbreviation(day.date),
+      frontColor: isToday ? colors.secondary : theme.colors.primary,
       labelTextStyle: {
-        color: isToday ? "#007AFF" : "#6B7280",
-        fontSize: 12,
-        fontWeight: (isToday ? "700" : "400") as any,
+        ...axisText,
+        color: isToday ? theme.colors.onSurface : theme.colors.onSurfaceVariant,
+        fontWeight: isToday ? ("700" as const) : ("400" as const),
       },
-      topLabelComponent: () => (
-        <Text style={[styles.topLabel, isToday && styles.todayLabel]}>
-          {(steps / 1000).toFixed(1)}k
-        </Text>
-      ),
     };
   });
 
   return (
-    <View style={styles.container}>
-      <BarChart
-        data={chartData}
-        width={300}
-        height={220}
-        barWidth={32}
-        spacing={20}
-        roundedTop
-        roundedBottom
-        hideRules
-        xAxisThickness={1}
-        yAxisThickness={0}
-        yAxisTextStyle={{ color: "#6B7280", fontSize: 10 }}
-        noOfSections={4}
-        maxValue={Math.max(...data.map((d) => d.steps)) * 1.2}
-        isAnimated
-        animationDuration={1000}
-        showGradient
-      />
-    </View>
+    <BarChart
+      data={chartData}
+      width={layout.chartWidth}
+      height={CHART_HEIGHT}
+      barWidth={layout.barWidth}
+      spacing={layout.spacing}
+      initialSpacing={layout.initialSpacing}
+      endSpacing={layout.initialSpacing}
+      disableScroll
+      roundedTop
+      maxValue={niceMax(
+        data.map((d) => d.steps),
+        goal * 1.1,
+      )}
+      noOfSections={CHART_SECTIONS}
+      yAxisLabelWidth={Y_AXIS_WIDTH}
+      yAxisThickness={0}
+      yAxisTextStyle={axisText}
+      xAxisColor={theme.colors.outlineVariant}
+      rulesType="dashed"
+      rulesColor={theme.colors.outlineVariant}
+      formatYLabel={(label) => formatCompactNumber(Number(label))}
+      showReferenceLine1
+      referenceLine1Position={goal}
+      referenceLine1Config={{
+        color: theme.colors.onSurfaceVariant,
+        type: "dashed",
+        dashWidth: 4,
+        dashGap: 4,
+        thickness: 1,
+        labelText: "Goal",
+        labelTextStyle: axisText,
+      }}
+      isAnimated
+    />
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    paddingVertical: 10,
-  },
-  topLabel: {
-    color: "#6B7280",
-    fontSize: 10,
-    fontWeight: "600" as any,
-    marginBottom: 4,
-  },
-  todayLabel: {
-    color: "#007AFF",
-    fontWeight: "700" as any,
-  },
-});

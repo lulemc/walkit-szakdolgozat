@@ -69,18 +69,19 @@ export const useDraggablePanel = ({
     height: panelHeight.value,
   }));
 
- const collapsePanel = () => {
-    panelHeight.value = withSpring(minHeight, {
+  // .set() rather than assigning .value, so the React Compiler can track the update
+  const collapsePanel = () => {
+    panelHeight.set(withSpring(minHeight, {
       damping: 20,
       stiffness: 90,
-    });
+    }));
   };
-  
+
   const expandPanel = () => {
-    panelHeight.value = withSpring(maxHeight, {
+    panelHeight.set(withSpring(maxHeight, {
       damping: 20,
       stiffness: 90,
-    });
+    }));
   };
   
   return {

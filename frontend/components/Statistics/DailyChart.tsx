@@ -1,63 +1,60 @@
-// frontend/src/components/Statistics/DailyChart.tsx
-// Improved daily chart with tooltips
-
 import React from "react";
-import { View, StyleSheet } from "react-native";
+import { View } from "react-native";
 import { BarChart } from "react-native-gifted-charts";
+import { useTheme } from "react-native-paper";
+import type { HourlySteps } from "@/services/healthKitService";
+import { colors } from "@/theme/colors";
+import { formatCompactNumber } from "@/utils/healthFormatters";
+import { AxisLabels } from "./AxisLabels";
+import { barCenter, CHART_SECTIONS, fitBars, niceMax, Y_AXIS_WIDTH } from "./chartLayout";
 
 interface DailyChartProps {
-  data: Array<{ hour: number; steps: number }>;
+  data: HourlySteps[];
+  width: number;
 }
 
-export const DailyChart: React.FC<DailyChartProps> = ({ data }) => {
-  const chartData = data
-    .filter((item) => item.steps > 0)
-    .map((item) => ({
-      value: item.steps,
-      label: item.hour % 3 === 0 ? `${item.hour}h` : "", // Show every 3rd hour
-      frontColor: "#007AFF",
-      gradientColor: "#4DA3FF",
-      spacing: 2,
-      labelWidth: 30,
-      labelTextStyle: { color: "#6B7280", fontSize: 10 },
-      topLabelComponent: () => (
-        <View style={styles.tooltip}>{/* Tooltip will show on press */}</View>
-      ),
-    }));
+const CHART_HEIGHT = 180;
+const LABELLED_HOURS = [0, 6, 12, 18];
+
+export const DailyChart: React.FC<DailyChartProps> = ({ data, width }) => {
+  const theme = useTheme();
+  const layout = fitBars(width, data.length);
+  const currentHour = new Date().getHours();
+  const axisText = { color: theme.colors.onSurfaceVariant, fontSize: 10 };
+
+  const chartData = data.map(({ hour, steps }) => ({
+    value: steps,
+    // Highlight the hour in progress
+    frontColor: hour === currentHour ? colors.secondary : theme.colors.primary,
+  }));
 
   return (
-    <View style={styles.container}>
+    <View>
       <BarChart
         data={chartData}
-        width={300}
-        height={200}
-        barWidth={16}
-        spacing={8}
+        width={layout.chartWidth}
+        height={CHART_HEIGHT}
+        barWidth={layout.barWidth}
+        spacing={layout.spacing}
+        initialSpacing={layout.initialSpacing}
+        endSpacing={layout.initialSpacing}
+        disableScroll
         roundedTop
-        roundedBottom
-        hideRules
-        xAxisThickness={1}
+        maxValue={niceMax(data.map((d) => d.steps))}
+        noOfSections={CHART_SECTIONS}
+        yAxisLabelWidth={Y_AXIS_WIDTH}
         yAxisThickness={0}
-        yAxisTextStyle={{ color: "#6B7280", fontSize: 10 }}
-        noOfSections={4}
-        maxValue={Math.max(...data.map((d) => d.steps)) * 1.1}
+        yAxisTextStyle={axisText}
+        xAxisColor={theme.colors.outlineVariant}
+        xAxisLabelsHeight={0}
+        rulesType="dashed"
+        rulesColor={theme.colors.outlineVariant}
+        formatYLabel={(label) => formatCompactNumber(Number(label))}
         isAnimated
-        animationDuration={800}
-        showGradient
-        gradientColor="#4DA3FF"
+      />
+      <AxisLabels
+        labels={LABELLED_HOURS.map((hour) => ({ x: barCenter(layout, hour), text: `${hour}h` }))}
       />
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    paddingVertical: 10,
-  },
-  tooltip: {
-    backgroundColor: "#1F2937",
-    padding: 6,
-    borderRadius: 6,
-    marginBottom: 4,
-  },
-});

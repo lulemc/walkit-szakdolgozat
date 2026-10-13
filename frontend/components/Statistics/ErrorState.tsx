@@ -1,85 +1,82 @@
-// frontend/src/components/Statistics/ErrorState.tsx
-// Error state component for statistics screen
-
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { Linking, StyleSheet, View } from "react-native";
+import { Icon, useTheme } from "react-native-paper";
+import { CustomText } from "../CustomText";
+import { PrimaryButton } from "../Button";
+import { ScreenContainer } from "../ScreenContainer";
+
+export type ErrorVariant = "denied" | "unavailable" | "error";
 
 interface ErrorStateProps {
-  error: Error;
+  variant: ErrorVariant;
+  error?: Error | null;
   onRetry: () => void;
+  retrying?: boolean;
 }
 
-export const ErrorState: React.FC<ErrorStateProps> = ({ error, onRetry }) => {
-  const isPermissionError =
-    error.message.includes("permission") ||
-    error.message.includes("not initialized");
+const COPY: Record<ErrorVariant, { icon: string; title: string; message: string; action?: string }> = {
+  denied: {
+    icon: "lock-closed-outline",
+    title: "Health access needed",
+    message:
+      "Allow WalkIt to read your steps, walking distance and active energy so we can show your statistics.",
+    action: "Open Settings",
+  },
+  unavailable: {
+    icon: "phone-portrait-outline",
+    title: "Apple Health isn't available",
+    message:
+      "Statistics come from Apple Health, which only works in the WalkIt iOS app. It isn't available in Expo Go, on Android or on the web.",
+  },
+  error: {
+    icon: "alert-circle-outline",
+    title: "Couldn't load your statistics",
+    message: "Something went wrong while reading Apple Health. Please try again.",
+    action: "Try again",
+  },
+};
+
+export const ErrorState: React.FC<ErrorStateProps> = ({ variant, error, onRetry, retrying }) => {
+  const theme = useTheme();
+  const copy = COPY[variant];
+  const handleAction = variant === "denied" ? () => Linking.openSettings() : onRetry;
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.emoji}>{isPermissionError ? "🔒" : "⚠️"}</Text>
+    <ScreenContainer>
+      <View style={styles.content}>
+        <Icon source={copy.icon} size={56} color={theme.colors.primary} />
+        <CustomText variant="headlineSmall" style={styles.center}>
+          {copy.title}
+        </CustomText>
+        <CustomText
+          variant="bodyLarge"
+          style={[styles.center, { color: theme.colors.onSurfaceVariant }]}
+        >
+          {copy.message}
+        </CustomText>
 
-      <Text style={styles.title}>
-        {isPermissionError ? "Health Access Required" : "Couldn't Load Data"}
-      </Text>
+        {copy.action ? (
+          <PrimaryButton onPress={handleAction} loading={retrying} disabled={retrying}>
+            {copy.action}
+          </PrimaryButton>
+        ) : null}
 
-      <Text style={styles.message}>
-        {isPermissionError
-          ? "We need permission to access your health data to show your statistics."
-          : "Please check your connection and try again."}
-      </Text>
-
-      <TouchableOpacity style={styles.button} onPress={onRetry}>
-        <Text style={styles.buttonText}>
-          {isPermissionError ? "Grant Permission" : "Try Again"}
-        </Text>
-      </TouchableOpacity>
-
-      {__DEV__ && <Text style={styles.debugText}>Debug: {error.message}</Text>}
-    </View>
+        {__DEV__ && error ? (
+          <CustomText variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+            Debug: {error.message}
+          </CustomText>
+        ) : null}
+      </View>
+    </ScreenContainer>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F9FAFB",
-    justifyContent: "center",
+  content: {
     alignItems: "center",
-    padding: 24,
+    gap: 16,
   },
-  emoji: {
-    fontSize: 64,
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#111827",
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  message: {
-    fontSize: 16,
-    color: "#6B7280",
-    textAlign: "center",
-    marginBottom: 24,
-    lineHeight: 24,
-  },
-  button: {
-    backgroundColor: "#007AFF",
-    paddingHorizontal: 32,
-    paddingVertical: 14,
-    borderRadius: 12,
-  },
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  debugText: {
-    marginTop: 16,
-    fontSize: 12,
-    color: "#9CA3AF",
+  center: {
     textAlign: "center",
   },
 });
