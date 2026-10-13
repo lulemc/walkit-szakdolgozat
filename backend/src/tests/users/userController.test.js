@@ -4,7 +4,6 @@ import jwt from "jsonwebtoken";
 import User from "../../models/User.js";
 
 import {
-  getAllUsers,
   getUserById,
   updateUser,
   deleteUser,
@@ -49,24 +48,6 @@ describe("User controller", () => {
     vi.clearAllMocks();
   });
 
-  /* -------- getAllUsers -------- */
-
-  it("getAllUsers returns users without passwordHash", async () => {
-    const req = {};
-    const res = mockRes();
-
-    const users = [{ _id: "1" }, { _id: "2" }];
-
-    User.find.mockReturnValue({
-      select: vi.fn().mockResolvedValue(users),
-    });
-
-    await getAllUsers(req, res);
-
-    expect(User.find).toHaveBeenCalled();
-    expect(res.json).toHaveBeenCalledWith(users);
-  });
-
   /* -------- getUserById -------- */
 
   it("getUserById returns user when found", async () => {
@@ -99,17 +80,31 @@ describe("User controller", () => {
     expect(res.json).toHaveBeenCalledWith({ message: "User not found" });
   });
 
+  it("getUserById returns 404 for an invalid id", async () => {
+    const req = { params: { id: "not-an-id" } };
+    const res = mockRes();
+
+    const castError = new Error("Cast to ObjectId failed");
+    castError.name = "CastError";
+    User.findById.mockReturnValue({
+      select: vi.fn().mockRejectedValue(castError),
+    });
+
+    await getUserById(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({ message: "User not found" });
+  });
+
   /* -------- updateUser -------- */
 
-  it("updateUser updates user with hashed password", async () => {
+  it("updateUser ignores password in the request body", async () => {
     const req = {
       params: { id: "123" },
       body: { name: "New Name", password: "newpass" },
     };
 
     const res = mockRes();
-
-    bcrypt.hash.mockResolvedValue("new-hash");
 
     User.findByIdAndUpdate.mockReturnValue({
       select: vi.fn().mockResolvedValue({
@@ -120,14 +115,11 @@ describe("User controller", () => {
 
     await updateUser(req, res);
 
-    expect(bcrypt.hash).toHaveBeenCalledWith("newpass", 10);
+    expect(bcrypt.hash).not.toHaveBeenCalled();
 
     expect(User.findByIdAndUpdate).toHaveBeenCalledWith(
       "123",
-      {
-        name: "New Name",
-        passwordHash: "new-hash",
-      },
+      { name: "New Name" },
       { new: true, runValidators: true },
     );
 
@@ -247,6 +239,20 @@ describe("User controller", () => {
     expect(res.json).toHaveBeenCalledWith({ message: "User not found" });
   });
 
+  it("deleteUser returns 404 for an invalid id", async () => {
+    const req = { params: { id: "not-an-id" } };
+    const res = mockRes();
+
+    const castError = new Error("Cast to ObjectId failed");
+    castError.name = "CastError";
+    User.findByIdAndDelete.mockRejectedValue(castError);
+
+    await deleteUser(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({ message: "User not found" });
+  });
+
   /* -------- changePassword -------- */
 
   it("changePassword successfully changes password and returns new token", async () => {
@@ -282,7 +288,7 @@ describe("User controller", () => {
     expect(jwt.sign).toHaveBeenCalledWith(
       { id: "123" },
       process.env.JWT_SECRET,
-      { expiresIn: "30d" },
+      { expiresIn: "7d" },
     );
     expect(res.json).toHaveBeenCalledWith({
       message: "Password changed successfully",

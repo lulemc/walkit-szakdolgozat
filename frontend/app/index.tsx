@@ -1,19 +1,17 @@
 import { useAuth } from "@/context/AuthProvider";
-import { useEffect } from "react";
-import { useRouter } from "expo-router";
+import { Redirect } from "expo-router";
 import Home from "./(app)/home";
 import { Navigation } from "@/components/Navigation/Navigation";
 import { View } from "react-native";
 
 export default function Index() {
-  const router = useRouter();
-  const { token } = useAuth();
+  const { token, loading } = useAuth();
 
-  useEffect(() => {
-    if (!token) {
-      router.replace("/login");
-    }
-  }, []);
+  if (loading) return null;
+
+  if (!token) {
+    return <Redirect href="/login" />;
+  }
 
   return (
     <View style={{ flex: 1 }}>

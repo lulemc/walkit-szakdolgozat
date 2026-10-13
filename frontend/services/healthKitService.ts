@@ -1,6 +1,6 @@
-import AppleHealthKit from 'react-native-health';
-import { Platform } from 'react-native';
-
+import { Platform } from "react-native";
+// @ts-ignore - react-native-health's typings don't cover this import style
+import AppleHealthKit, { HealthKitPermissions } from "react-native-health";
 
 export interface HealthData {
   steps: number;
@@ -9,268 +9,202 @@ export interface HealthData {
   date: Date;
 }
 
+export interface HourlySteps {
+  hour: number; // 0-23
+  steps: number;
+}
+
 export enum HealthKitErrorCode {
-  NOT_AVAILABLE = 'HEALTHKIT_NOT_AVAILABLE',
-  NOT_INITIALIZED = 'HEALTHKIT_NOT_INITIALIZED',
-  PERMISSION_DENIED = 'PERMISSION_DENIED',
-  FETCH_FAILED = 'FETCH_FAILED',
-  INVALID_DATE_RANGE = 'INVALID_DATE_RANGE',
+  NOT_AVAILABLE = "HEALTHKIT_NOT_AVAILABLE",
+  NOT_INITIALIZED = "HEALTHKIT_NOT_INITIALIZED",
+  PERMISSION_DENIED = "PERMISSION_DENIED",
+  FETCH_FAILED = "FETCH_FAILED",
+  INVALID_DATE_RANGE = "INVALID_DATE_RANGE",
 }
 
 export class HealthKitError extends Error {
   constructor(
     public code: HealthKitErrorCode,
     message: string,
-    public originalError?: Error
+    public originalError?: Error,
   ) {
     super(message);
-    this.name = 'HealthKitError';
+    this.name = "HealthKitError";
   }
 }
 
-interface HealthKitPermissions {
-  permissions: {
-    read: string[];
-    write: string[];
-  };
+interface HealthSample {
+  startDate: string;
+  value: number;
 }
 
-const permissions: HealthKitPermissions = {
+type SampleQuery = (
+  options: Record<string, unknown>,
+  callback: (error: unknown, results: HealthSample[]) => void,
+) => void;
+
+const permissions = {
   permissions: {
     read: [
-      'StepCount',
-      'DistanceWalkingRunning',
-      'ActiveEnergyBurned',
+      AppleHealthKit.Constants.Permissions.StepCount,
+      AppleHealthKit.Constants.Permissions.DistanceWalkingRunning,
+      AppleHealthKit.Constants.Permissions.ActiveEnergyBurned,
     ],
     write: [],
   },
+} as HealthKitPermissions;
+
+const MINUTES_PER_HOUR = 60;
+const MINUTES_PER_DAY = 24 * 60;
+
+// HealthKit returns offsets like "+0200"; make them "+02:00" so every JS engine parses them
+export const parseHealthDate = (value: string): Date =>
+  new Date(value.replace(/([+-]\d{2})(\d{2})$/, "$1:$2"));
+
+const startOfDay = (date: Date) => {
+  const day = new Date(date);
+  day.setHours(0, 0, 0, 0);
+  return day;
 };
 
-class HealthKitService {
+const dayKey = (date: Date) => `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+
+export class HealthKitService {
   private isInitialized = false;
 
-  /**
-   * Check if Apple Health is available on this device
-   */
+  /** HealthKit only exists in iOS builds that include the native module (not Expo Go or web) */
   async isAvailable(): Promise<boolean> {
-    if (Platform.OS !== 'ios') {
-      console.log('[HealthKit] Not available - not iOS platform');
-      return false;
-    }
-
-    return new Promise((resolve) => {
-      (AppleHealthKit as any).isAvailable((error: any, available: boolean) => {
-        if (error) {
-          console.error('[HealthKit] Error checking availability:', error);
-          resolve(false);
-        } else {
-          console.log('[HealthKit] Available:', available);
-          resolve(available);
-        }
-      });
-    });
+    return Platform.OS === "ios" && typeof AppleHealthKit?.initHealthKit === "function";
   }
 
   /**
    * Request permissions to access health data
-   * @returns true if permissions were granted
+   * @returns true if HealthKit initialised. iOS never reveals denied read access.
    */
   async requestPermissions(): Promise<boolean> {
-    if (Platform.OS !== 'ios') {
+    if (!(await this.isAvailable())) {
       return false;
     }
 
     return new Promise((resolve) => {
-      (AppleHealthKit as any).initHealthKit(permissions, (error: any) => {
+      AppleHealthKit.initHealthKit(permissions, (error: string) => {
         if (error) {
-          console.error('[HealthKit] Permission error:', error);
-          this.isInitialized = false;
-          resolve(false);
-        } else {
-          console.log('[HealthKit] Permissions granted');
-          this.isInitialized = true;
-          resolve(true);
+          console.error("[HealthKit] Permission error:", error);
         }
+        this.isInitialized = !error;
+        resolve(!error);
       });
     });
   }
 
   /**
-   * Get today's health statistics
+   * Today's steps in 24 hourly buckets; hours without data are 0
    */
-  async getTodayStats(): Promise<HealthData> {
+  async getHourlySteps(now: Date = new Date()): Promise<HourlySteps[]> {
     this.ensureInitialized();
 
-    const now = new Date();
-    const startOfDay = new Date(now);
-    startOfDay.setHours(0, 0, 0, 0);
+    const samples = await this.querySamples(
+      AppleHealthKit.getDailyStepCountSamples,
+      startOfDay(now),
+      now,
+      MINUTES_PER_HOUR,
+    );
 
-    const options = {
-      startDate: startOfDay.toISOString(),
-      endDate: now.toISOString(),
-    };
+    const hourly = Array.from({ length: 24 }, (_, hour) => ({ hour, steps: 0 }));
+    for (const sample of samples) {
+      const date = parseHealthDate(sample.startDate);
+      if (dayKey(date) === dayKey(now)) {
+        hourly[date.getHours()].steps += Math.round(sample.value);
+      }
+    }
 
-    console.log('[HealthKit] Fetching today\'s stats:', options);
-
-    const [steps, distance, calories] = await Promise.all([
-      this.getSteps(options),
-      this.getDistance(options),
-      this.getCalories(options),
-    ]);
-
-    console.log('[HealthKit] Today\'s stats:', { steps, distance, calories });
-
-    return {
-      steps,
-      distance,
-      calories,
-      date: new Date(),
-    };
+    return hourly;
   }
 
   /**
-   * Get step count for date range
-   * @private
+   * Daily totals for the last `days` days including today, oldest first
    */
-  private getSteps(options: { startDate: string; endDate: string }): Promise<number> {
-    return new Promise((resolve) => {
-      (AppleHealthKit as any).getStepCount(
-        options,
-        (error: any, results: any) => {
-          if (error) {
-            console.error('[HealthKit] Error fetching steps:', error);
-            resolve(0);
-          } else {
-            const steps = Math.round(results?.value || 0);
-            console.log('[HealthKit] Steps:', steps);
-            resolve(steps);
-          }
-        }
-      );
-    });
-  }
-
-  /**
-   * Get walking/running distance for date range (in meters)
-   * @private
-   */
-  private getDistance(options: { startDate: string; endDate: string }): Promise<number> {
-    return new Promise((resolve) => {
-      (AppleHealthKit as any).getDistanceWalkingRunning(
-        options,
-        (error: any, results: any) => {
-          if (error) {
-            console.error('[HealthKit] Error fetching distance:', error);
-            resolve(0);
-          } else {
-            const distance = Math.round(results?.value || 0);
-            console.log('[HealthKit] Distance:', distance, 'meters');
-            resolve(distance);
-          }
-        }
-      );
-    });
-  }
-
-  /**
-   * Get active energy burned for date range (in kcal)
-   * @private
-   */
-  private getCalories(options: { startDate: string; endDate: string }): Promise<number> {
-    return new Promise((resolve) => {
-      (AppleHealthKit as any).getActiveEnergyBurned(
-        options,
-        (error: any, results: any) => {
-          if (error) {
-            console.error('[HealthKit] Error fetching calories:', error);
-            resolve(0);
-          } else {
-            const calories = Math.round(results?.value || 0);
-            console.log('[HealthKit] Calories:', calories, 'kcal');
-            resolve(calories);
-          }
-        }
-      );
-    });
-  }
-
-  /**
-   * Get health stats for the past N days
-   * @param days Number of days to fetch (including today)
-   */
-  async getStatsForDays(days: number): Promise<HealthData[]> {
+  async getDailyStats(days: number, now: Date = new Date()): Promise<HealthData[]> {
     this.ensureInitialized();
 
     if (days <= 0) {
       throw new HealthKitError(
         HealthKitErrorCode.INVALID_DATE_RANGE,
-        'Number of days must be positive'
+        "Number of days must be positive",
       );
     }
 
-    console.log(`[HealthKit] Fetching stats for past ${days} days`);
+    const start = startOfDay(now);
+    start.setDate(start.getDate() - (days - 1));
 
-    const stats: HealthData[] = [];
-    const now = new Date();
+    const [steps, distance, calories] = await Promise.all([
+      this.querySamples(AppleHealthKit.getDailyStepCountSamples, start, now, MINUTES_PER_DAY),
+      this.querySamples(
+        AppleHealthKit.getDailyDistanceWalkingRunningSamples,
+        start,
+        now,
+        MINUTES_PER_DAY,
+      ),
+      this.querySamples(AppleHealthKit.getActiveEnergyBurned, start, now, MINUTES_PER_DAY),
+    ]);
 
-    for (let i = 0; i < days; i++) {
-      const date = new Date(now);
-      date.setDate(date.getDate() - i);
+    const result: HealthData[] = Array.from({ length: days }, (_, index) => {
+      const date = new Date(start);
+      date.setDate(start.getDate() + index);
+      return { steps: 0, distance: 0, calories: 0, date };
+    });
+    const byDay = new Map(result.map((day) => [dayKey(day.date), day]));
 
-      const startOfDay = new Date(date);
-      startOfDay.setHours(0, 0, 0, 0);
+    const addSamples = (samples: HealthSample[], key: "steps" | "distance" | "calories") => {
+      for (const sample of samples) {
+        const day = byDay.get(dayKey(parseHealthDate(sample.startDate)));
+        if (day) day[key] += Math.round(sample.value);
+      }
+    };
+    addSamples(steps, "steps");
+    addSamples(distance, "distance");
+    addSamples(calories, "calories");
 
-      const endOfDay = new Date(date);
-      endOfDay.setHours(23, 59, 59, 999);
-
-      const options = {
-        startDate: startOfDay.toISOString(),
-        endDate: endOfDay.toISOString(),
-      };
-
-      const [steps, distance, calories] = await Promise.all([
-        this.getSteps(options),
-        this.getDistance(options),
-        this.getCalories(options),
-      ]);
-
-      stats.push({
-        steps,
-        distance,
-        calories,
-        date: startOfDay,
-      });
-    }
-
-    // Return in chronological order (oldest first)
-    return stats.reverse();
+    return result;
   }
 
-  /**
-   * Get weekly stats (last 7 days)
-   */
-  async getWeekStats(): Promise<HealthData[]> {
-    console.log('[HealthKit] Fetching weekly stats');
-    return this.getStatsForDays(7);
+  private querySamples(
+    query: SampleQuery,
+    startDate: Date,
+    endDate: Date,
+    period: number,
+  ): Promise<HealthSample[]> {
+    return new Promise((resolve, reject) => {
+      query(
+        {
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
+          period,
+          ascending: true,
+          includeManuallyAdded: true,
+        },
+        (error, results) => {
+          if (error) {
+            reject(
+              new HealthKitError(
+                HealthKitErrorCode.FETCH_FAILED,
+                "Failed to read Apple Health data",
+                error instanceof Error ? error : undefined,
+              ),
+            );
+          } else {
+            resolve(results ?? []);
+          }
+        },
+      );
+    });
   }
 
-  /**
-   * Get monthly stats (last 30 days)
-   */
-  async getMonthStats(): Promise<HealthData[]> {
-    console.log('[HealthKit] Fetching monthly stats');
-    return this.getStatsForDays(30);
-  }
-
-  /**
-   * Ensure service is initialized before use
-   * @private
-   */
   private ensureInitialized(): void {
     if (!this.isInitialized) {
       throw new HealthKitError(
         HealthKitErrorCode.NOT_INITIALIZED,
-        'HealthKit not initialized. Call requestPermissions() first.'
+        "HealthKit not initialized. Call requestPermissions() first.",
       );
     }
   }

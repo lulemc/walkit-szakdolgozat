@@ -2,19 +2,21 @@ import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import jwt from "jsonwebtoken";
 
-export const getAllUsers = async (req, res) => {
-  const users = await User.find().select("-passwordHash");
-  res.json(users);
-};
-
 export const getUserById = async (req, res) => {
-  const user = await User.findById(req.params.id).select("-passwordHash");
+  try {
+    const user = await User.findById(req.params.id).select("-passwordHash");
 
-  if (!user) {
-    return res.status(404).json({ message: "User not found" });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json(user);
+  } catch (error) {
+    if (error.name === "CastError") {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(500).json({ message: "Failed to fetch user" });
   }
-
-  res.json(user);
 };
 
 export const updateUser = async (req, res) => {
@@ -30,10 +32,6 @@ export const updateUser = async (req, res) => {
     if (req.body.weight !== undefined) updateData.weight = req.body.weight;
     if (req.body.activityLevel !== undefined)
       updateData.activityLevel = req.body.activityLevel;
-
-    if (req.body.password) {
-      updateData.passwordHash = await bcrypt.hash(req.body.password, 10);
-    }
 
     const user = await User.findByIdAndUpdate(req.params.id, updateData, {
       new: true,
@@ -51,13 +49,20 @@ export const updateUser = async (req, res) => {
 };
 
 export const deleteUser = async (req, res) => {
-  const user = await User.findByIdAndDelete(req.params.id);
+  try {
+    const user = await User.findByIdAndDelete(req.params.id);
 
-  if (!user) {
-    return res.status(404).json({ message: "User not found" });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({ message: "User deleted" });
+  } catch (error) {
+    if (error.name === "CastError") {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(500).json({ message: "Failed to delete user" });
   }
-
-  res.json({ message: "User deleted" });
 };
 
 export const changePassword = async (req, res) => {
@@ -107,7 +112,7 @@ export const changePassword = async (req, res) => {
     await user.save();
 
     const newToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "30d",
+      expiresIn: "7d",
     });
 
     res.json({

@@ -1,118 +1,176 @@
 import React, { useState } from "react";
-import { View, ScrollView, RefreshControl, StyleSheet } from "react-native";
+import { RefreshControl, StyleSheet, View } from "react-native";
+import { SegmentedButtons, useTheme } from "react-native-paper";
+import { CustomText, ScreenContainer } from "@/components";
 import { useHealthData } from "@/hooks/useHealthData";
 import { StatisticsHeader } from "@/components/Statistics/StatisticsHeader";
 import { LoadingState } from "@/components/Statistics/LoadingState";
 import { ErrorState } from "@/components/Statistics/ErrorState";
 import { EmptyState } from "@/components/Statistics/EmptyState";
+import { TodayCard } from "@/components/Statistics/TodayCard";
+import { MetricCard } from "@/components/Statistics/MetricCard";
+import { ChartCard } from "@/components/Statistics/ChartCard";
+import { InsightsRow } from "@/components/Statistics/InsightsRow";
+import { DailyChart } from "@/components/Statistics/DailyChart";
+import { WeeklyChart } from "@/components/Statistics/WeeklyChart";
+import { MonthlyChart } from "@/components/Statistics/MonthlyChart";
+import { DAILY_STEP_GOAL, hasAnyActivity, HealthSummary } from "@/utils/healthStats";
+import {
+  formatCalories,
+  formatDate,
+  formatDistance,
+  formatSteps,
+  getDayAbbreviation,
+} from "@/utils/healthFormatters";
+
+type StatsView = "day" | "week" | "month";
+
+const VIEW_BUTTONS = [
+  { value: "day", label: "Day" },
+  { value: "week", label: "Week" },
+  { value: "month", label: "Month" },
+];
+
+const summaryLine = (summary: HealthSummary | null) =>
+  summary
+    ? `${formatSteps(summary.totalSteps)} steps · ${formatDistance(summary.totalDistance)}`
+    : undefined;
 
 export default function StatisticsScreen() {
-  const [refreshing, setRefreshing] = useState(false);
-  const [view, setView] = useState<"daily" | "weekly" | "monthly">("daily");
-
+  const theme = useTheme();
+  const [view, setView] = useState<StatsView>("day");
   const {
-    todayStats,
-    weekStats,
-    monthStats,
-    loading,
+    status,
     error,
-    refetch,
-    hasPermission,
+    today,
+    hourly,
+    week,
+    month,
+    weekSummary,
+    monthSummary,
+    trends,
+    streak,
+    refreshing,
+    lastUpdated,
+    refresh,
   } = useHealthData();
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await refetch();
-    setRefreshing(false);
-  };
-
-  // Loading state
-  if (loading && !todayStats) {
+  if (status === "loading") {
     return <LoadingState />;
   }
 
-  // Error state
-  if (error) {
-    return <ErrorState error={error} onRetry={refetch} />;
+  if (status !== "ready") {
+    return <ErrorState variant={status} error={error} onRetry={refresh} retrying={refreshing} />;
   }
 
-  // Empty state (no data)
-  if (
-    !todayStats ||
-    (todayStats.steps === 0 &&
-      todayStats.distance === 0 &&
-      todayStats.calories === 0)
-  ) {
-    return <EmptyState />;
+  if (!today || !hasAnyActivity(month)) {
+    return <EmptyState onRefresh={refresh} refreshing={refreshing} />;
   }
 
   return (
-    <View style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor="#007AFF"
-          />
-        }
-      >
-        <StatisticsHeader lastUpdated={new Date()} onRefresh={onRefresh} />
+    <ScreenContainer
+      scrollable
+      style={styles.screen}
+      contentContainerStyle={styles.content}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={refresh}
+          tintColor={theme.colors.primary}
+          colors={[theme.colors.primary]}
+        />
+      }
+    >
+      <StatisticsHeader lastUpdated={lastUpdated} />
 
-        {/* Today's Highlights - Will add in Phase 2 */}
-        <View style={styles.placeholder}>
-          <View style={styles.placeholderText}>
-            <Text style={styles.placeholderTitle}>Today's Stats:</Text>
-            <Text style={styles.placeholderItem}>
-              👟 Steps: {todayStats.steps.toLocaleString()}
-            </Text>
-            <Text style={styles.placeholderItem}>
-              🚶 Distance: {(todayStats.distance / 1000).toFixed(1)}km
-            </Text>
-            <Text style={styles.placeholderItem}>
-              🔥 Calories: {Math.round(todayStats.calories)} kcal
-            </Text>
-          </View>
-        </View>
+      {error ? (
+        <CustomText custom="error" variant="bodySmall" style={styles.notice}>
+          {"Couldn't refresh. Showing your last data."}
+        </CustomText>
+      ) : null}
 
-        {/* Tab Navigation - Will add in Phase 3 */}
-        {/* View Content - Will add in Phases 4-5 */}
-      </ScrollView>
-    </View>
+      <TodayCard steps={today.steps} goal={DAILY_STEP_GOAL} trend={trends.steps} />
+
+      <View style={styles.metrics}>
+        <MetricCard
+          icon="walk"
+          label="Distance"
+          value={formatDistance(today.distance)}
+          trend={trends.distance}
+        />
+        <MetricCard
+          icon="flame"
+          label="Calories"
+          value={formatCalories(today.calories)}
+          trend={trends.calories}
+        />
+      </View>
+
+      <SegmentedButtons
+        value={view}
+        onValueChange={(value) => setView(value as StatsView)}
+        buttons={VIEW_BUTTONS}
+      />
+
+      {view === "day" && (
+        <ChartCard
+          title="Today by hour"
+          subtitle={`${formatSteps(today.steps)} steps so far`}
+          isEmpty={!hourly.some((hour) => hour.steps > 0)}
+          emptyMessage="No steps recorded yet today. Your hourly activity will show up here once you start moving."
+        >
+          {(width) => <DailyChart data={hourly} width={width} />}
+        </ChartCard>
+      )}
+
+      {view === "week" && (
+        <ChartCard
+          title="Last 7 days"
+          subtitle={summaryLine(weekSummary)}
+          isEmpty={!hasAnyActivity(week)}
+          emptyMessage="No activity in the last 7 days. Your daily steps will appear here."
+          footer={
+            weekSummary ? (
+              <InsightsRow summary={weekSummary} streak={streak} bestDayLabel={getDayAbbreviation} />
+            ) : null
+          }
+        >
+          {(width) => <WeeklyChart data={week} goal={DAILY_STEP_GOAL} width={width} />}
+        </ChartCard>
+      )}
+
+      {view === "month" && (
+        <ChartCard
+          title="Last 30 days"
+          subtitle={summaryLine(monthSummary)}
+          isEmpty={!hasAnyActivity(month)}
+          emptyMessage="No activity in the last 30 days. Your daily steps will appear here."
+          footer={
+            monthSummary ? (
+              <InsightsRow summary={monthSummary} streak={streak} bestDayLabel={formatDate} />
+            ) : null
+          }
+        >
+          {(width) => <MonthlyChart data={month} goal={DAILY_STEP_GOAL} width={width} />}
+        </ChartCard>
+      )}
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F9FAFB",
+  screen: {
+    padding: 16,
   },
-  scrollView: {
-    flex: 1,
+  content: {
+    gap: 16,
+    paddingBottom: 32,
   },
-  placeholder: {
-    margin: 16,
-    padding: 24,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+  notice: {
+    textAlign: "center",
   },
-  placeholderText: {
+  metrics: {
+    flexDirection: "row",
     gap: 12,
-  },
-  placeholderTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#111827",
-    marginBottom: 8,
-  },
-  placeholderItem: {
-    fontSize: 16,
-    color: "#4B5563",
   },
 });

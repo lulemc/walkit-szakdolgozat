@@ -5,11 +5,17 @@ import { userStorage } from "@/utils/userStorage";
 import { useRouter } from "expo-router";
 import React from "react";
 import { loginUser, registerUser } from "@/services/authApi";
+import { setUnauthorizedHandler } from "@/services/api";
 
 // Mock the API
 jest.mock("@/services/authApi", () => ({
   registerUser: jest.fn(),
   loginUser: jest.fn(),
+}));
+
+// Mock the axios instance's 401 handler registry
+jest.mock("@/services/api", () => ({
+  setUnauthorizedHandler: jest.fn(),
 }));
 
 // Mock Storage
@@ -69,7 +75,29 @@ describe("AuthContext Logic", () => {
     });
 
     expect(result.current.token).toBe("existing-token");
+    expect(result.current.user).toEqual(mockUser);
     expect(result.current.loading).toBe(false);
+  });
+
+  it("should log out when the API reports 401", async () => {
+    (storage.getToken as jest.Mock).mockResolvedValue("expired-token");
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    const handler = (setUnauthorizedHandler as jest.Mock).mock.calls[0][0];
+
+    await act(async () => {
+      await handler();
+    });
+
+    expect(storage.removeToken).toHaveBeenCalled();
+    expect(userStorage.removeUser).toHaveBeenCalled();
+    expect(result.current.token).toBeNull();
+    expect(mockReplace).toHaveBeenCalledWith("/(auth)/login");
   });
 
   it("should register successfully and update state", async () => {

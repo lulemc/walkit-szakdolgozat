@@ -56,13 +56,6 @@ export default function ActiveWalkScreen({
   const [isTracking, setIsTracking] = useState(false);
   const [useMockGPS, setUseMockGPS] = useState(MOCK_MODE);
 
-  useEffect(() => {
-    startWalk();
-    return () => {
-      stopTracking();
-    };
-  }, []);
-
   // Timer for elapsed time
   useEffect(() => {
     if (isTracking && !session.isPaused) {
@@ -86,15 +79,6 @@ export default function ActiveWalkScreen({
       }
     };
   }, [isTracking, session.isPaused]);
-
-  const startWalk = async () => {
-    if (useMockGPS) {
-      startMockGPS();
-    } else {
-      await startRealGPS();
-    }
-    setIsTracking(true);
-  };
 
   const startMockGPS = () => {
     console.log("🎮 Starting MOCK GPS for testing");
@@ -250,6 +234,23 @@ export default function ActiveWalkScreen({
     ]);
   };
 
+  // Start tracking once on mount and stop when the screen closes
+  useEffect(() => {
+    const startWalk = async () => {
+      if (useMockGPS) {
+        startMockGPS();
+      } else {
+        await startRealGPS();
+      }
+      setIsTracking(true);
+    };
+
+    startWalk();
+    return () => {
+      stopTracking();
+    };
+  }, []);
+
   const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
@@ -392,7 +393,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   map: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   statsCard: {
     position: "absolute",
@@ -453,6 +454,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   mockMarkerText: {
-    fontSize: 32,
+    fontSize: 22,
   },
 });

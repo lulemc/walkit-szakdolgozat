@@ -1,8 +1,4 @@
 /* eslint-disable import/first */
-jest.mock('../authApi', () => ({
-  refreshTokenRequest: jest.fn(),
-}));
-
 jest.mock('@/utils/storage', () => ({
   storage: {
     getToken: jest.fn(),
@@ -21,47 +17,42 @@ jest.mock('axios', () => {
   };
 });
 
-import { refreshTokenRequest } from '../authApi';
 import { storage } from '@/utils/storage';
 
-const mockedRefreshTokenRequest = refreshTokenRequest as jest.MockedFunction<typeof refreshTokenRequest>;
 const mockedStorage = storage as jest.Mocked<typeof storage>;
 
 describe('API Module', () => {
   let api: any;
+  let setUnauthorizedHandler: (fn: (() => void) | null) => void;
 
   beforeAll(() => {
-    api = require('../api').default;
+    const apiModule = require('../api');
+    api = apiModule.default;
+    setUnauthorizedHandler = apiModule.setUnauthorizedHandler;
   });
 
   beforeEach(() => {
     jest.clearAllMocks();
+    setUnauthorizedHandler(null);
   });
 
   describe('Request Interceptor', () => {
     it('should add Authorization header when token exists', async () => {
-      const token = 'test-token';
-      mockedStorage.getToken.mockResolvedValue(token);
+      mockedStorage.getToken.mockResolvedValue('test-token');
+      const requestInterceptor = (api.interceptors.request as any).handlers[0];
 
-      try {
-        await api.get('/test');
-      } catch (e) {
-        // Ignore network errors, we just want to test the interceptor
-      }
+      const config = await requestInterceptor.fulfilled({ headers: {} });
 
-      expect(mockedStorage.getToken).toHaveBeenCalled();
+      expect(config.headers.Authorization).toBe('Bearer test-token');
     });
 
     it('should not add Authorization header when token is null', async () => {
       mockedStorage.getToken.mockResolvedValue(null);
+      const requestInterceptor = (api.interceptors.request as any).handlers[0];
 
-      try {
-        await api.get('/test');
-      } catch (e) {
-        // Ignore network errors
-      }
+      const config = await requestInterceptor.fulfilled({ headers: {} });
 
-      expect(mockedStorage.getToken).toHaveBeenCalled();
+      expect(config.headers.Authorization).toBeUndefined();
     });
   });
 
@@ -77,43 +68,9 @@ describe('API Module', () => {
   });
 
   describe('Response Error Interceptor - 401', () => {
-    it('should refresh token and retry on 401 error', async () => {
-      const newToken = 'new-token';
-      mockedStorage.getToken.mockResolvedValue('old-token');
-      mockedRefreshTokenRequest.mockResolvedValue({ token: newToken });
-      mockedStorage.setToken.mockResolvedValue();
-
-      const mockRetry = jest.fn().mockResolvedValue({ status: 200, data: 'success' });
-      const error: any = {
-        config: { 
-          headers: {} as any,
-          url: '/test',
-        },
-        response: { status: 401 },
-      };
-
-      const responseInterceptor = (api.interceptors.response as any).handlers[0];
-      
-      // Mock the api instance call for retry
-      const originalApi = api;
-      (global as any).mockApi = mockRetry;
-
-      try {
-        await responseInterceptor.rejected(error);
-      } catch (e) {
-        // May fail on retry
-      }
-
-      expect(mockedRefreshTokenRequest).toHaveBeenCalled();
-      expect(mockedStorage.setToken).toHaveBeenCalledWith(newToken);
-      expect(error.config._retry).toBe(true);
-      expect(error.config.headers.Authorization).toBe(`Bearer ${newToken}`);
-    });
-
-    it('should remove token when refresh fails', async () => {
-      mockedStorage.getToken.mockResolvedValue('old-token');
-      mockedRefreshTokenRequest.mockRejectedValue(new Error('Refresh failed'));
-      mockedStorage.removeToken.mockResolvedValue();
+    it('should call the unauthorized handler and reject', async () => {
+      const handler = jest.fn();
+      setUnauthorizedHandler(handler);
 
       const error: any = {
         config: { headers: {} },
@@ -122,134 +79,44 @@ describe('API Module', () => {
 
       const responseInterceptor = (api.interceptors.response as any).handlers[0];
 
-      await expect(responseInterceptor.rejected(error)).rejects.toThrow('Refresh failed');
+      await expect(responseInterceptor.rejected(error)).rejects.toEqual(error);
 
-      expect(mockedStorage.removeToken).toHaveBeenCalled();
+      expect(handler).toHaveBeenCalledTimes(1);
     });
 
-    it('should not retry if already retried', async () => {
+    it('should reject without throwing when no handler is registered', async () => {
       const error: any = {
-        config: { headers: {}, _retry: true },
+        config: { headers: {} },
         response: { status: 401 },
       };
 
       const responseInterceptor = (api.interceptors.response as any).handlers[0];
 
       await expect(responseInterceptor.rejected(error)).rejects.toEqual(error);
-
-      expect(mockedRefreshTokenRequest).not.toHaveBeenCalled();
-    });
-
-    it('should queue requests while token is refreshing', async () => {
-      const newToken = 'new-token';
-      let resolveRefresh: any;
-      
-      const refreshPromise = new Promise((resolve) => {
-        resolveRefresh = resolve;
-      });
-
-      mockedRefreshTokenRequest.mockReturnValue(refreshPromise as any);
-      mockedStorage.setToken.mockResolvedValue();
-
-      const error1: any = {
-        config: { headers: {}, url: '/test1' },
-        response: { status: 401 },
-      };
-
-      const error2: any = {
-        config: { headers: {}, url: '/test2' },
-        response: { status: 401 },
-      };
-
-      const responseInterceptor = (api.interceptors.response as any).handlers[0];
-
-      // Start first request
-      const promise1 = responseInterceptor.rejected(error1);
-
-      // Small delay
-      await new Promise(resolve => setTimeout(resolve, 10));
-
-      // Start second request (should be queued)
-      const promise2 = responseInterceptor.rejected(error2);
-
-      // Resolve the refresh
-      resolveRefresh({ token: newToken });
-
-      try {
-        await Promise.all([promise1, promise2]);
-      } catch (e) {
-        // May fail on retry
-      }
-
-      // Refresh should only be called once
-      expect(mockedRefreshTokenRequest).toHaveBeenCalledTimes(1);
-    });
-
-    it('should reject all queued requests when refresh fails', async () => {
-      const refreshError = new Error('Refresh failed');
-      let rejectRefresh: any;
-      
-      const refreshPromise = new Promise((_, reject) => {
-        rejectRefresh = reject;
-      });
-
-      mockedRefreshTokenRequest.mockReturnValue(refreshPromise as any);
-      mockedStorage.removeToken.mockResolvedValue();
-
-      const error1: any = {
-        config: { headers: {}, url: '/test1' },
-        response: { status: 401 },
-      };
-
-      const error2: any = {
-        config: { headers: {}, url: '/test2' },
-        response: { status: 401 },
-      };
-
-      const responseInterceptor = (api.interceptors.response as any).handlers[0];
-
-      const promise1 = responseInterceptor.rejected(error1);
-      await new Promise(resolve => setTimeout(resolve, 10));
-      const promise2 = responseInterceptor.rejected(error2);
-
-      rejectRefresh(refreshError);
-
-      await expect(promise1).rejects.toThrow('Refresh failed');
-      await expect(promise2).rejects.toThrow('Refresh failed');
-
-      expect(mockedRefreshTokenRequest).toHaveBeenCalledTimes(1);
-      expect(mockedStorage.removeToken).toHaveBeenCalled();
     });
   });
 
   describe('Response Error Interceptor - Non-401', () => {
-    it('should reject non-401 errors without refresh', async () => {
+    it.each([500, 404])('should reject %i errors without calling the handler', async (status) => {
+      const handler = jest.fn();
+      setUnauthorizedHandler(handler);
+
       const error: any = {
         config: { headers: {} },
-        response: { status: 500 },
+        response: { status },
       };
 
       const responseInterceptor = (api.interceptors.response as any).handlers[0];
 
       await expect(responseInterceptor.rejected(error)).rejects.toEqual(error);
 
-      expect(mockedRefreshTokenRequest).not.toHaveBeenCalled();
-    });
-
-    it('should reject 404 errors without refresh', async () => {
-      const error: any = {
-        config: { headers: {} },
-        response: { status: 404 },
-      };
-
-      const responseInterceptor = (api.interceptors.response as any).handlers[0];
-
-      await expect(responseInterceptor.rejected(error)).rejects.toEqual(error);
-
-      expect(mockedRefreshTokenRequest).not.toHaveBeenCalled();
+      expect(handler).not.toHaveBeenCalled();
     });
 
     it('should reject errors without response object', async () => {
+      const handler = jest.fn();
+      setUnauthorizedHandler(handler);
+
       const error: any = {
         config: { headers: {} },
         message: 'Network Error',
@@ -259,7 +126,7 @@ describe('API Module', () => {
 
       await expect(responseInterceptor.rejected(error)).rejects.toEqual(error);
 
-      expect(mockedRefreshTokenRequest).not.toHaveBeenCalled();
+      expect(handler).not.toHaveBeenCalled();
     });
   });
 });

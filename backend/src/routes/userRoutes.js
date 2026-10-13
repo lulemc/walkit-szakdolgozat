@@ -1,12 +1,11 @@
 import express from "express";
 import {
-  getAllUsers,
   getUserById,
   updateUser,
   deleteUser,
   changePassword,
 } from "../controllers/userController.js";
-import { protect } from "../middleware/authMiddleware.js";
+import { protect, requireSelf } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -16,26 +15,6 @@ const router = express.Router();
  *   name: Users
  *   description: User management
  */
-
-/**
- * @swagger
- * /api/users:
- *   get:
- *     summary: Get all users
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: List of users
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/User'
- */
-router.get("/", protect, getAllUsers);
 
 /**
  * @swagger
@@ -59,7 +38,7 @@ router.get("/", protect, getAllUsers);
  *             schema:
  *               $ref: '#/components/schemas/User'
  */
-router.get("/:id", protect, getUserById);
+router.get("/:id", protect, requireSelf, getUserById);
 
 /**
  * @swagger
@@ -85,7 +64,7 @@ router.get("/:id", protect, getUserById);
  *       200:
  *         description: User updated
  */
-router.put("/:id", protect, updateUser);
+router.put("/:id", protect, requireSelf, updateUser);
 
 /**
  * @swagger
@@ -105,7 +84,7 @@ router.put("/:id", protect, updateUser);
  *       204:
  *         description: User deleted
  */
-router.delete("/:id", protect, deleteUser);
+router.delete("/:id", protect, requireSelf, deleteUser);
 
 /**
  * @swagger
@@ -136,6 +115,6 @@ router.delete("/:id", protect, deleteUser);
  *       200:
  *         description: Password changed successfully
  */
-router.post("/:id/change-password", protect, changePassword); // ADD THIS ROUTE
+router.post("/:id/change-password", protect, requireSelf, changePassword);
 
 export default router;
