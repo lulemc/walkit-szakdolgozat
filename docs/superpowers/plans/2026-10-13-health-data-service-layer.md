@@ -772,6 +772,9 @@ Verify the YAML still parses: `ruby -ryaml -e 'YAML.load_file(".github/workflows
 
 ```bash
 npm install react-native-health-connect@^4.1.3
+# The library's Expo plugin requires @expo/config-plugins, which it lists only as an optional
+# peer (skipped under legacy-peer-deps). Declare it at the same range expo itself depends on.
+npm install -D @expo/config-plugins@~57.0.10
 node ../scripts/normalize-lockfile-registry.js package-lock.json
 node ../scripts/normalize-lockfile-registry.js --check package-lock.json
 ```
