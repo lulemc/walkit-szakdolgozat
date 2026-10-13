@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { formatLastUpdated } from "@/utils/healthFormatters";
+import { CustomText } from "../CustomText";
 
 interface StatisticsHeaderProps {
   lastUpdated: Date;
@@ -14,15 +15,13 @@ export const StatisticsHeader: React.FC<StatisticsHeaderProps> = ({
   return (
     <View style={styles.container}>
       <View>
-        <Text style={styles.title}>📊 Statistics</Text>
-        <Text style={styles.subtitle}>
-          Updated {formatLastUpdated(lastUpdated)}
-        </Text>
+        <CustomText variant="titleLarge">📊 Statistics</CustomText>
+        <CustomText>Updated {formatLastUpdated(lastUpdated)}</CustomText>
       </View>
 
       {onRefresh && (
         <TouchableOpacity onPress={onRefresh} style={styles.refreshButton}>
-          <Text style={styles.refreshIcon}>🔄</Text>
+          <CustomText style={styles.refreshIcon}>🔄</CustomText>
         </TouchableOpacity>
       )}
     </View>
@@ -37,32 +36,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 8,
-    backgroundColor: "#F9FAFB",
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#111827",
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#6B7280",
+    height: 100,
   },
   refreshButton: {
     width: 40,
-    height: 40,
+    height: 50,
     borderRadius: 20,
-    backgroundColor: "#FFFFFF",
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
   },
   refreshIcon: {
-    fontSize: 20,
+    fontSize: 17,
   },
 });

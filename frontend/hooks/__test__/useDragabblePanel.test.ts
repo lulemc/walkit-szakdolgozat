@@ -1,3 +1,6 @@
+/* eslint-disable import/first */
+jest.mock('react-native-worklets', () => require('react-native-worklets/src/mock'));
+
 import { renderHook } from '@testing-library/react-native';
 import { Dimensions } from 'react-native';
 import { useDraggablePanel } from '../useDraggablePanel';

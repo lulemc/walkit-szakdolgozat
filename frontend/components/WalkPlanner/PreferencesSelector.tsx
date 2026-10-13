@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   preferenceIcon: {
-    fontSize: 24,
+    fontSize: 16,
   },
   preferenceText: {
     flex: 1,

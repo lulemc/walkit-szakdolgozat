@@ -20,7 +20,6 @@ export default function ProfileSettings({
   onProfileUpdate,
   ...user
 }: ProfileSettingsProps) {
-  console.log(user);
   const [userName, setUserName] = useState(user.name || "");
   const [dateOfBirth, setDateOfBirth] = useState<Date>(
     user.dateOfBirth ? new Date(user.dateOfBirth) : new Date(),
@@ -101,7 +100,7 @@ export default function ProfileSettings({
         <CustomDatePicker
           label="Date of birth"
           value={dateOfBirth}
-          onChange={setDateOfBirth}
+          onChange={(_, date) => date && setDateOfBirth(date)}
           disabled={isLoading}
         />
       </View>

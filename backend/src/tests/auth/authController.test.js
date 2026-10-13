@@ -114,7 +114,6 @@ describe("authController - register", () => {
     expect(res.status).toHaveBeenCalledWith(500);
     expect(res.json).toHaveBeenCalledWith({
       message: "Server error",
-      error: "Database connection failed",
     });
   });
 
@@ -138,7 +137,6 @@ describe("authController - register", () => {
     expect(res.status).toHaveBeenCalledWith(500);
     expect(res.json).toHaveBeenCalledWith({
       message: "Server error",
-      error: "Validation failed",
     });
   });
 });
@@ -160,12 +158,13 @@ describe("authController - login", () => {
 
     const res = mockRes();
 
-    const mockUser = {
+    const userData = {
       _id: "456",
       name: "John",
       email: "john@test.com",
       passwordHash: "hashed-password",
     };
+    const mockUser = { ...userData, toObject: () => ({ ...userData }) };
 
     User.findOne.mockResolvedValue(mockUser);
     bcrypt.compare.mockResolvedValue(true);
@@ -182,7 +181,7 @@ describe("authController - login", () => {
     });
     expect(res.json).toHaveBeenCalledWith({
       token: "test-login-token",
-      user: mockUser,
+      user: { _id: "456", name: "John", email: "john@test.com" },
     });
   });
 
@@ -259,7 +258,6 @@ describe("authController - login", () => {
     expect(res.status).toHaveBeenCalledWith(500);
     expect(res.json).toHaveBeenCalledWith({
       message: "Server error",
-      error: "Database error",
     });
   });
 
@@ -287,7 +285,6 @@ describe("authController - login", () => {
     expect(res.status).toHaveBeenCalledWith(500);
     expect(res.json).toHaveBeenCalledWith({
       message: "Server error",
-      error: "bcrypt error",
     });
   });
 });

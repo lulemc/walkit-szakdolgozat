@@ -2,12 +2,12 @@ import { Redirect, Slot } from "expo-router";
 import { useAuth } from "../../context/AuthProvider";
 
 export default function AuthLayout() {
-  const { token, isLoading } = useAuth();
+  const { token, loading } = useAuth();
 
-  if (isLoading) return null;
+  if (loading) return null;
 
   if (token) {
-    return <Redirect href="/(app)" />;
+    return <Redirect href="/" />;
   }
 
   return <Slot />;

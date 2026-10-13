@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   map: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   statsCard: {
     position: "absolute",
@@ -453,6 +453,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   mockMarkerText: {
-    fontSize: 32,
+    fontSize: 22,
   },
 });

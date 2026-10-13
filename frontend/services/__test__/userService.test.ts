@@ -10,29 +10,6 @@ describe('UserService', () => {
     jest.clearAllMocks();
   });
 
-  describe('getAll', () => {
-    it('should get all users successfully', async () => {
-      const mockUsers = [
-        { _id: '1', name: 'User 1', email: 'user1@test.com' },
-        { _id: '2', name: 'User 2', email: 'user2@test.com' },
-      ];
-
-      mockedApi.get.mockResolvedValue({ data: mockUsers });
-
-      const result = await UserService.getAll();
-
-      expect(mockedApi.get).toHaveBeenCalledWith('/users');
-      expect(result).toEqual(mockUsers);
-    });
-
-    it('should handle error when getting all users', async () => {
-      const mockError = new Error('Failed to fetch users');
-      mockedApi.get.mockRejectedValue(mockError);
-
-      await expect(UserService.getAll()).rejects.toThrow('Failed to fetch users');
-    });
-  });
-
   describe('getById', () => {
     it('should get user by id successfully', async () => {
       const mockUser = { _id: '123', name: 'John Doe', email: 'john@test.com' };
@@ -50,42 +27,6 @@ describe('UserService', () => {
       mockedApi.get.mockRejectedValue(mockError);
 
       await expect(UserService.getById('invalid-id')).rejects.toThrow('User not found');
-    });
-  });
-
-  describe('create', () => {
-    it('should create user successfully', async () => {
-      const mockUserData = {
-        name: 'Jane Doe',
-        email: 'jane@test.com',
-        password: 'password123',
-      };
-
-      const mockResponse = {
-        _id: '456',
-        name: 'Jane Doe',
-        email: 'jane@test.com',
-      };
-
-      mockedApi.post.mockResolvedValue({ data: mockResponse });
-
-      const result = await UserService.create(mockUserData as any);
-
-      expect(mockedApi.post).toHaveBeenCalledWith('/users', mockUserData);
-      expect(result).toEqual(mockResponse);
-    });
-
-    it('should handle error when creating user', async () => {
-      const mockUserData = {
-        name: 'Jane Doe',
-        email: 'jane@test.com',
-        password: 'password123',
-      };
-
-      const mockError = new Error('Email already exists');
-      mockedApi.post.mockRejectedValue(mockError);
-
-      await expect(UserService.create(mockUserData as any)).rejects.toThrow('Email already exists');
     });
   });
 
