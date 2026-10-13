@@ -1,4 +1,4 @@
-import type { HealthData, HourlySteps } from "@/services/healthKitService";
+import type { HealthData, HourlySteps } from "@/services/health/types";
 
 export interface HealthSnapshot {
   hourly: HourlySteps[];

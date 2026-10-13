@@ -5,7 +5,7 @@ import {
   percentChange,
   summarize,
 } from "../healthStats";
-import type { HealthData } from "@/services/healthKitService";
+import type { HealthData } from "@/services/health/types";
 
 const day = (steps: number, distance = steps * 0.75, calories = steps * 0.04): HealthData => ({
   steps,

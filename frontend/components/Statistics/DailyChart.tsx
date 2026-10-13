@@ -2,7 +2,7 @@ import React from "react";
 import { View } from "react-native";
 import { BarChart } from "react-native-gifted-charts";
 import { useTheme } from "react-native-paper";
-import type { HourlySteps } from "@/services/healthKitService";
+import type { HourlySteps } from "@/services/health/types";
 import { colors } from "@/theme/colors";
 import { formatCompactNumber } from "@/utils/healthFormatters";
 import { AxisLabels } from "./AxisLabels";
