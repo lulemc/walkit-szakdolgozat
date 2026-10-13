@@ -108,15 +108,67 @@ describe("useHealthData", () => {
     expect(service.openInstallPage).toHaveBeenCalled();
   });
 
-  it("reloads when the app returns to the foreground while access is denied", async () => {
+  const foreground = () =>
+    act(async () => {
+      appStateHandler("active");
+    });
+
+  it("does not reload on foreground unless the user left through openSettings", async () => {
+    service.connect.mockRejectedValue(failWith(HealthErrorCode.PERMISSION_DENIED));
+    const { result } = renderHook(() => useHealthData());
+    await waitFor(() => expect(result.current.status).toBe("denied"));
+    expect(service.connect).toHaveBeenCalledTimes(1);
+
+    await foreground();
+
+    expect(service.connect).toHaveBeenCalledTimes(1);
+  });
+
+  it("reloads once after returning from Settings", async () => {
     service.connect.mockRejectedValueOnce(failWith(HealthErrorCode.PERMISSION_DENIED));
     const { result } = renderHook(() => useHealthData());
     await waitFor(() => expect(result.current.status).toBe("denied"));
 
+    await act(() => result.current.openSettings());
+    await foreground();
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+    expect(service.connect).toHaveBeenCalledTimes(2);
+
+    service.connect.mockRejectedValue(failWith(HealthErrorCode.PERMISSION_DENIED));
+    await foreground();
+
+    expect(service.connect).toHaveBeenCalledTimes(2);
+  });
+
+  it("reloads after returning from the Play Store", async () => {
+    service.connect.mockRejectedValueOnce(failWith(HealthErrorCode.NOT_INSTALLED));
+    const { result } = renderHook(() => useHealthData());
+    await waitFor(() => expect(result.current.status).toBe("notInstalled"));
+
+    await act(() => result.current.openInstallPage());
+    await foreground();
+
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+    expect(service.connect).toHaveBeenCalledTimes(2);
+  });
+
+  it("never overlaps loads", async () => {
+    service.connect.mockRejectedValueOnce(failWith(HealthErrorCode.PERMISSION_DENIED));
+    const { result } = renderHook(() => useHealthData());
+    await waitFor(() => expect(result.current.status).toBe("denied"));
+
+    let release: () => void = () => {};
+    service.connect.mockReturnValueOnce(new Promise<void>((resolve) => (release = resolve)));
+    await act(() => result.current.openSettings());
+    await foreground();
+    await foreground();
     await act(async () => {
-      appStateHandler("active");
+      result.current.refresh();
     });
 
+    expect(service.connect).toHaveBeenCalledTimes(2);
+
+    await act(async () => release());
     await waitFor(() => expect(result.current.status).toBe("ready"));
   });
 

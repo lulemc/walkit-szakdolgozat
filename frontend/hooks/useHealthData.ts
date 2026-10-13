@@ -78,6 +78,8 @@ export const useHealthData = (): UseHealthDataReturn => {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const hasData = useRef(false);
   const statusRef = useRef(status);
+  const pendingRefresh = useRef<Promise<void> | null>(null);
+  const leftForExternalAction = useRef(false);
 
   const applySnapshot = useCallback((next: HealthSnapshot) => {
     hasData.current = true;
@@ -108,17 +110,27 @@ export const useHealthData = (): UseHealthDataReturn => {
     [applySnapshot, applyError],
   );
 
-  const refresh = useCallback(async () => {
+  // One load at a time: overlapping loads would open overlapping permission dialogs
+  const refresh = useCallback(() => {
+    if (pendingRefresh.current) return pendingRefresh.current;
+
     setRefreshing(true);
-    try {
-      await load();
-    } finally {
+    const pending = load().finally(() => {
+      pendingRefresh.current = null;
       setRefreshing(false);
-    }
+    });
+    pendingRefresh.current = pending;
+    return pending;
   }, [load]);
 
-  const openSettings = useCallback(() => healthService.openSettings(), []);
-  const openInstallPage = useCallback(() => healthService.openInstallPage(), []);
+  const openSettings = useCallback(() => {
+    leftForExternalAction.current = true;
+    return healthService.openSettings();
+  }, []);
+  const openInstallPage = useCallback(() => {
+    leftForExternalAction.current = true;
+    return healthService.openInstallPage();
+  }, []);
 
   useEffect(() => {
     load();
@@ -128,10 +140,14 @@ export const useHealthData = (): UseHealthDataReturn => {
     statusRef.current = status;
   }, [status]);
 
-  // Coming back from Settings or the Play Store: pick up the access the user just granted
+  // Coming back from Settings or the Play Store: pick up the access the user just granted.
+  // Only after leaving on purpose, otherwise the permission dialog would reopen on every app switch.
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (state) => {
-      if (state === "active" && (statusRef.current === "denied" || statusRef.current === "notInstalled")) {
+      if (state !== "active" || !leftForExternalAction.current) return;
+      leftForExternalAction.current = false;
+
+      if (statusRef.current === "denied" || statusRef.current === "notInstalled") {
         refresh();
       }
     });
