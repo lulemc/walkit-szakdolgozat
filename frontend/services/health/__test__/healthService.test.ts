@@ -90,6 +90,21 @@ describe("HealthService", () => {
       expect(mockNative.requestPermissions).toHaveBeenCalledTimes(1);
     });
 
+    it("forgets the grant when a read reports PERMISSION_DENIED", async () => {
+      const denied = new HealthServiceError(
+        HealthErrorCode.PERMISSION_DENIED,
+        "revoked",
+        "apple-health",
+      );
+      mockNative.getDailyStats.mockRejectedValue(denied);
+
+      await service.connect();
+      await expect(service.getDailyStats(7, NOW)).rejects.toBe(denied);
+      await service.connect();
+
+      expect(mockNative.requestPermissions).toHaveBeenCalledTimes(2);
+    });
+
     it("asks again after a refusal", async () => {
       mockNative.requestPermissions.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
 

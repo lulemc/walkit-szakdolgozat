@@ -100,12 +100,16 @@ export class HealthService {
     return this.guard(() => this.provider.openInstallPage());
   }
 
-  /** Lets HealthServiceErrors through and wraps anything else as FETCH_FAILED */
+  /** Lets HealthServiceErrors through (forgetting the grant if access was denied) and wraps anything else as FETCH_FAILED */
   private async guard<T>(operation: () => Promise<T>): Promise<T> {
     try {
       return await operation();
     } catch (error) {
-      if (error instanceof HealthServiceError) throw error;
+      if (error instanceof HealthServiceError) {
+        // Access is gone (e.g. revoked in settings): ask again on the next connect()
+        if (error.code === HealthErrorCode.PERMISSION_DENIED) this.grantedProvider = null;
+        throw error;
+      }
       throw new HealthServiceError(
         HealthErrorCode.FETCH_FAILED,
         `Failed to read ${this.displayName} data`,

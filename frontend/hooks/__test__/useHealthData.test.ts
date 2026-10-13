@@ -10,6 +10,7 @@ jest.mock("@/services/health/healthService", () => ({
   },
 }));
 
+import { AppState } from "react-native";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import { healthService } from "@/services/health/healthService";
 import { HealthErrorCode, HealthServiceError } from "@/services/health/types";
@@ -31,8 +32,15 @@ const failWith = (code: HealthErrorCode) =>
   new HealthServiceError(code, code, "apple-health");
 
 describe("useHealthData", () => {
+  let appStateHandler: (state: string) => void;
+  const subscription = { remove: jest.fn() };
+
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.spyOn(AppState, "addEventListener").mockImplementation((_type, handler) => {
+      appStateHandler = handler as (state: string) => void;
+      return subscription;
+    });
     service.connect.mockResolvedValue(undefined);
     service.getHourlySteps.mockResolvedValue(hourly);
     service.getDailyStats.mockResolvedValue(days([...Array(28).fill(6000), 8000, 12000]));
@@ -98,5 +106,38 @@ describe("useHealthData", () => {
 
     expect(service.openSettings).toHaveBeenCalled();
     expect(service.openInstallPage).toHaveBeenCalled();
+  });
+
+  it("reloads when the app returns to the foreground while access is denied", async () => {
+    service.connect.mockRejectedValueOnce(failWith(HealthErrorCode.PERMISSION_DENIED));
+    const { result } = renderHook(() => useHealthData());
+    await waitFor(() => expect(result.current.status).toBe("denied"));
+
+    await act(async () => {
+      appStateHandler("active");
+    });
+
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+  });
+
+  it("does not reload on foreground while ready", async () => {
+    const { result } = renderHook(() => useHealthData());
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+    expect(service.getDailyStats).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      appStateHandler("active");
+    });
+
+    expect(service.getDailyStats).toHaveBeenCalledTimes(1);
+  });
+
+  it("stops listening to app state on unmount", async () => {
+    const { result, unmount } = renderHook(() => useHealthData());
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+
+    unmount();
+
+    expect(subscription.remove).toHaveBeenCalled();
   });
 });

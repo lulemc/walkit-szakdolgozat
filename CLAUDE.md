@@ -30,8 +30,8 @@ WalkIt is a React Native walking planner application that generates walking rout
     - `_layout.tsx`: Root layout with providers
   - `components/`: Reusable UI components organized by feature (WalkPlanner, Statistics, Settings, Navigation, Inputs)
   - `context/`: React Context providers (AuthProvider for authentication state)
-  - `services/`: API clients and platform integrations (authApi, routeService, healthKitService, GooglePlacesService)
-  - `hooks/`: Custom React hooks (useHealthData for iOS HealthKit integration)
+  - `services/`: API clients and platform integrations (authApi, routeService, GooglePlacesService, `health/` health data layer)
+  - `hooks/`: Custom React hooks (useHealthData for health data on iOS and Android)
   - `types/`: TypeScript type definitions
   - `theme/`: React Native Paper theme configuration
   - `utils/`: Utility functions (storage, userStorage for SecureStore)
@@ -52,11 +52,13 @@ WalkIt is a React Native walking planner application that generates walking rout
 - Uses OSM Overpass API for preference-based POI filtering (via `osmOverpassService.js`)
 - Circular route algorithm in `circularRouteGenerator.js`
 
-**iOS HealthKit Integration**:
-- Uses `react-native-health` library
-- Permissions configured in `app.json` (NSHealthShareUsageDescription, NSHealthUpdateUsageDescription)
-- Entitlements configured for HealthKit access
-- Data fetching logic in `hooks/useHealthData.ts` and `services/healthKitService.ts`
+**Health Data (iOS HealthKit / Android Health Connect)**:
+- Lives in `services/health/`: the `healthService` facade picks the platform provider, normalises the data and reports failures as `HealthServiceError`; `hooks/useHealthData.ts` consumes it
+- Providers in `services/health/providers/`: Apple Health (iOS, `react-native-health`), Health Connect (Android, `react-native-health-connect`, loaded lazily) and a mock provider; Metro platform files `index.ios.ts` / `index.android.ts` / `index.ts` select the native one
+- iOS: permissions configured in `app.json` (NSHealthShareUsageDescription, NSHealthUpdateUsageDescription) plus HealthKit entitlements
+- Android: `react-native-health-connect` Expo plugin, `minSdkVersion` 26 via `expo-build-properties`, and the three `android.permission.health.READ_*` permissions (steps, distance, active calories) in `app.json`
+- Health Connect must be installed on Android 8-13 (built into Android 14+)
+- Neither works in Expo Go (mock data is used there)
 
 **Maps & Location**:
 - `react-native-maps` for map display
@@ -122,6 +124,7 @@ Required variables:
 Required variables:
 - `EXPO_PUBLIC_API_URL`: Backend API URL (e.g., `http://192.168.0.96:4000/api`)
 - `EXPO_PUBLIC_GOOGLE_PLACES_API_KEY`: Google Places API key for location search
+- `EXPO_PUBLIC_USE_MOCK_HEALTH`: demo health data unless set to `"false"`; set `false` in `.env` / EAS env for real health data in dev builds
 
 ## Testing
 
@@ -134,6 +137,7 @@ Required variables:
 - Framework: Jest with React Native Testing Library
 - Mocks located in `__mocks__/` directory
 - Important: Mock expo-secure-store and storage utilities for auth tests
+- Jest runs in a fixed time zone (`America/Sao_Paulo`) set in `jest.globalSetup.js`, so local-vs-UTC date bugs fail in CI too
 
 ## CI/CD
 
@@ -141,6 +145,7 @@ GitHub Actions workflow (`.github/workflows/ci.yaml`):
 - Runs on PR and push events
 - Backend job: Spins up MongoDB service, runs tests with environment variables
 - Frontend job: Runs Jest tests
+- Lockfile guard: `scripts/normalize-lockfile-registry.js` (run it after `npm install` on a machine using an internal npm mirror); CI fails if a lockfile resolves outside registry.npmjs.org
 
 ## API Structure
 
@@ -156,5 +161,5 @@ CORS configured for `localhost:8081`, `localhost:19006`, and `localhost:4000`
 - The app uses Expo Router for navigation (file-based routing)
 - React Native Paper for UI components with custom light/dark themes
 - The backend uses ES modules (`"type": "module"` in package.json)
-- iOS HealthKit requires native build (cannot use Expo Go)
+- iOS HealthKit and Android Health Connect require a native build (cannot use Expo Go)
 - Frontend uses path aliases (`@/` maps to project root) configured in `babel.config.js` and `tsconfig.json`

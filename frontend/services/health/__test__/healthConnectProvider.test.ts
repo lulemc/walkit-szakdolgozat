@@ -8,6 +8,7 @@ jest.mock("react-native-health-connect", () => ({
   getSdkStatus: jest.fn(),
   initialize: jest.fn(),
   requestPermission: jest.fn(),
+  getGrantedPermissions: jest.fn(),
   aggregateGroupByDuration: jest.fn(),
   aggregateGroupByPeriod: jest.fn(),
   openHealthConnectSettings: jest.fn(),
@@ -30,6 +31,11 @@ describe("HealthConnectProvider", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     hc.initialize.mockResolvedValue(true);
+    hc.getGrantedPermissions.mockResolvedValue([
+      { accessType: "read", recordType: "Steps" },
+      { accessType: "read", recordType: "Distance" },
+      { accessType: "read", recordType: "ActiveCaloriesBurned" },
+    ]);
     provider = new HealthConnectProvider();
   });
 
@@ -122,8 +128,50 @@ describe("HealthConnectProvider", () => {
     );
   });
 
+  it("returns real steps and skips the metrics that weren't granted", async () => {
+    hc.getGrantedPermissions.mockResolvedValue([
+      { accessType: "read", recordType: "Steps" },
+      { accessType: "write", recordType: "Distance" },
+    ]);
+    hc.aggregateGroupByPeriod.mockResolvedValue([
+      { startTime: "2026-10-13T00:00", endTime: "", result: { COUNT_TOTAL: 8000 } },
+    ]);
+
+    const buckets = await provider.getDailyStats(3, NOW);
+
+    expect(hc.aggregateGroupByPeriod).toHaveBeenCalledTimes(1);
+    expect(hc.aggregateGroupByPeriod).toHaveBeenCalledWith(
+      expect.objectContaining({ recordType: "Steps" }),
+    );
+    expect(buckets).toEqual([{ start: new Date(2026, 9, 13), steps: 8000 }]);
+  });
+
+  it.each([
+    ["hourly steps", (p: HealthConnectProvider) => p.getHourlySteps(NOW)],
+    ["daily stats", (p: HealthConnectProvider) => p.getDailyStats(3, NOW)],
+  ])("rejects %s with PERMISSION_DENIED when steps access is gone", async (_name, read) => {
+    hc.getGrantedPermissions.mockResolvedValue([{ accessType: "read", recordType: "Distance" }]);
+
+    await expect(read(provider)).rejects.toMatchObject({
+      code: HealthErrorCode.PERMISSION_DENIED,
+      platform: "health-connect",
+    });
+    expect(hc.aggregateGroupByDuration).not.toHaveBeenCalled();
+    expect(hc.aggregateGroupByPeriod).not.toHaveBeenCalled();
+  });
+
+  it("maps a PERMISSION_ERROR from the library to PERMISSION_DENIED", async () => {
+    hc.aggregateGroupByDuration.mockRejectedValue(
+      Object.assign(new Error("SecurityException"), { code: "PERMISSION_ERROR" }),
+    );
+
+    await expect(provider.getHourlySteps(NOW)).rejects.toMatchObject({
+      code: HealthErrorCode.PERMISSION_DENIED,
+    });
+  });
+
   it("wraps query failures as FETCH_FAILED", async () => {
-    hc.aggregateGroupByDuration.mockRejectedValue(new Error("SecurityException"));
+    hc.aggregateGroupByDuration.mockRejectedValue(new Error("boom"));
 
     const result = provider.getHourlySteps(NOW);
 

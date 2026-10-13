@@ -16,6 +16,7 @@
     "test:coverage": "jest --coverage"
   },
   "jest": {
+    "globalSetup": "<rootDir>/jest.globalSetup.js",
     "preset": "jest-expo",
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/$1"

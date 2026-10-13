@@ -1,3 +1,4 @@
+import { AppState } from "react-native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { healthService } from "@/services/health/healthService";
 import {
@@ -76,6 +77,7 @@ export const useHealthData = (): UseHealthDataReturn => {
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const hasData = useRef(false);
+  const statusRef = useRef(status);
 
   const applySnapshot = useCallback((next: HealthSnapshot) => {
     hasData.current = true;
@@ -121,6 +123,20 @@ export const useHealthData = (): UseHealthDataReturn => {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
+
+  // Coming back from Settings or the Play Store: pick up the access the user just granted
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active" && (statusRef.current === "denied" || statusRef.current === "notInstalled")) {
+        refresh();
+      }
+    });
+    return () => subscription.remove();
+  }, [refresh]);
 
   const derived = useMemo(() => {
     const month = snapshot?.month ?? [];
