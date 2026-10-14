@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
+import { normalizeEmail } from "../utils/email.js";
 import jwt from "jsonwebtoken";
 
 export const getUserById = async (req, res) => {
@@ -24,7 +25,8 @@ export const updateUser = async (req, res) => {
     const updateData = {};
 
     if (req.body.name !== undefined) updateData.name = req.body.name;
-    if (req.body.email !== undefined) updateData.email = req.body.email;
+    if (req.body.email !== undefined)
+      updateData.email = normalizeEmail(req.body.email);
     if (req.body.dateOfBirth !== undefined)
       updateData.dateOfBirth = req.body.dateOfBirth;
     if (req.body.sex !== undefined) updateData.sex = req.body.sex;
