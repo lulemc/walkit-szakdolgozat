@@ -10,8 +10,22 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-       "config": {
+      "config": {
         "googleMapsApiKey": "AIzaSyBmTTxZ5x_NIQlKyIGJaf3aqNZTgRxFLh8"
+      },
+      "bundleIdentifier": "com.walkit.app",
+      "infoPlist": {
+        "NSHealthShareUsageDescription": "We need access to your health data to show your walking statistics and track your progress.",
+        "NSHealthUpdateUsageDescription": "We need access to update your health data with your walking activities.",
+        "UIBackgroundModes": [
+          "fetch",
+          "fetch"
+        ],
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "entitlements": {
+        "com.apple.developer.healthkit": true,
+        "com.apple.developer.healthkit.access": []
       }
     },
     "android": {
@@ -23,11 +37,17 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-       "config": {
+      "config": {
         "googleMaps": {
           "apiKey": "AIzaSyBmTTxZ5x_NIQlKyIGJaf3aqNZTgRxFLh8"
         }
-      }
+      },
+      "package": "com.walkit.app",
+      "permissions": [
+        "android.permission.health.READ_STEPS",
+        "android.permission.health.READ_DISTANCE",
+        "android.permission.health.READ_ACTIVE_CALORIES_BURNED"
+      ]
     },
     "web": {
       "output": "static",
@@ -46,11 +66,26 @@
             "backgroundColor": "#000000"
           }
         }
+      ],
+      "react-native-health-connect",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26
+          }
+        }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "c1f7f846-8307-4b88-8c6d-67c911b60583"
+      }
     }
   }
 }

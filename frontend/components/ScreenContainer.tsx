@@ -1,19 +1,28 @@
 import React, { ReactNode } from "react";
-import { View, ScrollView, ViewStyle } from "react-native";
+import {
+  View,
+  ScrollView,
+  ViewStyle,
+  StyleProp,
+  RefreshControlProps,
+} from "react-native";
 import { useTheme } from "react-native-paper";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface ScreenContainerProps {
   children: ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   scrollable?: boolean;
-  contentContainerStyle?: any;
+  contentContainerStyle?: StyleProp<ViewStyle>;
+  refreshControl?: React.ReactElement<RefreshControlProps>;
 }
 
 export const ScreenContainer: React.FC<ScreenContainerProps> = ({
   children,
   style,
   scrollable = false,
+  contentContainerStyle,
+  refreshControl,
 }) => {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -29,6 +38,8 @@ export const ScreenContainer: React.FC<ScreenContainerProps> = ({
           },
           style,
         ]}
+        contentContainerStyle={contentContainerStyle}
+        refreshControl={refreshControl}
       >
         {children}
       </ScrollView>

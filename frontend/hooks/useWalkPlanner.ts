@@ -46,64 +46,67 @@ export const useWalkPlanner = () => {
   const [generatedRoute, setGeneratedRoute] = useState<Route | null>(null);
   const [routeError, setRouteError] = useState<string | null>(null);
 
+  // Load the user's location once on mount
   useEffect(() => {
+    const getCurrentLocation = async () => {
+      try {
+        setLoading(true);
+
+        const { status } = await Location.requestForegroundPermissionsAsync();
+
+        if (status !== 'granted') {
+          Alert.alert(
+            'Permission Required',
+            'Location permission is needed to plan walks.'
+          );
+          setLoading(false);
+          return;
+        }
+
+        const location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+
+        const coords = {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        };
+
+        setCurrentLocation(coords);
+
+        try {
+          const locationWithAddress = await GooglePlacesService.reverseGeocode(coords);
+          setStartLocation(locationWithAddress);
+        } catch (error) {
+          setStartLocation({
+            coordinates: coords,
+            name: 'Current Location',
+            address: `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`,
+          });
+        }
+
+        setMapRegion({
+          ...coords,
+          latitudeDelta: 0.05,
+          longitudeDelta: 0.05,
+        });
+      } catch (error) {
+        console.error('Error getting location:', error);
+        Alert.alert('Error', 'Could not get your current location');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     getCurrentLocation();
   }, []);
 
-  useEffect(() => {
-    if (routeType === 'circular') {
+  // Circular routes have no destination, so clear it when switching to them
+  const changeRouteType = (type: RouteType) => {
+    setRouteType(type);
+    if (type === 'circular') {
       setDestinationLocation(null);
       setMapSelectionMode('none');
-    }
-  }, [routeType]);
-
-  const getCurrentLocation = async () => {
-    try {
-      setLoading(true);
-
-      const { status } = await Location.requestForegroundPermissionsAsync();
-
-      if (status !== 'granted') {
-        Alert.alert(
-          'Permission Required',
-          'Location permission is needed to plan walks.'
-        );
-        setLoading(false);
-        return;
-      }
-
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-
-      const coords = {
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      };
-
-      setCurrentLocation(coords);
-
-      try {
-        const locationWithAddress = await GooglePlacesService.reverseGeocode(coords);
-        setStartLocation(locationWithAddress);
-      } catch (error) {
-        setStartLocation({
-          coordinates: coords,
-          name: 'Current Location',
-          address: `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`,
-        });
-      }
-
-      setMapRegion({
-        ...coords,
-        latitudeDelta: 0.05,
-        longitudeDelta: 0.05,
-      });
-    } catch (error) {
-      console.error('Error getting location:', error);
-      Alert.alert('Error', 'Could not get your current location');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -277,7 +280,7 @@ export const useWalkPlanner = () => {
     setStartLocation,
     setDestinationLocation,
     setSelectedDistance,
-    setRouteType,
+    setRouteType: changeRouteType,
     setMapSelectionMode,
     handleUseCurrentLocation,
     handleEnableMapSelection,

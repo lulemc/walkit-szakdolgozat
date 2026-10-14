@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import jwt from "jsonwebtoken";
 import User from "../../models/User.js";
-import { protect } from "../../middleware/authMiddleware.js";
+import { protect, requireSelf } from "../../middleware/authMiddleware.js";
 
 /* ---------------- mocks ---------------- */
 
@@ -95,6 +95,37 @@ describe("authMiddleware - protect", () => {
     expect(res.json).toHaveBeenCalledWith({
       message: "Not authorized, no token",
     });
+    expect(next).not.toHaveBeenCalled();
+  });
+});
+
+describe("authMiddleware - requireSelf", () => {
+  const res = {
+    status: vi.fn().mockReturnThis(),
+    json: vi.fn(),
+  };
+  const next = vi.fn();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("calls next when the id matches the logged-in user", () => {
+    const req = { params: { id: "123" }, user: { _id: "123" } };
+
+    requireSelf(req, res, next);
+
+    expect(next).toHaveBeenCalled();
+    expect(res.status).not.toHaveBeenCalled();
+  });
+
+  it("returns 403 when the id belongs to another user", () => {
+    const req = { params: { id: "456" }, user: { _id: "123" } };
+
+    requireSelf(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({ message: "Forbidden" });
     expect(next).not.toHaveBeenCalled();
   });
 });

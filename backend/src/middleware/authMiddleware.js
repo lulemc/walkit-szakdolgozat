@@ -29,3 +29,11 @@ export const protect = async (req, res, next) => {
     return res.status(401).json({ message: "Not authorized, no token" });
   }
 };
+
+export const requireSelf = (req, res, next) => {
+  if (req.params.id !== req.user._id.toString()) {
+    return res.status(403).json({ message: "Forbidden" });
+  }
+
+  next();
+};

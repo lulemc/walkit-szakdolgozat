@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { StyleSheet } from "react-native";
 import { HelperText } from "react-native-paper";
 import { useRouter } from "expo-router";
 import { useTextInput } from "@/hooks/form/useTextInput";
 import { useAuth } from "@/context/AuthProvider";
-import { testNetworkRequest } from "@/services/authApi";
 import {
   CustomText,
   RowLayout,
@@ -23,12 +22,6 @@ const RegisterScreen: React.FC = () => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    testNetworkRequest().catch((err) => {
-      console.error("Network test failed:", err.message);
-    });
-  }, []);
 
   const onSubmit = async () => {
     if (!name.value || !email.value || !password.value) {

@@ -1,4 +1,3 @@
-import { User } from "@/types/User";
 import api from "./api";
 
 export interface UpdateUserData {
@@ -15,21 +14,9 @@ export interface ChangePasswordData {
   newPassword: string;
 }
 const UserService = {
-  // GET all users
-  getAll: async () => {
-    const response = await api.get("/users");
-    return response.data;
-  },
-
   // GET user by ID
   getById: async (id:string) => {
     const response = await api.get(`/users/${id}`);
-    return response.data;
-  },
-
-  // CREATE user
-  create: async (userData:User) => {
-    const response = await api.post("/users", userData);
     return response.data;
   },
 

@@ -34,8 +34,8 @@ export const register = async (req, res) => {
         email: user.email,
       },
     });
-  } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+  } catch {
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -54,11 +54,14 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
+    const safeUser = user.toObject();
+    delete safeUser.passwordHash;
+
     res.json({
       token: generateToken(user._id),
-      user: user,
+      user: safeUser,
     });
-  } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+  } catch {
+    res.status(500).json({ message: "Server error" });
   }
 };

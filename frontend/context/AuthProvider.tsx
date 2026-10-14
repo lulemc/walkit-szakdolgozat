@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { registerUser, loginUser } from "@/services/authApi";
 import { useRouter } from "expo-router";
 import { storage } from "@/utils/storage";
+import { setUnauthorizedHandler } from "@/services/api";
 import { userStorage } from "@/utils/userStorage";
 import { User } from "@/types/User";
 
@@ -33,9 +34,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const bootstrap = async () => {
       try {
-        const storedToken = await storage.getToken();
-        console.log("Loaded token:", storedToken);
+        const [storedToken, storedUser] = await Promise.all([
+          storage.getToken(),
+          userStorage.getUser(),
+        ]);
         setToken(storedToken);
+        setUser(storedUser);
       } catch (err) {
         console.error("Failed to load token", err);
       } finally {
@@ -73,6 +77,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setToken(null);
     router.replace("/(auth)/login");
   };
+
+  useEffect(() => {
+    setUnauthorizedHandler(logout);
+    return () => setUnauthorizedHandler(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <AuthContext.Provider

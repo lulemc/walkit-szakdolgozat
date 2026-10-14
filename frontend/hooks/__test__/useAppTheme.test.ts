@@ -7,8 +7,10 @@ jest.mock("@/theme/paperTheme", () => ({
   darkTheme: { mode: "dark" },
 }));
 
-jest.mock("react-native", () => ({
-  useColorScheme: jest.fn(),
+// Mock only the module behind react-native's useColorScheme export
+jest.mock("react-native/Libraries/Utilities/useColorScheme", () => ({
+  __esModule: true,
+  default: jest.fn(),
 }));
 
 describe("useAppTheme", () => {
