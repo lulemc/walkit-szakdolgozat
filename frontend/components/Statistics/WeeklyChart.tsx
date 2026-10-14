@@ -1,7 +1,7 @@
 import React from "react";
 import { BarChart } from "react-native-gifted-charts";
 import { useTheme } from "react-native-paper";
-import type { HealthData } from "@/services/healthKitService";
+import type { HealthData } from "@/services/health/types";
 import { colors } from "@/theme/colors";
 import { formatCompactNumber, getDayAbbreviation } from "@/utils/healthFormatters";
 import { CHART_SECTIONS, fitBars, niceMax, Y_AXIS_WIDTH } from "./chartLayout";

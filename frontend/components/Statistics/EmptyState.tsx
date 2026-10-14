@@ -6,11 +6,12 @@ import { PrimaryButton } from "../Button";
 import { ScreenContainer } from "../ScreenContainer";
 
 interface EmptyStateProps {
+  providerName: string;
   onRefresh: () => void;
   refreshing: boolean;
 }
 
-export const EmptyState: React.FC<EmptyStateProps> = ({ onRefresh, refreshing }) => {
+export const EmptyState: React.FC<EmptyStateProps> = ({ providerName, onRefresh, refreshing }) => {
   const theme = useTheme();
 
   return (
@@ -24,14 +25,13 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ onRefresh, refreshing })
           variant="bodyLarge"
           style={[styles.center, { color: theme.colors.onSurfaceVariant }]}
         >
-          {"We couldn't find any steps, distance or calories in Apple Health for the last 30 days."}
+          {`We couldn't find any steps, distance or calories in ${providerName} for the last 30 days.`}
         </CustomText>
 
         <View style={[styles.tip, { backgroundColor: theme.colors.surfaceVariant }]}>
           <Icon source="bulb-outline" size={18} color={theme.colors.onSurfaceVariant} />
           <CustomText variant="bodySmall" style={styles.tipText}>
-            Make sure your iPhone is recording activity, and that WalkIt can read it in Settings →
-            Health → Data Access & Devices.
+            {`Make sure your phone is recording activity and that WalkIt has permission to read it in ${providerName}.`}
           </CustomText>
         </View>
 

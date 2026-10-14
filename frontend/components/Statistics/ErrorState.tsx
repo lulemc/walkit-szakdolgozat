@@ -1,45 +1,76 @@
 import React from "react";
-import { Linking, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { Icon, useTheme } from "react-native-paper";
 import { CustomText } from "../CustomText";
 import { PrimaryButton } from "../Button";
 import { ScreenContainer } from "../ScreenContainer";
 
-export type ErrorVariant = "denied" | "unavailable" | "error";
+export type ErrorVariant = "denied" | "unavailable" | "notInstalled" | "error";
 
 interface ErrorStateProps {
   variant: ErrorVariant;
+  providerName: string;
   error?: Error | null;
   onRetry: () => void;
+  onOpenSettings: () => void;
+  onInstall: () => void;
   retrying?: boolean;
 }
 
-const COPY: Record<ErrorVariant, { icon: string; title: string; message: string; action?: string }> = {
-  denied: {
-    icon: "lock-closed-outline",
-    title: "Health access needed",
-    message:
-      "Allow WalkIt to read your steps, walking distance and active energy so we can show your statistics.",
-    action: "Open Settings",
-  },
-  unavailable: {
-    icon: "phone-portrait-outline",
-    title: "Apple Health isn't available",
-    message:
-      "Statistics come from Apple Health, which only works in the WalkIt iOS app. It isn't available in Expo Go, on Android or on the web.",
-  },
-  error: {
-    icon: "alert-circle-outline",
-    title: "Couldn't load your statistics",
-    message: "Something went wrong while reading Apple Health. Please try again.",
-    action: "Try again",
-  },
+interface Copy {
+  icon: string;
+  title: string;
+  message: string;
+  action?: string;
+}
+
+const getCopy = (variant: ErrorVariant, providerName: string): Copy => {
+  switch (variant) {
+    case "denied":
+      return {
+        icon: "lock-closed-outline",
+        title: "Health access needed",
+        message: `Allow WalkIt to read your steps, walking distance and active energy in ${providerName} so we can show your statistics.`,
+        action: "Open Settings",
+      };
+    case "notInstalled":
+      return {
+        icon: "download-outline",
+        title: "Health Connect is required",
+        message:
+          "WalkIt reads your activity through Health Connect. Install or update it from the Play Store, then come back and try again.",
+        action: "Get Health Connect",
+      };
+    case "unavailable":
+      return {
+        icon: "phone-portrait-outline",
+        title: `${providerName} isn't available`,
+        message:
+          "Health data isn't available on this device or in this version of the app. Use the WalkIt app on iPhone (Apple Health) or Android (Health Connect).",
+      };
+    case "error":
+      return {
+        icon: "alert-circle-outline",
+        title: "Couldn't load your statistics",
+        message: `Something went wrong while reading ${providerName}. Please try again.`,
+        action: "Try again",
+      };
+  }
 };
 
-export const ErrorState: React.FC<ErrorStateProps> = ({ variant, error, onRetry, retrying }) => {
+export const ErrorState: React.FC<ErrorStateProps> = ({
+  variant,
+  providerName,
+  error,
+  onRetry,
+  onOpenSettings,
+  onInstall,
+  retrying,
+}) => {
   const theme = useTheme();
-  const copy = COPY[variant];
-  const handleAction = variant === "denied" ? () => Linking.openSettings() : onRetry;
+  const copy = getCopy(variant, providerName);
+  const handleAction =
+    variant === "denied" ? onOpenSettings : variant === "notInstalled" ? onInstall : onRetry;
 
   return (
     <ScreenContainer>

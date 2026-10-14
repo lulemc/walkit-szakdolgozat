@@ -1,4 +1,4 @@
-import type { HealthData } from "@/services/healthKitService";
+import type { HealthData } from "@/services/health/types";
 
 export const DAILY_STEP_GOAL = 10000;
 export const ACTIVE_DAY_STEPS = 5000;

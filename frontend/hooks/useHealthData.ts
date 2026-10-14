@@ -1,6 +1,12 @@
+import { AppState } from "react-native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { healthKitService, HealthData, HourlySteps } from "@/services/healthKitService";
-import { generateMockHealth, HealthSnapshot } from "@/utils/mockHealthData";
+import { healthService } from "@/services/health/healthService";
+import {
+  HealthData,
+  HealthErrorCode,
+  HealthServiceError,
+  HourlySteps,
+} from "@/services/health/types";
 import {
   compareDays,
   currentStreak,
@@ -9,11 +15,18 @@ import {
   summarize,
 } from "@/utils/healthStats";
 
-export type HealthStatus = "loading" | "ready" | "unavailable" | "denied" | "error";
+export type HealthStatus =
+  | "loading"
+  | "ready"
+  | "unavailable"
+  | "notInstalled"
+  | "denied"
+  | "error";
 
 export interface UseHealthDataReturn {
   status: HealthStatus;
   error: Error | null;
+  providerName: string;
   today: HealthData | null;
   yesterday: HealthData | null;
   hourly: HourlySteps[];
@@ -26,20 +39,36 @@ export interface UseHealthDataReturn {
   refreshing: boolean;
   lastUpdated: Date | null;
   refresh: () => Promise<void>;
+  openSettings: () => Promise<void>;
+  openInstallPage: () => Promise<void>;
+}
+
+interface HealthSnapshot {
+  hourly: HourlySteps[];
+  month: HealthData[];
 }
 
 const MONTH_DAYS = 30;
 const WEEK_DAYS = 7;
 
-// Mock data is the default so the screen works in Expo Go;
-// set EXPO_PUBLIC_USE_MOCK_HEALTH=false to read Apple Health in a dev build
-const isMockMode = () => process.env.EXPO_PUBLIC_USE_MOCK_HEALTH !== "false";
+// Errors that mean "the user has to do something" rather than "something broke"
+const STATUS_BY_CODE: Partial<Record<HealthErrorCode, HealthStatus>> = {
+  [HealthErrorCode.UNSUPPORTED_PLATFORM]: "unavailable",
+  [HealthErrorCode.NOT_INSTALLED]: "notInstalled",
+  [HealthErrorCode.UPDATE_REQUIRED]: "notInstalled",
+  [HealthErrorCode.PERMISSION_DENIED]: "denied",
+};
 
-class HealthAccessError extends Error {
-  constructor(public status: "unavailable" | "denied") {
-    super(`Health data ${status}`);
-  }
-}
+const loadSnapshot = async (): Promise<HealthSnapshot> => {
+  await healthService.connect();
+
+  const [hourly, month] = await Promise.all([
+    healthService.getHourlySteps(),
+    healthService.getDailyStats(MONTH_DAYS),
+  ]);
+
+  return { hourly, month };
+};
 
 export const useHealthData = (): UseHealthDataReturn => {
   const [snapshot, setSnapshot] = useState<HealthSnapshot | null>(null);
@@ -47,32 +76,10 @@ export const useHealthData = (): UseHealthDataReturn => {
   const [error, setError] = useState<Error | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const hasPermission = useRef(false);
   const hasData = useRef(false);
-
-  const loadSnapshot = useCallback(async (): Promise<HealthSnapshot> => {
-    if (isMockMode()) {
-      return generateMockHealth();
-    }
-
-    if (!(await healthKitService.isAvailable())) {
-      throw new HealthAccessError("unavailable");
-    }
-
-    if (!hasPermission.current) {
-      if (!(await healthKitService.requestPermissions())) {
-        throw new HealthAccessError("denied");
-      }
-      hasPermission.current = true;
-    }
-
-    const [hourly, month] = await Promise.all([
-      healthKitService.getHourlySteps(),
-      healthKitService.getDailyStats(MONTH_DAYS),
-    ]);
-
-    return { hourly, month };
-  }, []);
+  const statusRef = useRef(status);
+  const pendingRefresh = useRef<Promise<void> | null>(null);
+  const leftForExternalAction = useRef(false);
 
   const applySnapshot = useCallback((next: HealthSnapshot) => {
     hasData.current = true;
@@ -83,8 +90,9 @@ export const useHealthData = (): UseHealthDataReturn => {
   }, []);
 
   const applyError = useCallback((err: unknown) => {
-    if (err instanceof HealthAccessError) {
-      setStatus(err.status);
+    const accessStatus = err instanceof HealthServiceError ? STATUS_BY_CODE[err.code] : undefined;
+    if (accessStatus) {
+      setStatus(accessStatus);
       return;
     }
 
@@ -99,21 +107,52 @@ export const useHealthData = (): UseHealthDataReturn => {
   // State is only updated in the promise callbacks, after the data has loaded
   const load = useCallback(
     () => loadSnapshot().then(applySnapshot, applyError),
-    [loadSnapshot, applySnapshot, applyError],
+    [applySnapshot, applyError],
   );
 
-  const refresh = useCallback(async () => {
+  // One load at a time: overlapping loads would open overlapping permission dialogs
+  const refresh = useCallback(() => {
+    if (pendingRefresh.current) return pendingRefresh.current;
+
     setRefreshing(true);
-    try {
-      await load();
-    } finally {
+    const pending = load().finally(() => {
+      pendingRefresh.current = null;
       setRefreshing(false);
-    }
+    });
+    pendingRefresh.current = pending;
+    return pending;
   }, [load]);
+
+  const openSettings = useCallback(() => {
+    leftForExternalAction.current = true;
+    return healthService.openSettings();
+  }, []);
+  const openInstallPage = useCallback(() => {
+    leftForExternalAction.current = true;
+    return healthService.openInstallPage();
+  }, []);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
+
+  // Coming back from Settings or the Play Store: pick up the access the user just granted.
+  // Only after leaving on purpose, otherwise the permission dialog would reopen on every app switch.
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state !== "active" || !leftForExternalAction.current) return;
+      leftForExternalAction.current = false;
+
+      if (statusRef.current === "denied" || statusRef.current === "notInstalled") {
+        refresh();
+      }
+    });
+    return () => subscription.remove();
+  }, [refresh]);
 
   const derived = useMemo(() => {
     const month = snapshot?.month ?? [];
@@ -134,5 +173,15 @@ export const useHealthData = (): UseHealthDataReturn => {
     };
   }, [snapshot]);
 
-  return { status, error, refreshing, lastUpdated, refresh, ...derived };
+  return {
+    status,
+    error,
+    providerName: healthService.displayName,
+    refreshing,
+    lastUpdated,
+    refresh,
+    openSettings,
+    openInstallPage,
+    ...derived,
+  };
 };

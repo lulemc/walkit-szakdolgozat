@@ -2,7 +2,7 @@ import React from "react";
 import { View } from "react-native";
 import { LineChart } from "react-native-gifted-charts";
 import { useTheme } from "react-native-paper";
-import type { HealthData } from "@/services/healthKitService";
+import type { HealthData } from "@/services/health/types";
 import { formatCompactNumber } from "@/utils/healthFormatters";
 import { AxisLabels } from "./AxisLabels";
 import { CHART_SECTIONS, fitLine, niceMax, pointX, Y_AXIS_WIDTH } from "./chartLayout";
