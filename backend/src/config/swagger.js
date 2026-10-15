@@ -257,6 +257,84 @@ const swaggerSpec = swaggerJSDoc({
             },
           },
         },
+        GroupWalkParticipant: {
+          type: "object",
+          properties: {
+            user: { $ref: "#/components/schemas/FriendUser" },
+            role: { type: "string", enum: ["organiser", "invitee"] },
+            status: { type: "string", enum: ["invited", "accepted", "declined"] },
+            invitedAt: { type: "string", format: "date-time" },
+            respondedAt: { type: "string", format: "date-time" },
+          },
+        },
+        GroupWalkCounts: {
+          type: "object",
+          properties: {
+            accepted: { type: "integer" },
+            invited: { type: "integer" },
+            declined: { type: "integer" },
+          },
+        },
+        GroupWalkSummary: {
+          type: "object",
+          description: "A walk in a list. The route has no coordinates here; load the detail for the map.",
+          properties: {
+            _id: { type: "string" },
+            title: { type: "string" },
+            scheduledAt: { type: "string", format: "date-time" },
+            status: { type: "string", enum: ["scheduled", "cancelled"] },
+            organiser: { $ref: "#/components/schemas/FriendUser" },
+            route: {
+              type: "object",
+              description: "Copy of the route (name, type, totalDistance, estimatedDuration, startLocation, ...)",
+            },
+            myStatus: { type: "string", enum: ["invited", "accepted", "declined"] },
+            counts: { $ref: "#/components/schemas/GroupWalkCounts" },
+          },
+        },
+        GroupWalkDetail: {
+          type: "object",
+          properties: {
+            _id: { type: "string" },
+            title: { type: "string" },
+            note: { type: "string" },
+            scheduledAt: { type: "string", format: "date-time" },
+            status: { type: "string", enum: ["scheduled", "cancelled"] },
+            cancelledAt: { type: "string", format: "date-time" },
+            organiser: { $ref: "#/components/schemas/FriendUser" },
+            route: {
+              type: "object",
+              description:
+                "Copy of the route taken when the walk was planned, including coordinates; unaffected if the original route changes or is deleted",
+            },
+            participants: {
+              type: "array",
+              items: { $ref: "#/components/schemas/GroupWalkParticipant" },
+            },
+            myStatus: { type: "string", enum: ["invited", "accepted", "declined"] },
+            isOrganiser: { type: "boolean" },
+            counts: { $ref: "#/components/schemas/GroupWalkCounts" },
+          },
+        },
+        CreateGroupWalkRequest: {
+          type: "object",
+          required: ["routeId", "scheduledAt"],
+          properties: {
+            routeId: { type: "string", description: "One of my saved routes" },
+            scheduledAt: {
+              type: "string",
+              format: "date-time",
+              description: "Must be in the future (send in UTC, e.g. toISOString())",
+            },
+            title: { type: "string", maxLength: 80 },
+            note: { type: "string", maxLength: 500 },
+            inviteeIds: {
+              type: "array",
+              items: { type: "string" },
+              description: "Friends to invite (at most 19, so 20 participants with me)",
+            },
+          },
+        },
         ErrorResponse: {
           type: "object",
           properties: {
@@ -706,6 +784,294 @@ const swaggerSpec = swaggerJSDoc({
               content: {
                 "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } },
               },
+            },
+          },
+        },
+      },
+      "/api/group-walks": {
+        post: {
+          summary: "Plan a group walk from one of my routes",
+          description:
+            "Copies the route into the walk and invites friends. I am added as the organiser with status accepted.",
+          tags: ["Group Walks"],
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/CreateGroupWalkRequest" },
+                example: {
+                  routeId: "65a1b2c3d4e5f6789013",
+                  scheduledAt: "2030-05-03T08:00:00.000Z",
+                  title: "Sunday walk",
+                  inviteeIds: ["65a1b2c3d4e5f6789014"],
+                },
+              },
+            },
+          },
+          responses: {
+            201: {
+              description: "Group walk created",
+              content: {
+                "application/json": {
+                  schema: { type: "object", properties: { success: { type: "boolean" }, data: { $ref: "#/components/schemas/GroupWalkDetail" } } },
+                },
+              },
+            },
+            400: {
+              description: "Time not in the future, title/note too long, more than 20 participants, or invitees who aren't friends (listed in invalidIds)",
+              content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
+            },
+            404: {
+              description: "Route not found among my routes",
+              content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
+            },
+          },
+        },
+        get: {
+          summary: "List my group walks",
+          tags: ["Group Walks"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              in: "query",
+              name: "scope",
+              schema: { type: "string", enum: ["invitations", "upcoming", "past"], default: "upcoming" },
+              description:
+                "invitations: still ahead, not cancelled, awaiting my answer; upcoming: still ahead and accepted by me (cancelled ones included); past: time has passed, newest first",
+            },
+          ],
+          responses: {
+            200: {
+              description: "Walks in the scope",
+              content: {
+                "application/json": {
+                  schema: { type: "object", properties: { success: { type: "boolean" }, data: { type: "array", items: { $ref: "#/components/schemas/GroupWalkSummary" } } } },
+                },
+              },
+            },
+            400: {
+              description: "Unknown scope",
+              content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
+            },
+          },
+        },
+      },
+      "/api/group-walks/{id}": {
+        get: {
+          summary: "Get a group walk with its route, participants and my status",
+          tags: ["Group Walks"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { in: "path", name: "id", required: true, schema: { type: "string" }, description: "Group walk id" },
+          ],
+          responses: {
+            200: {
+              description: "The group walk",
+              content: {
+                "application/json": {
+                  schema: { type: "object", properties: { success: { type: "boolean" }, data: { $ref: "#/components/schemas/GroupWalkDetail" } } },
+                },
+              },
+            },
+            404: {
+              description: "Walk not found, or I'm not part of it",
+              content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
+            },
+          },
+        },
+        patch: {
+          summary: "Change the title, note or time (organiser)",
+          tags: ["Group Walks"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { in: "path", name: "id", required: true, schema: { type: "string" }, description: "Group walk id" },
+          ],
+          requestBody: {
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    title: { type: "string", maxLength: 80 },
+                    note: { type: "string", maxLength: 500 },
+                    scheduledAt: { type: "string", format: "date-time" },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: "Updated walk",
+              content: {
+                "application/json": {
+                  schema: { type: "object", properties: { success: { type: "boolean" }, data: { $ref: "#/components/schemas/GroupWalkDetail" } } },
+                },
+              },
+            },
+            400: {
+              description: "The walk is cancelled or has already happened",
+              content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
+            },
+            403: {
+              description: "Only the organiser can do this",
+              content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
+            },
+            404: {
+              description: "Walk not found, or I'm not part of it",
+              content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
+            },
+          },
+        },
+      },
+      "/api/group-walks/{id}/cancel": {
+        post: {
+          summary: "Cancel the walk (organiser)",
+          tags: ["Group Walks"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { in: "path", name: "id", required: true, schema: { type: "string" }, description: "Group walk id" },
+          ],
+          responses: {
+            200: {
+              description: "Cancelled walk",
+              content: {
+                "application/json": {
+                  schema: { type: "object", properties: { success: { type: "boolean" }, data: { $ref: "#/components/schemas/GroupWalkDetail" } } },
+                },
+              },
+            },
+            400: {
+              description: "The walk is cancelled or has already happened",
+              content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
+            },
+            403: {
+              description: "Only the organiser can do this",
+              content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
+            },
+            404: {
+              description: "Walk not found, or I'm not part of it",
+              content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
+            },
+          },
+        },
+      },
+      "/api/group-walks/{id}/invites": {
+        post: {
+          summary: "Invite more friends (organiser)",
+          description: "People who declined are invited again; people already invited or coming are left as they are.",
+          tags: ["Group Walks"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { in: "path", name: "id", required: true, schema: { type: "string" }, description: "Group walk id" },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["userIds"],
+                  properties: { userIds: { type: "array", items: { type: "string" } } },
+                },
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: "Updated walk",
+              content: {
+                "application/json": {
+                  schema: { type: "object", properties: { success: { type: "boolean" }, data: { $ref: "#/components/schemas/GroupWalkDetail" } } },
+                },
+              },
+            },
+            400: {
+              description: "Empty list, walk closed, more than 20 participants, or users who aren't friends (listed in invalidIds)",
+              content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
+            },
+            403: {
+              description: "Only the organiser can do this",
+              content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
+            },
+            404: {
+              description: "Walk not found, or I'm not part of it",
+              content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
+            },
+          },
+        },
+      },
+      "/api/group-walks/{id}/participants/{userId}": {
+        delete: {
+          summary: "Remove a participant (organiser)",
+          tags: ["Group Walks"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { in: "path", name: "id", required: true, schema: { type: "string" }, description: "Group walk id" },
+            { in: "path", name: "userId", required: true, schema: { type: "string" }, description: "Participant's user id" },
+          ],
+          responses: {
+            200: {
+              description: "Updated walk",
+              content: {
+                "application/json": {
+                  schema: { type: "object", properties: { success: { type: "boolean" }, data: { $ref: "#/components/schemas/GroupWalkDetail" } } },
+                },
+              },
+            },
+            400: {
+              description: "The organiser can't be removed",
+              content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
+            },
+            403: {
+              description: "Only the organiser can do this",
+              content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
+            },
+            404: {
+              description: "Walk or participant not found",
+              content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
+            },
+          },
+        },
+      },
+      "/api/group-walks/{id}/respond": {
+        post: {
+          summary: "Accept or decline an invitation",
+          description: "The answer can be changed until the walk starts; declining after accepting is how to leave.",
+          tags: ["Group Walks"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { in: "path", name: "id", required: true, schema: { type: "string" }, description: "Group walk id" },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["status"],
+                  properties: { status: { type: "string", enum: ["accepted", "declined"] } },
+                },
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: "My new status",
+              content: {
+                "application/json": {
+                  schema: { type: "object", properties: { success: { type: "boolean" }, data: { type: "object", properties: { myStatus: { type: "string" } } } } },
+                },
+              },
+            },
+            400: {
+              description: "Unknown answer, organiser responding, or the walk is cancelled or has already happened",
+              content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
+            },
+            404: {
+              description: "Walk not found, or I'm not part of it",
+              content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
             },
           },
         },
