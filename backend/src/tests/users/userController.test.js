@@ -175,6 +175,23 @@ describe("User controller", () => {
     );
   });
 
+  it("updateUser stores the email in normalised form", async () => {
+    const req = { params: { id: "123" }, body: { email: "  New.Mail@Example.COM " } };
+    const res = mockRes();
+
+    User.findByIdAndUpdate.mockReturnValue({
+      select: vi.fn().mockResolvedValue({ _id: "123", email: "new.mail@example.com" }),
+    });
+
+    await updateUser(req, res);
+
+    expect(User.findByIdAndUpdate).toHaveBeenCalledWith(
+      "123",
+      { email: "new.mail@example.com" },
+      { new: true, runValidators: true },
+    );
+  });
+
   it("updateUser returns 404 if user not found", async () => {
     const req = {
       params: { id: "123" },
