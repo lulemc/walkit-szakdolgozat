@@ -335,6 +335,29 @@ const swaggerSpec = swaggerJSDoc({
             },
           },
         },
+        GroupWalkComment: {
+          type: "object",
+          properties: {
+            _id: { type: "string" },
+            author: { $ref: "#/components/schemas/FriendUser" },
+            text: { type: "string", maxLength: 500 },
+            createdAt: { type: "string", format: "date-time" },
+          },
+        },
+        SocialSummary: {
+          type: "object",
+          description: "Counts for the app's Social badge",
+          properties: {
+            pendingFriendRequests: {
+              type: "integer",
+              description: "Friend requests sent to me that I haven't answered",
+            },
+            pendingInvitations: {
+              type: "integer",
+              description: "Invitations to upcoming, not cancelled walks that I haven't answered",
+            },
+          },
+        },
         ErrorResponse: {
           type: "object",
           properties: {
@@ -857,6 +880,29 @@ const swaggerSpec = swaggerJSDoc({
           },
         },
       },
+      "/api/group-walks/summary": {
+        get: {
+          summary: "Counts for the Social badge",
+          tags: ["Group Walks"],
+          security: [{ bearerAuth: [] }],
+          responses: {
+            200: {
+              description: "Pending friend requests and walk invitations",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: { type: "boolean" },
+                      data: { $ref: "#/components/schemas/SocialSummary" },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
       "/api/group-walks/{id}": {
         get: {
           summary: "Get a group walk with its route, participants and my status",
@@ -1071,6 +1117,120 @@ const swaggerSpec = swaggerJSDoc({
             },
             404: {
               description: "Walk not found, or I'm not part of it",
+              content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
+            },
+          },
+        },
+      },
+      "/api/group-walks/{id}/comments": {
+        get: {
+          summary: "List comments, newest first",
+          description:
+            "Any participant can read, including those who declined. Pass the oldest loaded comment's createdAt as before to load older ones.",
+          tags: ["Group Walks"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { in: "path", name: "id", required: true, schema: { type: "string" }, description: "Group walk id" },
+            {
+              in: "query",
+              name: "before",
+              schema: { type: "string", format: "date-time" },
+              description: "Only comments created before this time",
+            },
+            {
+              in: "query",
+              name: "limit",
+              schema: { type: "integer", minimum: 1, maximum: 50, default: 20 },
+            },
+          ],
+          responses: {
+            200: {
+              description: "Comments",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: { type: "boolean" },
+                      data: { type: "array", items: { $ref: "#/components/schemas/GroupWalkComment" } },
+                    },
+                  },
+                },
+              },
+            },
+            400: {
+              description: "Invalid before date or limit",
+              content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
+            },
+            404: {
+              description: "Walk not found, or I'm not part of it",
+              content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
+            },
+          },
+        },
+        post: {
+          summary: "Add a comment",
+          description:
+            "Participants who haven't declined can comment, also after the walk; not on cancelled walks.",
+          tags: ["Group Walks"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { in: "path", name: "id", required: true, schema: { type: "string" }, description: "Group walk id" },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["text"],
+                  properties: { text: { type: "string", minLength: 1, maxLength: 500 } },
+                },
+                example: { text: "See you at the bridge" },
+              },
+            },
+          },
+          responses: {
+            201: {
+              description: "Comment added",
+              content: {
+                "application/json": {
+                  schema: { type: "object", properties: { success: { type: "boolean" }, data: { $ref: "#/components/schemas/GroupWalkComment" } } },
+                },
+              },
+            },
+            400: {
+              description: "Empty or too long text, or the walk is cancelled",
+              content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
+            },
+            403: {
+              description: "I declined this walk",
+              content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
+            },
+            404: {
+              description: "Walk not found, or I'm not part of it",
+              content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
+            },
+          },
+        },
+      },
+      "/api/group-walks/{id}/comments/{commentId}": {
+        delete: {
+          summary: "Delete a comment (its author or the organiser)",
+          tags: ["Group Walks"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { in: "path", name: "id", required: true, schema: { type: "string" }, description: "Group walk id" },
+            { in: "path", name: "commentId", required: true, schema: { type: "string" } },
+          ],
+          responses: {
+            200: { description: "Comment deleted" },
+            403: {
+              description: "Only the author or the organiser can delete this comment",
+              content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
+            },
+            404: {
+              description: "Walk or comment not found",
               content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
             },
           },
