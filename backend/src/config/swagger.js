@@ -205,6 +205,47 @@ const swaggerSpec = swaggerJSDoc({
             },
           },
         },
+        FriendUser: {
+          type: "object",
+          properties: {
+            _id: { type: "string", example: "65a1b2c3d4e5f6789013" },
+            name: { type: "string", example: "Ann" },
+          },
+        },
+        Friend: {
+          type: "object",
+          properties: {
+            friendshipId: { type: "string" },
+            user: { $ref: "#/components/schemas/FriendUser" },
+            since: { type: "string", format: "date-time" },
+          },
+        },
+        FriendRequest: {
+          type: "object",
+          properties: {
+            _id: { type: "string", description: "Friend request id" },
+            user: { $ref: "#/components/schemas/FriendUser" },
+            createdAt: { type: "string", format: "date-time" },
+          },
+        },
+        Friendship: {
+          type: "object",
+          properties: {
+            _id: { type: "string" },
+            requester: { type: "string" },
+            recipient: { type: "string" },
+            status: { type: "string", enum: ["pending", "accepted"] },
+            acceptedAt: { type: "string", format: "date-time" },
+            createdAt: { type: "string", format: "date-time" },
+          },
+        },
+        ErrorResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: false },
+            message: { type: "string" },
+          },
+        },
       },
     },
     paths: {
@@ -441,6 +482,171 @@ const swaggerSpec = swaggerJSDoc({
             },
             404: {
               description: "Route not found",
+            },
+          },
+        },
+      },
+      "/api/friends": {
+        get: {
+          summary: "List my friends",
+          tags: ["Friends"],
+          security: [{ bearerAuth: [] }],
+          responses: {
+            200: {
+              description: "Friends of the logged-in user",
+              content: { "application/json": { schema: { type: "object", properties: { success: { type: "boolean" }, data: { type: "array", items: { $ref: "#/components/schemas/Friend" } } } } } },
+            },
+          },
+        },
+      },
+      "/api/friends/requests": {
+        get: {
+          summary: "List pending friend requests",
+          description: "Incoming requests are addressed to me; outgoing requests are the ones I sent.",
+          tags: ["Friends"],
+          security: [{ bearerAuth: [] }],
+          responses: {
+            200: {
+              description: "Pending requests",
+              content: { "application/json": { schema: { type: "object", properties: { success: { type: "boolean" }, data: { type: "object", properties: { incoming: { type: "array", items: { $ref: "#/components/schemas/FriendRequest" } }, outgoing: { type: "array", items: { $ref: "#/components/schemas/FriendRequest" } } } } } } } },
+            },
+          },
+        },
+        post: {
+          summary: "Send a friend request",
+          description:
+            "If the other user already sent me a request, it is accepted instead and the response is 200.",
+          tags: ["Friends"],
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: { type: "object", required: ["userId"], properties: { userId: { type: "string" } } },
+                example: { userId: "65a1b2c3d4e5f6789013" },
+              },
+            },
+          },
+          responses: {
+            201: {
+              description: "Friend request sent",
+              content: { "application/json": { schema: { type: "object", properties: { success: { type: "boolean" }, data: { $ref: "#/components/schemas/Friendship" }, message: { type: "string" } } } } },
+            },
+            200: {
+              description: "The other user's pending request was accepted",
+              content: { "application/json": { schema: { type: "object", properties: { success: { type: "boolean" }, data: { $ref: "#/components/schemas/Friendship" } } } } },
+            },
+            400: {
+              description: "Missing user id, or a request to yourself",
+              content: {
+                "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } },
+              },
+            },
+            404: {
+              description: "User not found",
+              content: {
+                "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } },
+              },
+            },
+            409: {
+              description: "Already friends, or a request already exists",
+              content: {
+                "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } },
+              },
+            },
+            429: {
+              description: "Too many pending outgoing requests (50)",
+              content: {
+                "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } },
+              },
+            },
+          },
+        },
+      },
+      "/api/friends/requests/{id}/accept": {
+        post: {
+          summary: "Accept a friend request addressed to me",
+          tags: ["Friends"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { in: "path", name: "id", required: true, schema: { type: "string" }, description: "Friend request id" },
+          ],
+          responses: {
+            200: {
+              description: "Friend request accepted",
+              content: { "application/json": { schema: { type: "object", properties: { success: { type: "boolean" }, data: { $ref: "#/components/schemas/Friendship" } } } } },
+            },
+            404: {
+              description: "Friend request not found",
+              content: {
+                "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } },
+              },
+            },
+          },
+        },
+      },
+      "/api/friends/requests/{id}/decline": {
+        post: {
+          summary: "Decline a friend request addressed to me",
+          tags: ["Friends"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { in: "path", name: "id", required: true, schema: { type: "string" }, description: "Friend request id" },
+          ],
+          responses: {
+            200: {
+              description: "Friend request declined",
+              content: { "application/json": { schema: { type: "object", properties: { success: { type: "boolean" }, message: { type: "string" } } } } },
+            },
+            404: {
+              description: "Friend request not found",
+              content: {
+                "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } },
+              },
+            },
+          },
+        },
+      },
+      "/api/friends/requests/{id}": {
+        delete: {
+          summary: "Cancel a friend request I sent",
+          tags: ["Friends"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { in: "path", name: "id", required: true, schema: { type: "string" }, description: "Friend request id" },
+          ],
+          responses: {
+            200: {
+              description: "Friend request cancelled",
+              content: { "application/json": { schema: { type: "object", properties: { success: { type: "boolean" }, message: { type: "string" } } } } },
+            },
+            404: {
+              description: "Friend request not found",
+              content: {
+                "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } },
+              },
+            },
+          },
+        },
+      },
+      "/api/friends/{userId}": {
+        delete: {
+          summary: "Unfriend a user",
+          tags: ["Friends"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { in: "path", name: "userId", required: true, schema: { type: "string" }, description: "The friend's user id" },
+          ],
+          responses: {
+            200: {
+              description: "Friend removed",
+              content: { "application/json": { schema: { type: "object", properties: { success: { type: "boolean" }, message: { type: "string" } } } } },
+            },
+            404: {
+              description: "Not friends with this user",
+              content: {
+                "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } },
+              },
             },
           },
         },
