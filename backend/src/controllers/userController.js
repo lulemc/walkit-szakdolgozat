@@ -1,6 +1,8 @@
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import { normalizeEmail } from "../utils/email.js";
+import { sendError } from "../utils/httpError.js";
+import * as userSearchService from "../services/userSearchService.js";
 import jwt from "jsonwebtoken";
 
 export const getUserById = async (req, res) => {
@@ -126,5 +128,17 @@ export const changePassword = async (req, res) => {
     res.status(500).json({
       message: "Failed to change password. Please try again.",
     });
+  }
+};
+
+/**
+ * Search other users by name or exact email, for adding friends
+ */
+export const searchUsers = async (req, res) => {
+  try {
+    const users = await userSearchService.searchUsers(req.user.id, req.query.q);
+    res.json({ success: true, data: users });
+  } catch (error) {
+    sendError(res, error, "Failed to search users");
   }
 };
