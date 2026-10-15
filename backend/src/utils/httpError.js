@@ -1,12 +1,13 @@
 /**
  * An error that carries the HTTP status the client should receive.
- * Services throw it; controllers turn it into `{ success: false, message }`.
+ * Services throw it; controllers turn it into `{ success: false, message, ...details }`.
  */
 export class HttpError extends Error {
-  constructor(status, message) {
+  constructor(status, message, details) {
     super(message);
     this.name = "HttpError";
     this.status = status;
+    this.details = details;
   }
 }
 
@@ -16,7 +17,9 @@ export class HttpError extends Error {
  */
 export const sendError = (res, error, fallbackMessage) => {
   if (error instanceof HttpError) {
-    return res.status(error.status).json({ success: false, message: error.message });
+    return res
+      .status(error.status)
+      .json({ success: false, message: error.message, ...error.details });
   }
   console.error(`${fallbackMessage}:`, error);
   return res.status(500).json({ success: false, message: fallbackMessage });
