@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import Friendship from "../models/Friendship.js";
 import User from "../models/User.js";
 import { HttpError } from "../utils/httpError.js";
+import { sameId } from "../utils/ids.js";
 
 export const MAX_OUTGOING_PENDING = 50;
 
@@ -10,10 +11,8 @@ const DUPLICATE_KEY = 11000;
 /** The same key for A->B and B->A, used by the unique index */
 export const pairKey = (userA, userB) => [String(userA), String(userB)].sort().join("_");
 
-const sameUser = (a, b) => String(a?._id ?? a) === String(b?._id ?? b);
-
 const otherUser = (friendship, userId) =>
-  sameUser(friendship.requester, userId) ? friendship.recipient : friendship.requester;
+  sameId(friendship.requester, userId) ? friendship.recipient : friendship.requester;
 
 const toUserSummary = (user) => (user ? { _id: user._id, name: user.name } : null);
 
@@ -85,7 +84,7 @@ export const sendRequest = async (requesterId, recipientId) => {
   if (!recipientId) {
     throw new HttpError(400, "userId is required");
   }
-  if (sameUser(requesterId, recipientId)) {
+  if (sameId(requesterId, recipientId)) {
     throw new HttpError(400, "You can't send a friend request to yourself");
   }
   if (!mongoose.isValidObjectId(recipientId) || !(await User.exists({ _id: recipientId }))) {
@@ -98,7 +97,7 @@ export const sendRequest = async (requesterId, recipientId) => {
   if (existing?.status === "accepted") {
     throw new HttpError(409, "You are already friends");
   }
-  if (existing && sameUser(existing.requester, requesterId)) {
+  if (existing && sameId(existing.requester, requesterId)) {
     throw new HttpError(409, "Friend request already sent");
   }
   if (existing) {

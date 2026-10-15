@@ -3,6 +3,7 @@ import GroupWalk, { PARTICIPANT_STATUSES } from "../models/GroupWalk.js";
 import Route from "../models/Route.js";
 import { getFriendIds } from "./friendshipService.js";
 import { HttpError } from "../utils/httpError.js";
+import { sameId } from "../utils/ids.js";
 
 export const MAX_PARTICIPANTS = 20;
 
@@ -26,8 +27,6 @@ const ROUTE_SNAPSHOT_FIELDS = [
 ];
 
 /* ---------------- helpers ---------------- */
-
-const sameId = (a, b) => String(a?._id ?? a) === String(b?._id ?? b);
 
 const toUserSummary = (user) => (user ? { _id: user._id, name: user.name } : null);
 
@@ -184,6 +183,13 @@ export const createGroupWalk = async (
   return getGroupWalk(userId, created._id);
 };
 
+/** Walks still ahead and not cancelled whose invitation the user hasn't answered yet */
+export const openInvitationsFilter = (userId, now = new Date()) => ({
+  participants: { $elemMatch: { user: userId, status: "invited" } },
+  status: "scheduled",
+  scheduledAt: { $gte: now },
+});
+
 /**
  * - invitations: walks I'm invited to that are still ahead and not cancelled
  * - upcoming: walks I accepted that are still ahead (cancelled ones too, so I see they're off)
@@ -196,11 +202,7 @@ export const listGroupWalks = async (userId, scope) => {
 
   const now = new Date();
   const filters = {
-    invitations: {
-      participants: { $elemMatch: { user: userId, status: "invited" } },
-      status: "scheduled",
-      scheduledAt: { $gte: now },
-    },
+    invitations: openInvitationsFilter(userId, now),
     upcoming: {
       participants: { $elemMatch: { user: userId, status: "accepted" } },
       scheduledAt: { $gte: now },
