@@ -239,6 +239,24 @@ const swaggerSpec = swaggerJSDoc({
             createdAt: { type: "string", format: "date-time" },
           },
         },
+        UserSearchResult: {
+          type: "object",
+          description: "A user found by search. Email addresses are never returned.",
+          properties: {
+            _id: { type: "string", example: "65a1b2c3d4e5f6789013" },
+            name: { type: "string", example: "Ann" },
+            relationship: {
+              type: "string",
+              enum: ["none", "friends", "outgoing", "incoming"],
+              description:
+                "friends: already friends; outgoing: I sent a pending request; incoming: they sent me one",
+            },
+            friendshipId: {
+              type: "string",
+              description: "The friendship or request id, when relationship isn't none",
+            },
+          },
+        },
         ErrorResponse: {
           type: "object",
           properties: {
@@ -482,6 +500,47 @@ const swaggerSpec = swaggerJSDoc({
             },
             404: {
               description: "Route not found",
+            },
+          },
+        },
+      },
+      "/api/users/search": {
+        get: {
+          summary: "Search users by name or exact email",
+          description:
+            "Partial, case-insensitive name match; if the query contains '@' it must match an email exactly. Excludes the logged-in user; at most 20 results.",
+          tags: ["Users"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              in: "query",
+              name: "q",
+              required: true,
+              schema: { type: "string", minLength: 2 },
+              description: "Name fragment or full email address",
+              example: "ann",
+            },
+          ],
+          responses: {
+            200: {
+              description: "Matching users",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: { type: "boolean" },
+                      data: { type: "array", items: { $ref: "#/components/schemas/UserSearchResult" } },
+                    },
+                  },
+                },
+              },
+            },
+            400: {
+              description: "Query shorter than 2 characters",
+              content: {
+                "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } },
+              },
             },
           },
         },

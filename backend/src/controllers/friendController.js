@@ -1,14 +1,5 @@
 import * as friendshipService from "../services/friendshipService.js";
-import { HttpError } from "../utils/httpError.js";
-
-/** Expected failures carry their own status; anything else is a 500 without internals */
-const sendError = (res, error, fallbackMessage) => {
-  if (error instanceof HttpError) {
-    return res.status(error.status).json({ success: false, message: error.message });
-  }
-  console.error(`${fallbackMessage}:`, error);
-  return res.status(500).json({ success: false, message: fallbackMessage });
-};
+import { sendError } from "../utils/httpError.js";
 
 export const listFriends = async (req, res) => {
   try {
