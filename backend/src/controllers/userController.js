@@ -3,6 +3,7 @@ import User from "../models/User.js";
 import { normalizeEmail } from "../utils/email.js";
 import { sendError } from "../utils/httpError.js";
 import * as userSearchService from "../services/userSearchService.js";
+import { deleteUserData } from "../services/accountCleanupService.js";
 import jwt from "jsonwebtoken";
 
 export const getUserById = async (req, res) => {
@@ -52,19 +53,28 @@ export const updateUser = async (req, res) => {
   }
 };
 
+/**
+ * Deletes the account. The user's friendships, comments, routes and walk
+ * participation are cleaned up first; if that fails, the account is kept so
+ * the deletion can be retried instead of leaving data nobody can reach.
+ */
 export const deleteUser = async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
+    const userId = req.params.id;
 
-    if (!user) {
+    if (!(await User.exists({ _id: userId }))) {
       return res.status(404).json({ message: "User not found" });
     }
+
+    await deleteUserData(userId);
+    await User.findByIdAndDelete(userId);
 
     res.json({ message: "User deleted" });
   } catch (error) {
     if (error.name === "CastError") {
       return res.status(404).json({ message: "User not found" });
     }
+    console.error("Failed to delete user:", error);
     res.status(500).json({ message: "Failed to delete user" });
   }
 };

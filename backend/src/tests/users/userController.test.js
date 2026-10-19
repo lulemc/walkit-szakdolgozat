@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../../models/User.js";
+import { deleteUserData } from "../../services/accountCleanupService.js";
 
 import {
   getUserById,
@@ -25,12 +26,17 @@ vi.mock("jsonwebtoken", () => ({
   },
 }));
 
+vi.mock("../../services/accountCleanupService.js", () => ({
+  deleteUserData: vi.fn(),
+}));
+
 vi.mock("../../models/User.js", () => ({
   default: {
     find: vi.fn(),
     findById: vi.fn(),
     findByIdAndUpdate: vi.fn(),
     findByIdAndDelete: vi.fn(),
+    exists: vi.fn(),
   },
 }));
 
@@ -232,28 +238,48 @@ describe("User controller", () => {
 
   /* -------- deleteUser -------- */
 
-  it("deleteUser deletes user successfully", async () => {
+  it("deleteUser cleans up the user's social data, then deletes the account", async () => {
     const req = { params: { id: "123" } };
     const res = mockRes();
-
-    User.findByIdAndDelete.mockResolvedValue({ _id: "123" });
+    const order = [];
+    User.exists.mockResolvedValue({ _id: "123" });
+    deleteUserData.mockImplementation(async () => order.push("cleanup"));
+    User.findByIdAndDelete.mockImplementation(async () => order.push("delete"));
 
     await deleteUser(req, res);
 
+    expect(User.exists).toHaveBeenCalledWith({ _id: "123" });
+    expect(deleteUserData).toHaveBeenCalledWith("123");
     expect(User.findByIdAndDelete).toHaveBeenCalledWith("123");
+    expect(order).toEqual(["cleanup", "delete"]);
     expect(res.json).toHaveBeenCalledWith({ message: "User deleted" });
   });
 
-  it("deleteUser returns 404 if user not found", async () => {
+  it("deleteUser returns 404 if user not found, without cleaning anything up", async () => {
     const req = { params: { id: "123" } };
     const res = mockRes();
-
-    User.findByIdAndDelete.mockResolvedValue(null);
+    User.exists.mockResolvedValue(null);
 
     await deleteUser(req, res);
 
     expect(res.status).toHaveBeenCalledWith(404);
     expect(res.json).toHaveBeenCalledWith({ message: "User not found" });
+    expect(deleteUserData).not.toHaveBeenCalled();
+    expect(User.findByIdAndDelete).not.toHaveBeenCalled();
+  });
+
+  it("deleteUser keeps the account if the cleanup fails, so it can be retried", async () => {
+    const req = { params: { id: "123" } };
+    const res = mockRes();
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    User.exists.mockResolvedValue({ _id: "123" });
+    deleteUserData.mockRejectedValue(new Error("connection lost"));
+
+    await deleteUser(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ message: "Failed to delete user" });
+    expect(User.findByIdAndDelete).not.toHaveBeenCalled();
   });
 
   it("deleteUser returns 404 for an invalid id", async () => {
@@ -262,7 +288,7 @@ describe("User controller", () => {
 
     const castError = new Error("Cast to ObjectId failed");
     castError.name = "CastError";
-    User.findByIdAndDelete.mockRejectedValue(castError);
+    User.exists.mockRejectedValue(castError);
 
     await deleteUser(req, res);
 

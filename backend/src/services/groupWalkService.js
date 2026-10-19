@@ -4,6 +4,7 @@ import Route from "../models/Route.js";
 import { getFriendIds } from "./friendshipService.js";
 import { HttpError } from "../utils/httpError.js";
 import { sameId } from "../utils/ids.js";
+import { toUserSummary } from "../utils/userSummary.js";
 
 export const MAX_PARTICIPANTS = 20;
 
@@ -27,8 +28,6 @@ const ROUTE_SNAPSHOT_FIELDS = [
 ];
 
 /* ---------------- helpers ---------------- */
-
-const toUserSummary = (user) => (user ? { _id: user._id, name: user.name } : null);
 
 const findParticipant = (walk, userId) =>
   walk.participants.find((participant) => sameId(participant.user, userId));
