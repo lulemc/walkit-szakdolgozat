@@ -3,6 +3,7 @@ import Friendship from "../models/Friendship.js";
 import User from "../models/User.js";
 import { HttpError } from "../utils/httpError.js";
 import { sameId } from "../utils/ids.js";
+import { toUserSummary } from "../utils/userSummary.js";
 
 export const MAX_OUTGOING_PENDING = 50;
 
@@ -13,8 +14,6 @@ export const pairKey = (userA, userB) => [String(userA), String(userB)].sort().j
 
 const otherUser = (friendship, userId) =>
   sameId(friendship.requester, userId) ? friendship.recipient : friendship.requester;
-
-const toUserSummary = (user) => (user ? { _id: user._id, name: user.name } : null);
 
 const acceptedBy = (userId) => ({
   status: "accepted",

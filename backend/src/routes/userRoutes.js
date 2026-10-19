@@ -76,6 +76,7 @@ router.put("/:id", protect, requireSelf, updateUser);
  * /api/users/{id}:
  *   delete:
  *     summary: Delete user
+ *     description: Also deletes the user's friendships, comments and routes, cancels their upcoming group walks and removes them from other walks.
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []

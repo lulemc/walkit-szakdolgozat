@@ -96,6 +96,14 @@ describe("listComments", () => {
     ]);
   });
 
+  it("shows the author of an old comment whose account was deleted as 'Deleted user'", async () => {
+    GroupWalkComment.find.mockReturnValue(query([{ ...stored, author: null }]));
+
+    const [comment] = await listComments(me, walkId);
+
+    expect(comment.author).toEqual({ _id: null, name: "Deleted user" });
+  });
+
   it("loads older comments with before and limit", async () => {
     const q = query([]);
     GroupWalkComment.find.mockReturnValue(q);

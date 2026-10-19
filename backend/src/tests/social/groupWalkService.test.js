@@ -330,6 +330,29 @@ describe("getGroupWalk", () => {
     );
   });
 
+  it("shows an organiser or participant whose account was deleted as 'Deleted user'", async () => {
+    GroupWalk.findOne.mockReturnValue(
+      query({
+        _id: walkId,
+        scheduledAt: EARLIER,
+        status: "scheduled",
+        organiser: null,
+        route: savedRoute,
+        participants: [
+          { user: null, role: "organiser", status: "accepted" },
+          { user: { _id: me, name: "Me" }, role: "invitee", status: "accepted" },
+        ],
+      }),
+    );
+
+    const walk = await getGroupWalk(me, walkId);
+
+    expect(walk.organiser).toEqual({ _id: null, name: "Deleted user" });
+    expect(walk.participants[0].user).toEqual({ _id: null, name: "Deleted user" });
+    expect(walk.myStatus).toBe("accepted");
+    expect(walk.isOrganiser).toBe(false);
+  });
+
   it("returns 404 when I'm not part of the walk", async () => {
     GroupWalk.findOne.mockReturnValue(query(null));
 

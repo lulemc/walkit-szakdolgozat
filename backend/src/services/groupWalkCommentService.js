@@ -3,6 +3,7 @@ import GroupWalk from "../models/GroupWalk.js";
 import GroupWalkComment, { MAX_COMMENT_LENGTH } from "../models/GroupWalkComment.js";
 import { HttpError } from "../utils/httpError.js";
 import { sameId } from "../utils/ids.js";
+import { toUserSummary } from "../utils/userSummary.js";
 
 export const DEFAULT_PAGE_SIZE = 20;
 export const MAX_PAGE_SIZE = 50;
@@ -37,7 +38,7 @@ const parsePageOptions = ({ before, limit } = {}) => {
 
 const toComment = (comment) => ({
   _id: comment._id,
-  author: comment.author ? { _id: comment.author._id, name: comment.author.name } : null,
+  author: toUserSummary(comment.author),
   text: comment.text,
   createdAt: comment.createdAt,
 });
