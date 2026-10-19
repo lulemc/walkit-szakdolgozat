@@ -96,48 +96,6 @@ describe("authController - register", () => {
     expect(User.create).not.toHaveBeenCalled();
   });
 
-  it("looks up and stores the email in normalised form", async () => {
-    const req = {
-      body: { name: "John", email: "  John@Test.COM ", password: "secret" },
-    };
-    const res = mockRes();
-
-    User.findOne.mockResolvedValue(null);
-    bcrypt.hash.mockResolvedValue("hashed-password");
-    User.create.mockResolvedValue({
-      _id: "123",
-      name: "John",
-      email: "john@test.com",
-    });
-
-    await register(req, res);
-
-    expect(User.findOne).toHaveBeenCalledWith({ email: "john@test.com" });
-    expect(User.create).toHaveBeenCalledWith(
-      expect.objectContaining({ email: "john@test.com" }),
-    );
-    expect(res.status).toHaveBeenCalledWith(201);
-  });
-
-  it("rejects an email that differs from an existing one only by case", async () => {
-    const req = {
-      body: { name: "John", email: "JOHN@test.com", password: "secret" },
-    };
-    const res = mockRes();
-
-    User.findOne.mockImplementation(({ email }) =>
-      Promise.resolve(
-        email === "john@test.com" ? { _id: "existing-id", email } : null,
-      ),
-    );
-
-    await register(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ message: "User already exists" });
-    expect(User.create).not.toHaveBeenCalled();
-  });
-
   it("returns 500 on server error", async () => {
     const req = {
       body: {
@@ -225,27 +183,6 @@ describe("authController - login", () => {
       token: "test-login-token",
       user: { _id: "456", name: "John", email: "john@test.com" },
     });
-  });
-
-  it("finds the user by the normalised email", async () => {
-    const req = { body: { email: " John@Test.COM", password: "correctPassword" } };
-    const res = mockRes();
-
-    const userData = {
-      _id: "456",
-      name: "John",
-      email: "john@test.com",
-      passwordHash: "hashed-password",
-    };
-    User.findOne.mockResolvedValue({ ...userData, toObject: () => ({ ...userData }) });
-    bcrypt.compare.mockResolvedValue(true);
-
-    await login(req, res);
-
-    expect(User.findOne).toHaveBeenCalledWith({ email: "john@test.com" });
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ token: "test-login-token" }),
-    );
   });
 
   it("returns 400 if user does not exist", async () => {

@@ -1,7 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
-import { normalizeEmail } from "../utils/email.js";
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -12,8 +11,7 @@ const generateToken = (id) => {
 // REGISTER
 export const register = async (req, res) => {
   try {
-    const { name, password } = req.body;
-    const email = normalizeEmail(req.body.email);
+    const { name, email, password } = req.body;
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -44,8 +42,7 @@ export const register = async (req, res) => {
 // LOGIN
 export const login = async (req, res) => {
   try {
-    const { password } = req.body;
-    const email = normalizeEmail(req.body.email);
+    const { email, password } = req.body;
 
     const user = await User.findOne({ email });
     if (!user) {

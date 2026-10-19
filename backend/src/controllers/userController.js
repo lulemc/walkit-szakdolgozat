@@ -1,9 +1,5 @@
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
-import { normalizeEmail } from "../utils/email.js";
-import { sendError } from "../utils/httpError.js";
-import * as userSearchService from "../services/userSearchService.js";
-import { deleteUserData } from "../services/accountCleanupService.js";
 import jwt from "jsonwebtoken";
 
 export const getUserById = async (req, res) => {
@@ -28,8 +24,7 @@ export const updateUser = async (req, res) => {
     const updateData = {};
 
     if (req.body.name !== undefined) updateData.name = req.body.name;
-    if (req.body.email !== undefined)
-      updateData.email = normalizeEmail(req.body.email);
+    if (req.body.email !== undefined) updateData.email = req.body.email;
     if (req.body.dateOfBirth !== undefined)
       updateData.dateOfBirth = req.body.dateOfBirth;
     if (req.body.sex !== undefined) updateData.sex = req.body.sex;
@@ -53,28 +48,19 @@ export const updateUser = async (req, res) => {
   }
 };
 
-/**
- * Deletes the account. The user's friendships, comments, routes and walk
- * participation are cleaned up first; if that fails, the account is kept so
- * the deletion can be retried instead of leaving data nobody can reach.
- */
 export const deleteUser = async (req, res) => {
   try {
-    const userId = req.params.id;
+    const user = await User.findByIdAndDelete(req.params.id);
 
-    if (!(await User.exists({ _id: userId }))) {
+    if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-
-    await deleteUserData(userId);
-    await User.findByIdAndDelete(userId);
 
     res.json({ message: "User deleted" });
   } catch (error) {
     if (error.name === "CastError") {
       return res.status(404).json({ message: "User not found" });
     }
-    console.error("Failed to delete user:", error);
     res.status(500).json({ message: "Failed to delete user" });
   }
 };
@@ -138,17 +124,5 @@ export const changePassword = async (req, res) => {
     res.status(500).json({
       message: "Failed to change password. Please try again.",
     });
-  }
-};
-
-/**
- * Search other users by name or exact email, for adding friends
- */
-export const searchUsers = async (req, res) => {
-  try {
-    const users = await userSearchService.searchUsers(req.user.id, req.query.q);
-    res.json({ success: true, data: users });
-  } catch (error) {
-    sendError(res, error, "Failed to search users");
   }
 };

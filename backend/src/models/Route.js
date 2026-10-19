@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 
-// Shared with the route copy stored in a GroupWalk
-export const coordinateSchema = new mongoose.Schema(
+const coordinateSchema = new mongoose.Schema(
   {
     latitude: {
       type: Number,
@@ -15,7 +14,7 @@ export const coordinateSchema = new mongoose.Schema(
   { _id: false },
 );
 
-export const locationSchema = new mongoose.Schema(
+const locationSchema = new mongoose.Schema(
   {
     latitude: {
       type: Number,
