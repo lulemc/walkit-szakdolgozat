@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const userSchema = new mongoose.Schema(
   {
     name: String,
-    email: { type: String, unique: true, lowercase: true, trim: true },
+    email: { type: String, unique: true },
     passwordHash: String,
     dateOfBirth: { type: Date },
     sex: { type: String, enum: ["male", "female", "other"] },
