@@ -1,4 +1,5 @@
-import api  from './api';
+import api from './api';
+import type { ApiResponse } from '@/types/api';
 
 export interface Coordinates {
   latitude: number;
@@ -56,13 +57,8 @@ export interface Route {
   updatedAt: string;
 }
 
-/** The backend's response envelope for /routes endpoints */
-export interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
-  count?: number;
-}
+// Kept as an export from here so existing imports keep working
+export type { ApiResponse } from '@/types/api';
 
 class RouteService {
   /**
