@@ -62,3 +62,22 @@ describe('FriendMultiSelect', () => {
     expect(await findByRole('checkbox', { name: 'Invite Ann' })).toBeTruthy();
   });
 });
+
+describe('FriendMultiSelect with excluded friends', () => {
+  it('leaves out the excluded friends', async () => {
+    const { findByRole, queryByRole } = renderWithTheme(
+      <FriendMultiSelect selectedIds={[]} onChange={jest.fn()} excludeIds={['u2']} />,
+    );
+
+    expect(await findByRole('checkbox', { name: 'Invite Bob' })).toBeTruthy();
+    expect(queryByRole('checkbox', { name: 'Invite Ann' })).toBeNull();
+  });
+
+  it('says when every friend is already in', async () => {
+    const { findByText } = renderWithTheme(
+      <FriendMultiSelect selectedIds={[]} onChange={jest.fn()} excludeIds={['u2', 'u3']} />,
+    );
+
+    expect(await findByText('All your friends are already invited.')).toBeTruthy();
+  });
+});

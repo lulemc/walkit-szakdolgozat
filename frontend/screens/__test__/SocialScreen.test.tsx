@@ -3,6 +3,7 @@ import { BackHandler } from 'react-native';
 import { act, fireEvent } from '@testing-library/react-native';
 import { renderWithTheme } from '@/components/Statistics/__test__/renderWithTheme';
 import { makeRoute } from '@/components/Social/__test__/routeFixtures';
+import { makeWalkDetail, makeWalkSummary } from '@/components/Social/__test__/groupWalkFixtures';
 import { friendService } from '@/services/friendService';
 import { groupWalkService } from '@/services/groupWalkService';
 import { routeService } from '@/services/routeService';
@@ -16,7 +17,10 @@ jest.mock('@/services/friendService', () => ({
   friendService: { listFriends: jest.fn() },
 }));
 jest.mock('@/services/groupWalkService', () => ({
-  groupWalkService: { create: jest.fn() },
+  groupWalkService: { create: jest.fn(), list: jest.fn(), get: jest.fn() },
+}));
+jest.mock('@/context/SocialSummaryProvider', () => ({
+  useSocialSummary: () => ({ refresh: jest.fn().mockResolvedValue(undefined) }),
 }));
 const getUserRoutes = jest.spyOn(routeService, 'getUserRoutes');
 const getFavoriteRoutes = jest.spyOn(routeService, 'getFavoriteRoutes');
@@ -56,6 +60,12 @@ beforeEach(() => {
     { friendshipId: 'f1', user: { _id: 'u2', name: 'Ann' }, since: '2026-10-01T10:00:00Z' },
   ]);
   (groupWalkService.create as jest.Mock).mockResolvedValue({ _id: 'w9' });
+  (groupWalkService.list as jest.Mock).mockImplementation(async (scope: string) =>
+    scope === 'upcoming' ? [makeWalkSummary({ _id: 'w1', title: 'Sunday stroll', myStatus: 'accepted' })] : [],
+  );
+  (groupWalkService.get as jest.Mock).mockImplementation(async (walkId: string) =>
+    makeWalkDetail({ _id: walkId, title: `Walk ${walkId}` }),
+  );
   jest.spyOn(BackHandler, 'addEventListener').mockImplementation((_event, handler) => {
     backHandler = handler as () => boolean;
     return { remove: removeBackHandler };
@@ -63,31 +73,39 @@ beforeEach(() => {
 });
 
 describe('SocialScreen', () => {
-  it('opens on the Walks view and switches to Friends', () => {
-    const { getByText, queryByText } = renderWithTheme(<SocialScreen />);
+  it('opens on the Walks view and switches to Friends', async () => {
+    const { getByText, queryByText, findByText } = renderWithTheme(<SocialScreen />);
 
-    expect(getByText('Your group walks will appear here.')).toBeTruthy();
+    expect(await findByText('Sunday stroll')).toBeTruthy();
 
     fireEvent.press(getByText('Friends'));
 
     expect(getByText('Friends section')).toBeTruthy();
-    expect(queryByText('Your group walks will appear here.')).toBeNull();
+    expect(queryByText('Sunday stroll')).toBeNull();
     // The hub's title and switch stay visible above the section
     expect(getByText('Social')).toBeTruthy();
     expect(getByText('Walks')).toBeTruthy();
   });
 
-  it('shows a walk detail view with a way back to the hub', () => {
-    const { getByText, queryByText } = renderWithTheme(
-      <SocialScreen initialView={{ screen: 'walkDetail', walkId: 'w1' }} />,
+  it('shows a walk detail view with a way back to the hub', async () => {
+    const { getByText, queryByText, findByText } = renderWithTheme(
+      <SocialScreen initialView={{ screen: 'walkDetail', walkId: 'w7' }} />,
     );
 
-    expect(getByText('Group walk')).toBeTruthy();
+    expect(await findByText('Walk w7')).toBeTruthy();
 
     fireEvent.press(getByText('Back'));
 
-    expect(getByText('Your group walks will appear here.')).toBeTruthy();
-    expect(queryByText('Group walk')).toBeNull();
+    expect(await findByText('Sunday stroll')).toBeTruthy();
+    expect(queryByText('Walk w7')).toBeNull();
+  });
+
+  it('opens a walk from the list', async () => {
+    const { findByLabelText, findByText } = renderWithTheme(<SocialScreen />);
+
+    fireEvent.press(await findByLabelText(/^Sunday stroll/));
+
+    expect(await findByText('Walk w1')).toBeTruthy();
   });
 
   it("goes back to the hub on Android's back button", async () => {
@@ -102,18 +120,20 @@ describe('SocialScreen', () => {
     });
 
     expect(handled).toBe(true);
-    expect(getByText('Your group walks will appear here.')).toBeTruthy();
+    expect(getByText('New group walk')).toBeTruthy();
+    await findByText('Sunday stroll');
   });
 
-  it("leaves Android's back button to the system on the hub", () => {
-    renderWithTheme(<SocialScreen />);
+  it("leaves Android's back button to the system on the hub", async () => {
+    const { findByText } = renderWithTheme(<SocialScreen />);
+    await findByText('Sunday stroll');
 
     expect(backHandler()).toBe(false);
   });
 
-  it('walks a route in the existing walk screen and returns to the hub afterwards', () => {
+  it('walks a route in the existing walk screen and returns to the hub afterwards', async () => {
     const route = { _id: 'w1', coordinates: [] } as unknown as Route;
-    const { getByText } = renderWithTheme(
+    const { getByText, findByText } = renderWithTheme(
       <SocialScreen initialView={{ screen: 'activeWalk', route }} />,
     );
 
@@ -121,7 +141,8 @@ describe('SocialScreen', () => {
 
     fireEvent.press(getByText('Active walk'));
 
-    expect(getByText('Your group walks will appear here.')).toBeTruthy();
+    expect(getByText('New group walk')).toBeTruthy();
+    await findByText('Sunday stroll');
   });
 
   it('stops listening to the back button on unmount', () => {
@@ -167,7 +188,7 @@ describe('SocialScreen', () => {
       fireEvent.press(await findByRole('checkbox', { name: 'Invite Ann' }));
       fireEvent.press(getByRole('button', { name: 'Create group walk' }));
 
-      expect(await findByText('Group walk')).toBeTruthy();
+      expect(await findByText('Walk w9')).toBeTruthy();
       expect(groupWalkService.create).toHaveBeenCalledWith(
         expect.objectContaining({ routeId: 'r1', inviteeIds: ['u2'] }),
       );
@@ -181,6 +202,7 @@ describe('SocialScreen', () => {
       fireEvent.press(await findByText('Cancel'));
 
       expect(getByText('New group walk')).toBeTruthy();
+      await findByText('Sunday stroll');
     });
   });
 });

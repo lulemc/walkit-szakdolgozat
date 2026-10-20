@@ -3,7 +3,7 @@ import { BackHandler } from "react-native";
 import { ScreenContainer } from "@/components";
 import { CreateGroupWalk } from "@/components/Social/CreateGroupWalk";
 import { SocialHub } from "@/components/Social/SocialHub";
-import { SocialPlaceholder } from "@/components/Social/SocialPlaceholder";
+import { GroupWalkDetailView } from "@/components/Social/GroupWalkDetailView";
 import ActiveWalkScreen from "@/screens/ActiveWalkScreen";
 import {
   SocialNavigationProvider,
@@ -50,6 +50,11 @@ function SocialViews() {
   // The hub's sections scroll themselves (for pull-to-refresh)
   if (view.screen === "hub") return <SocialHub />;
 
+  // The detail view scrolls itself (for pull-to-refresh)
+  if (view.screen === "walkDetail") {
+    return <GroupWalkDetailView key={view.walkId} walkId={view.walkId} onBack={goBack} />;
+  }
+
   // The walk screen manages its own full-screen layout
   if (view.screen === "activeWalk") {
     return <ActiveWalkScreen route={view.route} onEndWalk={goBack} />;
@@ -57,23 +62,13 @@ function SocialViews() {
 
   return (
     <ScreenContainer scrollable style={{ padding: 16 }}>
-      {view.screen === "walkDetail" && (
-        <SocialPlaceholder
-          icon="walk-outline"
-          title="Group walk"
-          message="The walk's details will appear here."
-          onBack={goBack}
-        />
-      )}
-      {view.screen === "createWalk" && (
-        <CreateGroupWalk
-          // A new route from the planner starts the flow over
-          key={view.route?._id}
-          initialRoute={view.route}
-          onCreated={(walk) => navigate({ screen: "walkDetail", walkId: walk._id })}
-          onCancel={goBack}
-        />
-      )}
+      <CreateGroupWalk
+        // A new route from the planner starts the flow over
+        key={view.route?._id}
+        initialRoute={view.route}
+        onCreated={(walk) => navigate({ screen: "walkDetail", walkId: walk._id })}
+        onCancel={goBack}
+      />
     </ScreenContainer>
   );
 }
