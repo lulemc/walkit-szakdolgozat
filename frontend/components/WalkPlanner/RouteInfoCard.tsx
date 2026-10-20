@@ -10,12 +10,15 @@ interface RouteInfoCardProps {
   route: Route;
   onClose: () => void;
   onStartWalk: () => void;
+  /** Shows a "Plan group walk" button; leave out where group walks aren't available */
+  onPlanGroupWalk?: (route: Route) => void;
 }
 
 const RouteInfoCard: React.FC<RouteInfoCardProps> = ({
   route,
   onClose,
   onStartWalk,
+  onPlanGroupWalk,
 }) => {
   const distance = routeService.formatDistance(route.totalDistance);
   const duration = routeService.formatDuration(route.estimatedDuration);
@@ -189,6 +192,16 @@ const RouteInfoCard: React.FC<RouteInfoCardProps> = ({
         >
           Start Walk
         </PrimaryButton>
+        {onPlanGroupWalk && (
+          <PrimaryButton
+            mode="outlined"
+            onPress={() => onPlanGroupWalk(route)}
+            style={styles.groupWalkButton}
+            icon="people"
+          >
+            Plan group walk
+          </PrimaryButton>
+        )}
       </Card.Content>
     </Card>
   );
@@ -303,6 +316,9 @@ const styles = StyleSheet.create({
   },
   startButton: {
     marginTop: 4,
+  },
+  groupWalkButton: {
+    marginTop: 8,
   },
 });
 

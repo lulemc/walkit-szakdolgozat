@@ -1,0 +1,36 @@
+import type { Route } from '@/services/routeService';
+
+/** A saved route with sensible defaults; override what the test cares about */
+export const makeRoute = (overrides: Partial<Route> = {}): Route => ({
+  _id: 'r1',
+  userId: 'u1',
+  name: null,
+  type: 'circular',
+  startLocation: { latitude: 47.5, longitude: 19.04, address: 'Budapest' },
+  endLocation: { latitude: 47.5, longitude: 19.04, address: 'Budapest' },
+  coordinates: [],
+  totalDistance: 5200,
+  estimatedDuration: 65,
+  preferenceScore: 70,
+  preferences: {
+    parks: false,
+    waterfront: false,
+    avoidHighways: false,
+    scenic: false,
+    uphill: false,
+    mountain: false,
+    quietStreets: false,
+    beach: false,
+  },
+  elevationGain: 0,
+  elevationLoss: 0,
+  maxElevation: null,
+  minElevation: null,
+  isFavorite: false,
+  favoritedAt: null,
+  lastWalkedAt: null,
+  walkCount: 0,
+  createdAt: '2026-10-10T10:00:00.000Z',
+  updatedAt: '2026-10-10T10:00:00.000Z',
+  ...overrides,
+});

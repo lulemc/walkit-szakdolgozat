@@ -1,15 +1,29 @@
 import React from 'react';
-import { act, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, waitFor } from '@testing-library/react-native';
 import { BottomNavigation } from 'react-native-paper';
 import { renderWithTheme } from '@/components/Statistics/__test__/renderWithTheme';
 import { groupWalkService } from '@/services/groupWalkService';
 import { Navigation } from '../Navigation';
 
 // The tab screens themselves aren't under test here
-jest.mock('@/app/(app)/home', () => () => null);
+// Home asks to open the Social tab's create-walk view, as "Plan group walk" does
+jest.mock('@/app/(app)/home', () =>
+  function MockHome() {
+    const { Button } = jest.requireActual('react-native');
+    const { useSocialNavigation } = jest.requireActual('@/screens/social/socialNavigation');
+    const social = useSocialNavigation();
+    return <Button title="Plan from home" onPress={() => social.open({ screen: 'createWalk' })} />;
+  },
+);
 jest.mock('@/app/(app)/statistics', () => () => null);
 jest.mock('@/app/(app)/settings', () => () => null);
-jest.mock('@/app/(app)/social', () => () => null);
+jest.mock('@/app/(app)/social', () =>
+  function MockSocial() {
+    const { Text } = jest.requireActual('react-native');
+    const { useSocialNavigation } = jest.requireActual('@/screens/social/socialNavigation');
+    return <Text>{`Social view: ${useSocialNavigation().view.screen}`}</Text>;
+  },
+);
 
 jest.mock('@/services/groupWalkService', () => ({
   groupWalkService: { getSummary: jest.fn() },
@@ -71,5 +85,16 @@ describe('Navigation', () => {
     await act(async () => tabs.props.onIndexChange(keys.indexOf('social')));
     await waitFor(() => expect(getSummary).toHaveBeenCalledTimes(2));
     expect(await findByRole('button', { name: 'Social', selected: true })).toBeTruthy();
+  });
+
+  it('lets another tab open a Social view, switching to the Social tab', async () => {
+    getSummary.mockResolvedValue({ pendingFriendRequests: 0, pendingInvitations: 0 });
+    const { findByRole, getByRole, findByText } = renderNavigation();
+    await findByRole('button', { name: 'Social' });
+
+    await act(async () => fireEvent.press(getByRole('button', { name: 'Plan from home' })));
+
+    expect(await findByRole('button', { name: 'Social', selected: true })).toBeTruthy();
+    expect(await findByText('Social view: createWalk')).toBeTruthy();
   });
 });

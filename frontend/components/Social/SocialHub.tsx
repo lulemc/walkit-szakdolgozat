@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { SegmentedButtons } from "react-native-paper";
-import { ScreenContainer } from "@/components";
+import { PrimaryButton, ScreenContainer } from "@/components";
+import { useSocialNavigation } from "@/screens/social/socialNavigation";
 import { CustomText } from "../CustomText";
 import { FriendsSection } from "./FriendsSection";
 import { SocialPlaceholder } from "./SocialPlaceholder";
@@ -19,6 +20,7 @@ const SECTION_BUTTONS = [
  */
 export const SocialHub: React.FC = () => {
   const [section, setSection] = useState<HubSection>("walks");
+  const { navigate } = useSocialNavigation();
 
   const header = (
     <View style={styles.header}>
@@ -40,6 +42,9 @@ export const SocialHub: React.FC = () => {
   return (
     <ScreenContainer scrollable style={styles.screen} contentContainerStyle={styles.content}>
       {header}
+      <PrimaryButton icon="add" onPress={() => navigate({ screen: "createWalk" })}>
+        New group walk
+      </PrimaryButton>
       <SocialPlaceholder icon="walk-outline" message="Your group walks will appear here." />
     </ScreenContainer>
   );
