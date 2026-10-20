@@ -125,6 +125,9 @@ Required variables:
 - `EXPO_PUBLIC_API_URL`: Backend API URL (e.g., `http://192.168.0.96:4000/api`)
 - `EXPO_PUBLIC_GOOGLE_PLACES_API_KEY`: Google Places API key for location search
 - `EXPO_PUBLIC_USE_MOCK_HEALTH`: demo health data unless set to `"false"`; set `false` in `.env` / EAS env for real health data in dev builds
+- `GOOGLE_MAPS_IOS_KEY`, `GOOGLE_MAPS_ANDROID_KEY`: Google Maps SDK keys for native builds, read by `app.config.ts` at build time (EAS environment variables for EAS builds). Never put keys in `app.json`
+
+`frontend/.env.example` lists every variable.
 
 ## Testing
 
