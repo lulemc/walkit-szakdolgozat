@@ -10,6 +10,16 @@ describe('UserService', () => {
     jest.clearAllMocks();
   });
 
+  describe('searchUsers', () => {
+    it('searches by name or email and returns the matches', async () => {
+      const results = [{ _id: 'u2', name: 'Ann', relationship: 'none' }];
+      mockedApi.get.mockResolvedValue({ data: { success: true, data: results } });
+
+      await expect(UserService.searchUsers('ann')).resolves.toEqual(results);
+      expect(mockedApi.get).toHaveBeenCalledWith('/users/search', { params: { q: 'ann' } });
+    });
+  });
+
   describe('getById', () => {
     it('should get user by id successfully', async () => {
       const mockUser = { _id: '123', name: 'John Doe', email: 'john@test.com' };

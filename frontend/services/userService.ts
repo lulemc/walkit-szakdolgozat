@@ -1,4 +1,6 @@
 import api from "./api";
+import type { ApiResponse } from "@/types/api";
+import type { UserSearchResult } from "@/types/social";
 
 export interface UpdateUserData {
   name?: string;
@@ -14,6 +16,14 @@ export interface ChangePasswordData {
   newPassword: string;
 }
 const UserService = {
+  // Search other users by name, or by exact email when the query contains "@"
+  searchUsers: async (q: string): Promise<UserSearchResult[]> => {
+    const response = await api.get<ApiResponse<UserSearchResult[]>>("/users/search", {
+      params: { q },
+    });
+    return response.data.data;
+  },
+
   // GET user by ID
   getById: async (id:string) => {
     const response = await api.get(`/users/${id}`);

@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { SegmentedButtons } from "react-native-paper";
+import { ScreenContainer } from "@/components";
 import { CustomText } from "../CustomText";
+import { FriendsSection } from "./FriendsSection";
 import { SocialPlaceholder } from "./SocialPlaceholder";
 
 type HubSection = "walks" | "friends";
@@ -11,33 +13,47 @@ const SECTION_BUTTONS = [
   { value: "friends", label: "Friends", icon: "people" },
 ];
 
-/** The Social tab's start view: group walks and friends */
+/**
+ * The Social tab's start view: group walks and friends. Each section owns its
+ * scroll view (for pull-to-refresh) and shows this header at the top.
+ */
 export const SocialHub: React.FC = () => {
   const [section, setSection] = useState<HubSection>("walks");
 
-  return (
-    <View style={styles.container}>
+  const header = (
+    <View style={styles.header}>
       <CustomText variant="headlineMedium" style={styles.title}>
         Social
       </CustomText>
-
       <SegmentedButtons
         value={section}
         onValueChange={(value) => setSection(value as HubSection)}
         buttons={SECTION_BUTTONS}
       />
-
-      {section === "walks" ? (
-        <SocialPlaceholder icon="walk-outline" message="Your group walks will appear here." />
-      ) : (
-        <SocialPlaceholder icon="people-outline" message="Your friends will appear here." />
-      )}
     </View>
+  );
+
+  if (section === "friends") {
+    return <FriendsSection header={header} />;
+  }
+
+  return (
+    <ScreenContainer scrollable style={styles.screen} contentContainerStyle={styles.content}>
+      {header}
+      <SocialPlaceholder icon="walk-outline" message="Your group walks will appear here." />
+    </ScreenContainer>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
+    padding: 16,
+  },
+  content: {
+    gap: 16,
+    paddingBottom: 32,
+  },
+  header: {
     gap: 16,
   },
   title: {

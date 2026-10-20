@@ -15,6 +15,19 @@ jest.mock('@/screens/ActiveWalkScreen', () => ({
   },
 }));
 
+// The Friends section has its own tests; here it only needs to show up
+jest.mock('@/components/Social/FriendsSection', () => ({
+  FriendsSection: ({ header }: { header?: React.ReactNode }) => {
+    const { Text: MockText, View: MockView } = jest.requireActual('react-native');
+    return (
+      <MockView>
+        {header}
+        <MockText>Friends section</MockText>
+      </MockView>
+    );
+  },
+}));
+
 let backHandler: () => boolean;
 const removeBackHandler = jest.fn();
 
@@ -34,8 +47,11 @@ describe('SocialScreen', () => {
 
     fireEvent.press(getByText('Friends'));
 
-    expect(getByText('Your friends will appear here.')).toBeTruthy();
+    expect(getByText('Friends section')).toBeTruthy();
     expect(queryByText('Your group walks will appear here.')).toBeNull();
+    // The hub's title and switch stay visible above the section
+    expect(getByText('Social')).toBeTruthy();
+    expect(getByText('Walks')).toBeTruthy();
   });
 
   it('shows a walk detail view with a way back to the hub', () => {

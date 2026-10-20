@@ -33,6 +33,15 @@ export default function SocialScreen({ initialView = HUB }: SocialScreenProps) {
     return () => subscription.remove();
   }, [view, goBack]);
 
+  // The hub's sections scroll themselves (for pull-to-refresh)
+  if (view.screen === "hub") {
+    return (
+      <SocialNavigationContext.Provider value={navigation}>
+        <SocialHub />
+      </SocialNavigationContext.Provider>
+    );
+  }
+
   // The walk screen manages its own full-screen layout
   if (view.screen === "activeWalk") {
     return (
@@ -45,7 +54,6 @@ export default function SocialScreen({ initialView = HUB }: SocialScreenProps) {
   return (
     <SocialNavigationContext.Provider value={navigation}>
       <ScreenContainer scrollable style={{ padding: 16 }}>
-        {view.screen === "hub" && <SocialHub />}
         {view.screen === "walkDetail" && (
           <SocialPlaceholder
             icon="walk-outline"
