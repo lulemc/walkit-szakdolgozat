@@ -3,6 +3,7 @@ import Friendship from "../models/Friendship.js";
 import { HttpError } from "../utils/httpError.js";
 import { normalizeEmail } from "../utils/email.js";
 import { pairKey } from "./friendshipService.js";
+import { displayName } from "../utils/userSummary.js";
 
 export const MAX_RESULTS = 20;
 export const MIN_QUERY_LENGTH = 2;
@@ -50,7 +51,7 @@ export const searchUsers = async (userId, rawQuery) => {
     const friendship = byPair.get(pairKey(userId, user._id));
     return {
       _id: user._id,
-      name: user.name,
+      name: displayName(user),
       relationship: relationshipOf(friendship, userId),
       ...(friendship && { friendshipId: friendship._id }),
     };

@@ -71,6 +71,32 @@ describe("authController - register", () => {
     });
   });
 
+  it.each([
+    ["name", { email: "john@test.com", password: "secret" }],
+    ["blank name", { name: "   ", email: "john@test.com", password: "secret" }],
+    ["email", { name: "John", password: "secret" }],
+    ["password", { name: "John", email: "john@test.com" }],
+  ])("returns 400 without a %s", async (_missing, body) => {
+    const res = mockRes();
+
+    await register({ body }, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ message: "Name, email and password are required" });
+    expect(User.create).not.toHaveBeenCalled();
+  });
+
+  it("stores the name without surrounding spaces", async () => {
+    const res = mockRes();
+    User.findOne.mockResolvedValue(null);
+    bcrypt.hash.mockResolvedValue("hashed-password");
+    User.create.mockResolvedValue({ _id: "123", name: "John", email: "john@test.com" });
+
+    await register({ body: { name: "  John ", email: "john@test.com", password: "secret" } }, res);
+
+    expect(User.create).toHaveBeenCalledWith(expect.objectContaining({ name: "John" }));
+  });
+
   it("returns 400 if user already exists", async () => {
     const req = {
       body: {

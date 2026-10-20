@@ -38,6 +38,15 @@ const swaggerSpec = swaggerJSDoc({
             password: { type: "string" },
           },
         },
+        RegisterRequest: {
+          type: "object",
+          required: ["name", "email", "password"],
+          properties: {
+            name: { type: "string", description: "Shown to other users, e.g. in friend search" },
+            email: { type: "string" },
+            password: { type: "string" },
+          },
+        },
         AuthResponse: {
           type: "object",
           properties: {
@@ -376,14 +385,17 @@ const swaggerSpec = swaggerJSDoc({
             required: true,
             content: {
               "application/json": {
-                schema: { $ref: "#/components/schemas/AuthRequest" },
-                example: { email: "test@example.com", password: "123456" },
+                schema: { $ref: "#/components/schemas/RegisterRequest" },
+                example: { name: "Test User", email: "test@example.com", password: "123456" },
               },
             },
           },
           responses: {
             201: {
               description: "User registered successfully",
+            },
+            400: {
+              description: "Name, email or password missing, or the user already exists",
             },
           },
         },

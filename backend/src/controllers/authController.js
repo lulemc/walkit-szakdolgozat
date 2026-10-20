@@ -12,8 +12,14 @@ const generateToken = (id) => {
 // REGISTER
 export const register = async (req, res) => {
   try {
-    const { name, password } = req.body;
+    const { password } = req.body;
+    const name = typeof req.body.name === "string" ? req.body.name.trim() : "";
     const email = normalizeEmail(req.body.email);
+
+    // The app's form asks for all three; this also covers direct API calls
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: "Name, email and password are required" });
+    }
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {

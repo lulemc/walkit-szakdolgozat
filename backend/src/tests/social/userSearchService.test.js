@@ -133,3 +133,14 @@ describe("searchUsers - relationship", () => {
     expect(Friendship.find).not.toHaveBeenCalled();
   });
 });
+
+describe("searchUsers - names", () => {
+  it("gives accounts without a name a placeholder name", async () => {
+    const other = id();
+    User.find.mockReturnValue(query([{ _id: other }]));
+
+    const results = await searchUsers(me, "someone@x.com");
+
+    expect(results[0].name).toBe("Unnamed user");
+  });
+});
