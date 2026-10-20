@@ -106,11 +106,8 @@ describe("authMiddleware - protect", () => {
     await protect(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: "Not authorized, token failed",
-      }),
-    );
+    // Without the library's own error text
+    expect(res.json).toHaveBeenCalledWith({ message: "Not authorized, token failed" });
     expect(next).not.toHaveBeenCalled();
   });
 

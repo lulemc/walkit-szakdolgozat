@@ -27,10 +27,8 @@ export const protect = async (req, res, next) => {
       }
 
       next();
-    } catch (err) {
-      return res
-        .status(401)
-        .json({ message: "Not authorized, token failed", error: err.message });
+    } catch {
+      return res.status(401).json({ message: "Not authorized, token failed" });
     }
   } else {
     return res.status(401).json({ message: "Not authorized, no token" });

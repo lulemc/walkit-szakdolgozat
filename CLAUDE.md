@@ -119,6 +119,7 @@ Required variables:
 - `ORS_API_KEY`: OpenRouteService API key for route generation
 - `PORT`: Server port (defaults to 4000)
 - `NODE_ENV`: Environment (development/test/production)
+- `CORS_ORIGINS` (optional): comma-separated browser origins allowed to call the API
 - `TRUST_PROXY` (optional): number of proxies in front of the API when hosted (e.g. `1`), so rate limits see each client's own IP
 
 ### Frontend (`frontend/.env`)
@@ -158,7 +159,7 @@ Backend exposes three main route groups:
 - `/api/users`: User management endpoints
 - `/api/routes`: Route generation and retrieval endpoints
 
-CORS configured for `localhost:8081`, `localhost:19006`, and `localhost:4000`
+CORS allows `localhost:8081`, `localhost:19006` and `localhost:4000` by default, or the comma-separated `CORS_ORIGINS` env list; other browser origins get 403 (the mobile app sends no origin). Swagger UI is not served when `NODE_ENV=production`
 
 ## Important Notes
 

@@ -2,6 +2,7 @@
 // UPDATED: Added favorites endpoints with Swagger documentation
 
 import express from "express";
+import mongoose from "mongoose";
 import {
   generateRoute,
   getUserRoutes,
@@ -17,6 +18,14 @@ import { protect } from "../middleware/authMiddleware.js";
 import { routeGenerationLimiter } from "../middleware/rateLimit.js";
 
 const router = express.Router();
+
+// An id that can't exist is "not found", without asking the database
+router.param("routeId", (req, res, next, routeId) => {
+  if (!mongoose.isValidObjectId(routeId)) {
+    return res.status(404).json({ success: false, message: "Route not found" });
+  }
+  next();
+});
 
 /**
  * @swagger
