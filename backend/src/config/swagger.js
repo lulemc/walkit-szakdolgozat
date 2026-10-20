@@ -42,9 +42,13 @@ const swaggerSpec = swaggerJSDoc({
           type: "object",
           required: ["name", "email", "password"],
           properties: {
-            name: { type: "string", description: "Shown to other users, e.g. in friend search" },
-            email: { type: "string" },
-            password: { type: "string" },
+            name: {
+              type: "string",
+              maxLength: 50,
+              description: "Shown to other users, e.g. in friend search",
+            },
+            email: { type: "string", format: "email" },
+            password: { type: "string", minLength: 8 },
           },
         },
         AuthResponse: {
@@ -386,7 +390,7 @@ const swaggerSpec = swaggerJSDoc({
             content: {
               "application/json": {
                 schema: { $ref: "#/components/schemas/RegisterRequest" },
-                example: { name: "Test User", email: "test@example.com", password: "123456" },
+                example: { name: "Test User", email: "test@example.com", password: "secret123" },
               },
             },
           },

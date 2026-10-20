@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import { normalizeEmail } from "../utils/email.js";
 import { sendError } from "../utils/httpError.js";
+import { emailProblem, nameProblem, passwordProblem } from "../utils/validation.js";
 import * as userSearchService from "../services/userSearchService.js";
 import { deleteUserData } from "../services/accountCleanupService.js";
 import jwt from "jsonwebtoken";
@@ -25,11 +26,40 @@ export const getUserById = async (req, res) => {
 
 export const updateUser = async (req, res) => {
   try {
+    const userId = req.params.id;
     const updateData = {};
 
-    if (req.body.name !== undefined) updateData.name = req.body.name;
-    if (req.body.email !== undefined)
-      updateData.email = normalizeEmail(req.body.email);
+    if (req.body.name !== undefined) {
+      const problem = nameProblem(req.body.name);
+      if (problem) return res.status(400).json({ message: problem });
+      updateData.name = req.body.name.trim();
+    }
+
+    if (req.body.email !== undefined) {
+      const email = normalizeEmail(req.body.email);
+      const problem = emailProblem(email);
+      if (problem) return res.status(400).json({ message: problem });
+
+      const user = await User.findById(userId);
+      if (!user) return res.status(404).json({ message: "User not found" });
+
+      // A new email takes over the login, so a stolen token alone mustn't be enough
+      if (email !== user.email) {
+        if (!req.body.currentPassword) {
+          return res
+            .status(400)
+            .json({ message: "Enter your current password to change your email" });
+        }
+        if (!(await bcrypt.compare(req.body.currentPassword, user.passwordHash))) {
+          return res.status(401).json({ message: "Current password is incorrect" });
+        }
+        if (await User.findOne({ email, _id: { $ne: userId } }).select("_id")) {
+          return res.status(409).json({ message: "Email already in use" });
+        }
+        updateData.email = email;
+      }
+    }
+
     if (req.body.dateOfBirth !== undefined)
       updateData.dateOfBirth = req.body.dateOfBirth;
     if (req.body.sex !== undefined) updateData.sex = req.body.sex;
@@ -38,7 +68,7 @@ export const updateUser = async (req, res) => {
     if (req.body.activityLevel !== undefined)
       updateData.activityLevel = req.body.activityLevel;
 
-    const user = await User.findByIdAndUpdate(req.params.id, updateData, {
+    const user = await User.findByIdAndUpdate(userId, updateData, {
       new: true,
       runValidators: true,
     }).select("-passwordHash");
@@ -49,7 +79,20 @@ export const updateUser = async (req, res) => {
 
     res.json({ message: "User updated successfully", user });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    if (error.name === "CastError") {
+      return res.status(404).json({ message: "User not found" });
+    }
+    if (error.name === "ValidationError") {
+      // The model's own message (e.g. "Height must be between 50 and 300 cm")
+      const [first] = Object.values(error.errors);
+      return res.status(400).json({ message: first?.message ?? "Invalid profile data" });
+    }
+    if (error.code === 11000) {
+      // Another account took the email between the check and the update
+      return res.status(409).json({ message: "Email already in use" });
+    }
+    console.error("Failed to update user:", error);
+    res.status(500).json({ message: "Failed to update profile" });
   }
 };
 
@@ -114,10 +157,9 @@ export const changePassword = async (req, res) => {
       });
     }
 
-    if (newPassword.length < 8) {
-      return res.status(400).json({
-        message: "Password must be at least 8 characters long",
-      });
+    const problem = passwordProblem(newPassword);
+    if (problem) {
+      return res.status(400).json({ message: problem });
     }
 
     const newPasswordHash = await bcrypt.hash(newPassword, 10);

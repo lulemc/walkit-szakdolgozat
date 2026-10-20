@@ -33,6 +33,7 @@ vi.mock("../../services/accountCleanupService.js", () => ({
 vi.mock("../../models/User.js", () => ({
   default: {
     find: vi.fn(),
+    findOne: vi.fn(),
     findById: vi.fn(),
     findByIdAndUpdate: vi.fn(),
     findByIdAndDelete: vi.fn(),
@@ -181,21 +182,117 @@ describe("User controller", () => {
     );
   });
 
-  it("updateUser stores the email in normalised form", async () => {
-    const req = { params: { id: "123" }, body: { email: "  New.Mail@Example.COM " } };
-    const res = mockRes();
+  /* -------- updateUser: email -------- */
 
+  const currentUser = { _id: "123", email: "old@example.com", passwordHash: "hash" };
+  const emailChange = (body) => ({ params: { id: "123" }, body });
+
+  const givenEmailChangeContext = ({ passwordOk = true, takenBy = null } = {}) => {
+    User.findById.mockResolvedValue(currentUser);
+    bcrypt.compare.mockResolvedValue(passwordOk);
+    User.findOne.mockReturnValue({ select: vi.fn().mockResolvedValue(takenBy) });
     User.findByIdAndUpdate.mockReturnValue({
       select: vi.fn().mockResolvedValue({ _id: "123", email: "new.mail@example.com" }),
     });
+  };
 
-    await updateUser(req, res);
+  it("updateUser changes the email in normalised form after checking the current password", async () => {
+    givenEmailChangeContext();
+    const res = mockRes();
 
+    await updateUser(
+      emailChange({ email: "  New.Mail@Example.COM ", currentPassword: "secret123" }),
+      res,
+    );
+
+    expect(bcrypt.compare).toHaveBeenCalledWith("secret123", "hash");
     expect(User.findByIdAndUpdate).toHaveBeenCalledWith(
       "123",
       { email: "new.mail@example.com" },
       { new: true, runValidators: true },
     );
+  });
+
+  it("updateUser asks for the current password before changing the email", async () => {
+    givenEmailChangeContext();
+    const res = mockRes();
+
+    await updateUser(emailChange({ email: "new@example.com" }), res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      message: "Enter your current password to change your email",
+    });
+    expect(User.findByIdAndUpdate).not.toHaveBeenCalled();
+  });
+
+  it("updateUser refuses an email change with the wrong password", async () => {
+    givenEmailChangeContext({ passwordOk: false });
+    const res = mockRes();
+
+    await updateUser(emailChange({ email: "new@example.com", currentPassword: "nope" }), res);
+
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith({ message: "Current password is incorrect" });
+    expect(User.findByIdAndUpdate).not.toHaveBeenCalled();
+  });
+
+  it("updateUser answers 409 when another account uses the email", async () => {
+    givenEmailChangeContext({ takenBy: { _id: "456" } });
+    const res = mockRes();
+
+    await updateUser(emailChange({ email: "taken@example.com", currentPassword: "secret123" }), res);
+
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(res.json).toHaveBeenCalledWith({ message: "Email already in use" });
+    expect(User.findByIdAndUpdate).not.toHaveBeenCalled();
+  });
+
+  it("updateUser answers 409 when the email is taken at the same moment (unique index)", async () => {
+    givenEmailChangeContext();
+    User.findByIdAndUpdate.mockReturnValue({
+      select: vi.fn().mockRejectedValue(Object.assign(new Error("E11000 duplicate key"), { code: 11000 })),
+    });
+    const res = mockRes();
+
+    await updateUser(emailChange({ email: "taken@example.com", currentPassword: "secret123" }), res);
+
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(res.json).toHaveBeenCalledWith({ message: "Email already in use" });
+  });
+
+  it("updateUser rejects an invalid email", async () => {
+    givenEmailChangeContext();
+    const res = mockRes();
+
+    await updateUser(emailChange({ email: "not-an-email", currentPassword: "secret123" }), res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ message: "Please enter a valid email address" });
+  });
+
+  it("updateUser doesn't ask for the password when the email stays the same", async () => {
+    givenEmailChangeContext();
+    const res = mockRes();
+
+    await updateUser(emailChange({ email: "OLD@example.com", name: "Ann" }), res);
+
+    expect(bcrypt.compare).not.toHaveBeenCalled();
+    expect(User.findByIdAndUpdate).toHaveBeenCalledWith(
+      "123",
+      { name: "Ann" },
+      { new: true, runValidators: true },
+    );
+  });
+
+  it("updateUser rejects an empty name", async () => {
+    const res = mockRes();
+
+    await updateUser({ params: { id: "123" }, body: { name: "   " } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ message: "Name can't be empty" });
+    expect(User.findByIdAndUpdate).not.toHaveBeenCalled();
   });
 
   it("updateUser returns 404 if user not found", async () => {
@@ -216,24 +313,42 @@ describe("User controller", () => {
     expect(res.json).toHaveBeenCalledWith({ message: "User not found" });
   });
 
-  it("updateUser returns 400 on validation error", async () => {
-    const req = {
-      params: { id: "123" },
-      body: { activityLevel: "invalid_level" },
-    };
-
+  it("updateUser returns 400 with the validation message, not Mongoose's text", async () => {
+    const req = { params: { id: "123" }, body: { height: 20 } };
     const res = mockRes();
-
-    const validationError = new Error("Validation failed");
-
-    User.findByIdAndUpdate.mockReturnValue({
-      select: vi.fn().mockRejectedValue(validationError),
-    });
+    const validationError = Object.assign(
+      new Error("Validation failed: height: Path `height` (20) is less than minimum allowed value (50)."),
+      { name: "ValidationError", errors: { height: { message: "Height must be between 50 and 300 cm" } } },
+    );
+    User.findByIdAndUpdate.mockReturnValue({ select: vi.fn().mockRejectedValue(validationError) });
 
     await updateUser(req, res);
 
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ message: "Validation failed" });
+    expect(res.json).toHaveBeenCalledWith({ message: "Height must be between 50 and 300 cm" });
+  });
+
+  it("updateUser returns 404 for an invalid id", async () => {
+    const res = mockRes();
+    User.findByIdAndUpdate.mockReturnValue({
+      select: vi.fn().mockRejectedValue(Object.assign(new Error("Cast to ObjectId failed"), { name: "CastError" })),
+    });
+
+    await updateUser({ params: { id: "nope" }, body: { name: "Ann" } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+  });
+
+  it("updateUser hides unexpected errors behind a generic message", async () => {
+    const res = mockRes();
+    User.findByIdAndUpdate.mockReturnValue({
+      select: vi.fn().mockRejectedValue(new Error("connection reset by mongod at 10.0.0.5")),
+    });
+
+    await updateUser({ params: { id: "123" }, body: { name: "Ann" } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ message: "Failed to update profile" });
   });
 
   /* -------- deleteUser -------- */

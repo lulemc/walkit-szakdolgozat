@@ -50,6 +50,7 @@ router.get("/:id", protect, requireSelf, getUserById);
  * /api/users/{id}:
  *   put:
  *     summary: Update user
+ *     description: Changing the email requires `currentPassword`; an email used by another account gives 409.
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
@@ -68,6 +69,12 @@ router.get("/:id", protect, requireSelf, getUserById);
  *     responses:
  *       200:
  *         description: User updated
+ *       400:
+ *         description: Invalid name, email, height or weight, or currentPassword missing for an email change
+ *       401:
+ *         description: Current password is incorrect
+ *       409:
+ *         description: Email already in use
  */
 router.put("/:id", protect, requireSelf, updateUser);
 

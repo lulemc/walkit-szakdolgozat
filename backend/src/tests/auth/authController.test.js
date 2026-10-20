@@ -31,7 +31,7 @@ describe("authController - register", () => {
       body: {
         name: "John",
         email: "john@test.com",
-        password: "secret",
+        password: "secret123",
       },
     };
 
@@ -48,7 +48,7 @@ describe("authController - register", () => {
 
     await register(req, res);
 
-    expect(bcrypt.hash).toHaveBeenCalledWith("secret", 10);
+    expect(bcrypt.hash).toHaveBeenCalledWith("secret123", 10);
 
     expect(User.create).toHaveBeenCalledWith({
       name: "John",
@@ -72,9 +72,9 @@ describe("authController - register", () => {
   });
 
   it.each([
-    ["name", { email: "john@test.com", password: "secret" }],
-    ["blank name", { name: "   ", email: "john@test.com", password: "secret" }],
-    ["email", { name: "John", password: "secret" }],
+    ["name", { email: "john@test.com", password: "secret123" }],
+    ["blank name", { name: "   ", email: "john@test.com", password: "secret123" }],
+    ["email", { name: "John", password: "secret123" }],
     ["password", { name: "John", email: "john@test.com" }],
   ])("returns 400 without a %s", async (_missing, body) => {
     const res = mockRes();
@@ -86,13 +86,27 @@ describe("authController - register", () => {
     expect(User.create).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ["a short password", { name: "John", email: "john@test.com", password: "1234567" }, "Password must be at least 8 characters long"],
+    ["an invalid email", { name: "John", email: "john@test", password: "secret123" }, "Please enter a valid email address"],
+    ["a too long name", { name: "a".repeat(51), email: "john@test.com", password: "secret123" }, "Name can be at most 50 characters"],
+  ])("returns 400 for %s", async (_case, body, message) => {
+    const res = mockRes();
+
+    await register({ body }, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ message });
+    expect(User.create).not.toHaveBeenCalled();
+  });
+
   it("stores the name without surrounding spaces", async () => {
     const res = mockRes();
     User.findOne.mockResolvedValue(null);
     bcrypt.hash.mockResolvedValue("hashed-password");
     User.create.mockResolvedValue({ _id: "123", name: "John", email: "john@test.com" });
 
-    await register({ body: { name: "  John ", email: "john@test.com", password: "secret" } }, res);
+    await register({ body: { name: "  John ", email: "john@test.com", password: "secret123" } }, res);
 
     expect(User.create).toHaveBeenCalledWith(expect.objectContaining({ name: "John" }));
   });
@@ -102,7 +116,7 @@ describe("authController - register", () => {
       body: {
         name: "John",
         email: "john@test.com",
-        password: "secret",
+        password: "secret123",
       },
     };
 
@@ -124,7 +138,7 @@ describe("authController - register", () => {
 
   it("looks up and stores the email in normalised form", async () => {
     const req = {
-      body: { name: "John", email: "  John@Test.COM ", password: "secret" },
+      body: { name: "John", email: "  John@Test.COM ", password: "secret123" },
     };
     const res = mockRes();
 
@@ -147,7 +161,7 @@ describe("authController - register", () => {
 
   it("rejects an email that differs from an existing one only by case", async () => {
     const req = {
-      body: { name: "John", email: "JOHN@test.com", password: "secret" },
+      body: { name: "John", email: "JOHN@test.com", password: "secret123" },
     };
     const res = mockRes();
 
@@ -169,7 +183,7 @@ describe("authController - register", () => {
       body: {
         name: "John",
         email: "john@test.com",
-        password: "secret",
+        password: "secret123",
       },
     };
 
@@ -190,7 +204,7 @@ describe("authController - register", () => {
       body: {
         name: "John",
         email: "john@test.com",
-        password: "secret",
+        password: "secret123",
       },
     };
 
