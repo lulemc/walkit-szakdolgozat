@@ -14,6 +14,7 @@ import {
   recordWalkCompletion,
 } from "../controllers/routeController.js";
 import { protect } from "../middleware/authMiddleware.js";
+import { routeGenerationLimiter } from "../middleware/rateLimit.js";
 
 const router = express.Router();
 
@@ -102,7 +103,7 @@ const router = express.Router();
  *       401:
  *         description: Unauthorized
  */
-router.post("/generate", protect, generateRoute);
+router.post("/generate", protect, routeGenerationLimiter(), generateRoute);
 
 /**
  * @swagger

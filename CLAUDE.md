@@ -119,6 +119,7 @@ Required variables:
 - `ORS_API_KEY`: OpenRouteService API key for route generation
 - `PORT`: Server port (defaults to 4000)
 - `NODE_ENV`: Environment (development/test/production)
+- `TRUST_PROXY` (optional): number of proxies in front of the API when hosted (e.g. `1`), so rate limits see each client's own IP
 
 ### Frontend (`frontend/.env`)
 Required variables:

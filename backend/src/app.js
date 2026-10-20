@@ -2,8 +2,10 @@ import dotenv from "dotenv";
 dotenv.config();
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./config/swagger.js";
+import { apiLimiter } from "./middleware/rateLimit.js";
 
 import userRoutes from "./routes/userRoutes.js";
 import authRoutes from "./routes/auth.js";
@@ -18,6 +20,14 @@ const allowedOrigins = [
 ];
 
 const app = express();
+
+// Behind a hosting proxy, set TRUST_PROXY (e.g. 1) so rate limits see each
+// client's own address instead of the proxy's
+if (process.env.TRUST_PROXY) {
+  app.set("trust proxy", Number(process.env.TRUST_PROXY));
+}
+
+app.use(helmet());
 
 app.use(
   cors({
@@ -41,6 +51,7 @@ app.use(express.json());
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // API routes
+app.use("/api", apiLimiter());
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/routes", routeRoutes);

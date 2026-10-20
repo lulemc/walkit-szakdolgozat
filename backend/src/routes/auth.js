@@ -1,7 +1,11 @@
 import express from "express";
 import { register, login } from "../controllers/authController.js";
+import { authLimiter } from "../middleware/rateLimit.js";
 
 const router = express.Router();
+
+// One counter for login and register together
+const limitAuthAttempts = authLimiter();
 
 /**
  * @swagger
@@ -36,7 +40,7 @@ const router = express.Router();
  *       201:
  *         description: User registered successfully
  */
-router.post("/register", register);
+router.post("/register", limitAuthAttempts, register);
 
 /**
  * @swagger
@@ -72,6 +76,6 @@ router.post("/register", register);
  *                   type: string
  *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
  */
-router.post("/login", login);
+router.post("/login", limitAuthAttempts, login);
 
 export default router;
