@@ -3,9 +3,13 @@ import { ActivityIndicator, RefreshControl, StyleSheet, View } from "react-nativ
 import { Icon, useTheme } from "react-native-paper";
 import { CustomText, PrimaryButton, ScreenContainer } from "@/components";
 import ConfirmationModal from "@/components/ConformationModal";
+import { useAuth } from "@/context/AuthProvider";
 import { useGroupWalk } from "@/hooks/useGroupWalk";
-import type { GroupWalkParticipant, UpdateGroupWalkRequest } from "@/types/social";
+import type { Route } from "@/services/routeService";
+import type { GroupWalkDetail, GroupWalkParticipant, UpdateGroupWalkRequest } from "@/types/social";
+import { canStartWalk, groupWalkToRoute } from "@/utils/groupWalkRoute";
 import { formatWalkTime, isWalkOpen } from "@/utils/groupWalkTime";
+import { CommentsSection } from "./CommentsSection";
 import { EditGroupWalkForm } from "./EditGroupWalkForm";
 import { GroupWalkMap } from "./GroupWalkMap";
 import { InviteFriendsForm } from "./InviteFriendsForm";
@@ -22,15 +26,30 @@ type Confirmation =
 interface GroupWalkDetailViewProps {
   walkId: string;
   onBack: () => void;
+  /** Opens the walk screen with the walk's route */
+  onStartWalk: (route: Route) => void;
 }
+
+/** Why I can't comment on this walk, or null when I can */
+const commentsClosedReason = (walk: GroupWalkDetail): string | null => {
+  if (walk.status === "cancelled") return "Comments are closed because the walk was cancelled.";
+  if (walk.myStatus === "declined") return "You declined this walk, so you can't comment.";
+  return null;
+};
 
 /**
  * A group walk: the route map, local time, note and participants. Invitees
  * answer here; the organiser edits, invites, removes people or cancels.
- * Cancelled and past walks are read-only.
+ * Cancelled and past walks are read-only. Everyone can comment (unless they
+ * declined), and people going can start the route on the day.
  */
-export const GroupWalkDetailView: React.FC<GroupWalkDetailViewProps> = ({ walkId, onBack }) => {
+export const GroupWalkDetailView: React.FC<GroupWalkDetailViewProps> = ({
+  walkId,
+  onBack,
+  onStartWalk,
+}) => {
   const theme = useTheme();
+  const { user } = useAuth();
   const groupWalk = useGroupWalk(walkId);
   const { walk } = groupWalk;
   const [mode, setMode] = useState<Mode>("view");
@@ -64,6 +83,7 @@ export const GroupWalkDetailView: React.FC<GroupWalkDetailViewProps> = ({ walkId
   const open = isWalkOpen(walk);
   const canRespond = open && !walk.isOrganiser && walk.myStatus !== null;
   const canManage = open && walk.isOrganiser;
+  const canStart = canStartWalk(walk);
 
   // Forms return to the walk once the change went through
   const saveChanges = async (changes: UpdateGroupWalkRequest) => {
@@ -116,10 +136,11 @@ export const GroupWalkDetailView: React.FC<GroupWalkDetailViewProps> = ({ walkId
     );
   }
 
+  // On the day itself the walk can still be started, so it isn't called over yet
   const banner =
     walk.status === "cancelled"
       ? "This walk was cancelled."
-      : !open
+      : !open && !canStart
         ? "This walk has already taken place."
         : null;
   const mutedText = { color: theme.colors.onSurfaceVariant };
@@ -171,6 +192,12 @@ export const GroupWalkDetailView: React.FC<GroupWalkDetailViewProps> = ({ walkId
 
       {walk.note ? <CustomText variant="bodyMedium">{walk.note}</CustomText> : null}
 
+      {canStart ? (
+        <PrimaryButton icon="walk" onPress={() => onStartWalk(groupWalkToRoute(walk))}>
+          Start walk
+        </PrimaryButton>
+      ) : null}
+
       {canRespond && walk.myStatus ? (
         <RespondBar
           myStatus={walk.myStatus}
@@ -203,6 +230,13 @@ export const GroupWalkDetailView: React.FC<GroupWalkDetailViewProps> = ({ walkId
           }
         />
       </View>
+
+      <CommentsSection
+        walkId={walk._id}
+        currentUserId={user?._id}
+        isOrganiser={walk.isOrganiser}
+        closedReason={commentsClosedReason(walk)}
+      />
 
       {canManage ? (
         <PrimaryButton
