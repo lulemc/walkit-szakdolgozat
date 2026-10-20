@@ -3,8 +3,12 @@ import Settings from "@/app/(app)/settings";
 import Statistics from "@/app/(app)/statistics";
 import Social from "@/app/(app)/social";
 import { ScreenContainer } from "@/components";
-import { SocialSummaryProvider, useSocialSummary } from "@/context/SocialSummaryProvider";
-import { ReactNode, useMemo, useState } from "react";
+import {
+  SocialSummaryProvider,
+  useSocialSummary,
+} from "@/context/SocialSummaryProvider";
+import { SocialNavigationProvider } from "@/screens/social/socialNavigation";
+import { ReactNode, useCallback, useMemo, useState } from "react";
 import { BottomNavigation, useTheme } from "react-native-paper";
 import { BaseRoute } from "react-native-paper/lib/typescript/components/BottomNavigation/BottomNavigation";
 
@@ -55,31 +59,47 @@ const NavigationBar: React.FC = () => {
   const routes = useMemo(
     () =>
       routesArray.map((route) =>
-        route.key === "social" ? { ...route, badge: total > 0 ? total : false } : route,
+        route.key === "social"
+          ? { ...route, badge: total > 0 ? total : false }
+          : route,
       ),
     [total],
   );
 
-  const handleIndexChange = (nextIndex: number) => {
-    setIndex(nextIndex);
-    if (routes[nextIndex].key === "social") refresh();
-  };
+  const handleIndexChange = useCallback(
+    (nextIndex: number) => {
+      setIndex(nextIndex);
+      if (routesArray[nextIndex].key === "social") refresh();
+    },
+    [refresh],
+  );
+
+  // Other tabs can open a Social view, e.g. "Plan group walk" on Home
+  const openSocialTab = useCallback(
+    () =>
+      handleIndexChange(
+        routesArray.findIndex((route) => route.key === "social"),
+      ),
+    [handleIndexChange],
+  );
 
   return (
-    <ScreenContainer style={{ padding: 0 }}>
-      <BottomNavigation
-        navigationState={{ index, routes }}
-        onIndexChange={handleIndexChange}
-        barStyle={{
-          backgroundColor: theme.colors.background,
-        }}
-        shifting={false}
-        activeColor={theme.colors.onSurface}
-        inactiveColor={theme.colors.onSurface}
-        activeIndicatorStyle={{ backgroundColor: theme.colors.background }}
-        renderScene={renderScene}
-      ></BottomNavigation>
-    </ScreenContainer>
+    <SocialNavigationProvider onOpen={openSocialTab}>
+      <ScreenContainer style={{ padding: 0 }}>
+        <BottomNavigation
+          navigationState={{ index, routes }}
+          onIndexChange={handleIndexChange}
+          barStyle={{
+            backgroundColor: theme.colors.background,
+          }}
+          shifting={false}
+          activeColor={theme.colors.onSurface}
+          inactiveColor={theme.colors.onSurface}
+          activeIndicatorStyle={{ backgroundColor: theme.colors.background }}
+          renderScene={renderScene}
+        ></BottomNavigation>
+      </ScreenContainer>
+    </SocialNavigationProvider>
   );
 };
 
