@@ -52,7 +52,14 @@ function SocialViews() {
 
   // The detail view scrolls itself (for pull-to-refresh)
   if (view.screen === "walkDetail") {
-    return <GroupWalkDetailView key={view.walkId} walkId={view.walkId} onBack={goBack} />;
+    return (
+      <GroupWalkDetailView
+        key={view.walkId}
+        walkId={view.walkId}
+        onBack={goBack}
+        onStartWalk={(route) => navigate({ screen: "activeWalk", route })}
+      />
+    );
   }
 
   // The walk screen manages its own full-screen layout

@@ -17,7 +17,7 @@ jest.mock('@/services/friendService', () => ({
   friendService: { listFriends: jest.fn() },
 }));
 jest.mock('@/services/groupWalkService', () => ({
-  groupWalkService: { create: jest.fn(), list: jest.fn(), get: jest.fn() },
+  groupWalkService: { create: jest.fn(), list: jest.fn(), get: jest.fn(), listComments: jest.fn() },
 }));
 jest.mock('@/context/SocialSummaryProvider', () => ({
   useSocialSummary: () => ({ refresh: jest.fn().mockResolvedValue(undefined) }),
@@ -63,6 +63,7 @@ beforeEach(() => {
   (groupWalkService.list as jest.Mock).mockImplementation(async (scope: string) =>
     scope === 'upcoming' ? [makeWalkSummary({ _id: 'w1', title: 'Sunday stroll', myStatus: 'accepted' })] : [],
   );
+  (groupWalkService.listComments as jest.Mock).mockResolvedValue([]);
   (groupWalkService.get as jest.Mock).mockImplementation(async (walkId: string) =>
     makeWalkDetail({ _id: walkId, title: `Walk ${walkId}` }),
   );
@@ -98,6 +99,28 @@ describe('SocialScreen', () => {
 
     expect(await findByText('Sunday stroll')).toBeTruthy();
     expect(queryByText('Walk w7')).toBeNull();
+  });
+
+  it("starts a group walk's route in the walk screen", async () => {
+    // Only the clock is faked: it is the morning of the walk (10:30 local on Jan 2, 2030)
+    jest.useFakeTimers({
+      now: new Date(2030, 0, 2, 8, 0),
+      doNotFake: ['nextTick', 'queueMicrotask', 'setImmediate', 'clearImmediate', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'requestAnimationFrame', 'cancelAnimationFrame', 'hrtime', 'performance'],
+    });
+    try {
+      const walk = makeWalkDetail({ _id: 'w7', myStatus: 'accepted' });
+      (groupWalkService.get as jest.Mock).mockResolvedValue(walk);
+      const { findByText } = renderWithTheme(<SocialScreen initialView={{ screen: 'walkDetail', walkId: 'w7' }} />);
+
+      fireEvent.press(await findByText('Start walk'));
+
+      expect(await findByText('Active walk')).toBeTruthy();
+      expect(mockActiveWalk).toHaveBeenCalledWith(
+        expect.objectContaining({ route: expect.objectContaining({ _id: 'w7', coordinates: walk.route.coordinates }) }),
+      );
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it('opens a walk from the list', async () => {

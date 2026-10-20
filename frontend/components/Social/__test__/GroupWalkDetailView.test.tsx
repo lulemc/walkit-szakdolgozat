@@ -16,8 +16,25 @@ jest.mock('@/services/groupWalkService', () => ({
     cancel: jest.fn(),
     invite: jest.fn(),
     removeParticipant: jest.fn(),
+    listComments: jest.fn(),
+    addComment: jest.fn(),
+    deleteComment: jest.fn(),
   },
 }));
+jest.mock('@/context/AuthProvider', () => ({
+  useAuth: () => ({ user: { _id: 'u2', name: 'Ann' } }),
+}));
+
+/** Pretends it is this moment, faking only the clock so async waits still run */
+const pretendNowIs = (now: Date) =>
+  jest.useFakeTimers({
+    now,
+    doNotFake: [
+      'hrtime', 'nextTick', 'performance', 'queueMicrotask', 'requestAnimationFrame',
+      'cancelAnimationFrame', 'requestIdleCallback', 'cancelIdleCallback', 'setImmediate',
+      'clearImmediate', 'setInterval', 'clearInterval', 'setTimeout', 'clearTimeout',
+    ],
+  });
 jest.mock('@/services/friendService', () => ({
   friendService: { listFriends: jest.fn() },
 }));
@@ -29,6 +46,9 @@ beforeEach(() => {
   jest.clearAllMocks();
   (useSocialSummary as jest.Mock).mockReturnValue({ refresh: jest.fn().mockResolvedValue(undefined) });
   service.get.mockResolvedValue(makeWalkDetail());
+  service.listComments.mockResolvedValue([
+    { _id: 'c1', author: { _id: 'u1', name: 'Olga' }, text: 'Bring water', createdAt: '2029-12-30T10:00:00.000Z' },
+  ]);
   (friendService.listFriends as jest.Mock).mockResolvedValue([
     { friendshipId: 'f2', user: { _id: 'u2', name: 'Ann' }, since: '2026-10-01T10:00:00Z' },
     { friendshipId: 'f3', user: { _id: 'u3', name: 'Bob' }, since: '2026-10-01T10:00:00Z' },
@@ -36,11 +56,19 @@ beforeEach(() => {
   ]);
 });
 
+afterEach(() => {
+  jest.useRealTimers();
+});
+
 const renderDetail = async () => {
   const onBack = jest.fn();
-  const screen = renderWithTheme(<GroupWalkDetailView walkId="w1" onBack={onBack} />);
+  const onStartWalk = jest.fn();
+  const screen = renderWithTheme(
+    <GroupWalkDetailView walkId="w1" onBack={onBack} onStartWalk={onStartWalk} />,
+  );
   await screen.findByText('Sunday stroll');
-  return { ...screen, onBack };
+  await screen.findByText('Bring water');
+  return { ...screen, onBack, onStartWalk };
 };
 
 describe('GroupWalkDetailView', () => {
@@ -220,7 +248,7 @@ describe('GroupWalkDetailView', () => {
 
     it('invites more friends, offering only those not already coming or invited', async () => {
       service.invite.mockResolvedValue(makeOrganiserWalk());
-      const { getByText, findByRole, queryByRole, getByRole } = await renderDetail();
+      const { getByText, findByRole, queryByRole, getByRole, findByText } = await renderDetail();
 
       fireEvent.press(getByText('Invite friends'));
 
@@ -233,6 +261,8 @@ describe('GroupWalkDetailView', () => {
       fireEvent.press(getByText('Send invitations'));
 
       await waitFor(() => expect(service.invite).toHaveBeenCalledWith('w1', ['u4']));
+      // Back on the walk once the invitations went out
+      expect(await findByText('Bring water')).toBeTruthy();
     });
   });
 
@@ -281,11 +311,93 @@ describe('GroupWalkDetailView', () => {
 
   it('offers a retry when the walk fails to load', async () => {
     service.get.mockRejectedValueOnce(new Error('Network Error'));
-    const { findByText, getByText } = renderWithTheme(<GroupWalkDetailView walkId="w1" onBack={jest.fn()} />);
+    const { findByText, getByText } = renderWithTheme(<GroupWalkDetailView walkId="w1" onBack={jest.fn()} onStartWalk={jest.fn()} />);
 
     expect(await findByText("Couldn't load this walk")).toBeTruthy();
     fireEvent.press(getByText('Try again'));
 
     expect(await findByText('Sunday stroll')).toBeTruthy();
+  });
+
+  describe('comments', () => {
+    it("shows the walk's comments and a box to write one", async () => {
+      const { getByText, getByLabelText } = await renderDetail();
+
+      expect(getByText('Bring water')).toBeTruthy();
+      expect(getByLabelText('Write a comment')).toBeTruthy();
+      expect(service.listComments).toHaveBeenCalledWith('w1', expect.anything());
+    });
+
+    it("hides the comment box from people who declined, who can still read", async () => {
+      service.get.mockResolvedValue(makeWalkDetail({ myStatus: 'declined' }));
+      const { queryByLabelText, getByText } = await renderDetail();
+
+      expect(getByText('Bring water')).toBeTruthy();
+      expect(queryByLabelText('Write a comment')).toBeNull();
+      expect(getByText("You declined this walk, so you can't comment.")).toBeTruthy();
+    });
+
+    it('hides the comment box on a cancelled walk', async () => {
+      service.get.mockResolvedValue(makeWalkDetail({ status: 'cancelled', myStatus: 'accepted' }));
+      const { queryByLabelText, getByText } = await renderDetail();
+
+      expect(queryByLabelText('Write a comment')).toBeNull();
+      expect(getByText('Comments are closed because the walk was cancelled.')).toBeTruthy();
+    });
+
+    it('still allows comments after the walk', async () => {
+      service.get.mockResolvedValue(makeWalkDetail({ scheduledAt: '2020-01-02T13:30:00.000Z', myStatus: 'accepted' }));
+      const { getByLabelText } = await renderDetail();
+
+      expect(getByLabelText('Write a comment')).toBeTruthy();
+    });
+  });
+
+  // The walk is at 10:30 local time on Jan 2, 2030
+  describe('starting the walk', () => {
+    it("lets people who are going start the walk's route on the day", async () => {
+      pretendNowIs(new Date(2030, 0, 2, 8, 0));
+      const walk = makeWalkDetail({ myStatus: 'accepted' });
+      service.get.mockResolvedValue(walk);
+      const { getByText, onStartWalk } = await renderDetail();
+
+      fireEvent.press(getByText('Start walk'));
+
+      expect(onStartWalk).toHaveBeenCalledWith(
+        expect.objectContaining({ _id: 'w1', coordinates: walk.route.coordinates }),
+      );
+    });
+
+    it('also for the organiser', async () => {
+      pretendNowIs(new Date(2030, 0, 2, 8, 0));
+      service.get.mockResolvedValue(makeOrganiserWalk());
+      const { getByText } = await renderDetail();
+
+      expect(getByText('Start walk')).toBeTruthy();
+    });
+
+    it('still on the day after the start time, without the "already taken place" banner', async () => {
+      pretendNowIs(new Date(2030, 0, 2, 12, 0));
+      service.get.mockResolvedValue(makeWalkDetail({ myStatus: 'accepted' }));
+      const { getByText, queryByText } = await renderDetail();
+
+      expect(getByText('Start walk')).toBeTruthy();
+      expect(queryByText('This walk has already taken place.')).toBeNull();
+    });
+
+    it('not before the day of the walk', async () => {
+      pretendNowIs(new Date(2030, 0, 1, 20, 0));
+      service.get.mockResolvedValue(makeWalkDetail({ myStatus: 'accepted' }));
+      const { queryByText } = await renderDetail();
+
+      expect(queryByText('Start walk')).toBeNull();
+    });
+
+    it("not for people who haven't accepted", async () => {
+      pretendNowIs(new Date(2030, 0, 2, 8, 0));
+      const { queryByText } = await renderDetail();
+
+      expect(queryByText('Start walk')).toBeNull();
+    });
   });
 });
