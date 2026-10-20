@@ -37,6 +37,15 @@ export interface Friendship {
 /** How the logged-in user is related to another user */
 export type Relationship = 'none' | 'friends' | 'outgoing' | 'incoming';
 
+/** A user found by search; emails are never returned */
+export interface UserSearchResult {
+  _id: string;
+  name: string;
+  relationship: Relationship;
+  /** The friendship or pending request, when relationship isn't 'none' */
+  friendshipId?: string;
+}
+
 /* ---------------- group walks ---------------- */
 
 export type GroupWalkScope = 'invitations' | 'upcoming' | 'past';
