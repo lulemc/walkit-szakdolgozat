@@ -44,3 +44,9 @@ describe("User model", () => {
     expect(errorsOf({ ...valid, height: 175, weight: 70 })).toEqual({});
   });
 });
+
+describe("User token version", () => {
+  it("starts at 0", () => {
+    expect(new User(valid).tokenVersion).toBe(0);
+  });
+});

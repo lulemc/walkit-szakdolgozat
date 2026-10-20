@@ -18,6 +18,8 @@ const userSchema = new mongoose.Schema(
     },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     passwordHash: { type: String, required: true },
+    // Increased on every password change; tokens with an older version are rejected
+    tokenVersion: { type: Number, default: 0 },
     dateOfBirth: { type: Date },
     sex: { type: String, enum: ["male", "female", "other"] },
     height: { type: Number, min: [50, HEIGHT_MESSAGE], max: [300, HEIGHT_MESSAGE] }, // in cm

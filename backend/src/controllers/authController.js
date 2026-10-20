@@ -1,14 +1,8 @@
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import { normalizeEmail } from "../utils/email.js";
+import { generateToken } from "../utils/generateToken.js";
 import { emailProblem, nameProblem, passwordProblem } from "../utils/validation.js";
-
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: "7d",
-  });
-};
 
 // REGISTER
 export const register = async (req, res) => {
@@ -41,7 +35,7 @@ export const register = async (req, res) => {
     });
 
     res.status(201).json({
-      token: generateToken(user._id),
+      token: generateToken(user),
       user: {
         _id: user._id,
         name: user.name,
@@ -73,7 +67,7 @@ export const login = async (req, res) => {
     delete safeUser.passwordHash;
 
     res.json({
-      token: generateToken(user._id),
+      token: generateToken(user),
       user: safeUser,
     });
   } catch {

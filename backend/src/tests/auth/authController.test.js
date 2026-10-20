@@ -56,7 +56,7 @@ describe("authController - register", () => {
       passwordHash: "hashed-password",
     });
 
-    expect(jwt.sign).toHaveBeenCalledWith({ id: "123" }, "test-secret", {
+    expect(jwt.sign).toHaveBeenCalledWith({ id: "123", tokenVersion: 0 }, "test-secret", {
       expiresIn: "7d",
     });
 
@@ -258,7 +258,7 @@ describe("authController - login", () => {
       "correctPassword",
       "hashed-password",
     );
-    expect(jwt.sign).toHaveBeenCalledWith({ id: "456" }, "test-secret", {
+    expect(jwt.sign).toHaveBeenCalledWith({ id: "456", tokenVersion: 0 }, "test-secret", {
       expiresIn: "7d",
     });
     expect(res.json).toHaveBeenCalledWith({

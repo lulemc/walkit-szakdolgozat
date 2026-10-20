@@ -427,6 +427,7 @@ describe("User controller", () => {
     const mockUser = {
       _id: "123",
       passwordHash: "old-hash",
+      tokenVersion: 4,
       save: vi.fn().mockResolvedValue(true),
     };
 
@@ -443,8 +444,10 @@ describe("User controller", () => {
     expect(bcrypt.compare).toHaveBeenCalledWith("newPassword456", "old-hash");
     expect(bcrypt.hash).toHaveBeenCalledWith("newPassword456", 10);
     expect(mockUser.save).toHaveBeenCalled();
+    // A new version makes every token issued before the change invalid
+    expect(mockUser.tokenVersion).toBe(5);
     expect(jwt.sign).toHaveBeenCalledWith(
-      { id: "123" },
+      { id: "123", tokenVersion: 5 },
       process.env.JWT_SECRET,
       { expiresIn: "7d" },
     );

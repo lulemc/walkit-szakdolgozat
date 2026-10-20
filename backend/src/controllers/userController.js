@@ -2,10 +2,10 @@ import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import { normalizeEmail } from "../utils/email.js";
 import { sendError } from "../utils/httpError.js";
+import { generateToken } from "../utils/generateToken.js";
 import { emailProblem, nameProblem, passwordProblem } from "../utils/validation.js";
 import * as userSearchService from "../services/userSearchService.js";
 import { deleteUserData } from "../services/accountCleanupService.js";
-import jwt from "jsonwebtoken";
 
 export const getUserById = async (req, res) => {
   try {
@@ -165,11 +165,11 @@ export const changePassword = async (req, res) => {
     const newPasswordHash = await bcrypt.hash(newPassword, 10);
 
     user.passwordHash = newPasswordHash;
+    // Logs out every other session: their tokens carry the old version
+    user.tokenVersion = (user.tokenVersion ?? 0) + 1;
     await user.save();
 
-    const newToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "7d",
-    });
+    const newToken = generateToken(user);
 
     res.json({
       message: "Password changed successfully",
