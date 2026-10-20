@@ -100,7 +100,7 @@ export default function ProfileSettings({
         <CustomDatePicker
           label="Date of birth"
           value={dateOfBirth}
-          onChange={(_, date) => date && setDateOfBirth(date)}
+          onChange={setDateOfBirth}
           disabled={isLoading}
         />
       </View>

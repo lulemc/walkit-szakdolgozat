@@ -20,7 +20,10 @@
     "preset": "jest-expo",
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/$1"
-    }
+    },
+    "setupFiles": [
+      "<rootDir>/jest.setup.fonts.ts"
+    ]
   },
   "dependencies": {
     "@expo/html-elements": "^0.13.7",

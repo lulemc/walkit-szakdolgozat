@@ -4,6 +4,7 @@ import {
   updateUser,
   deleteUser,
   changePassword,
+  searchUsers,
 } from "../controllers/userController.js";
 import { protect, requireSelf } from "../middleware/authMiddleware.js";
 
@@ -15,6 +16,10 @@ const router = express.Router();
  *   name: Users
  *   description: User management
  */
+
+// Must stay above the /:id routes, which would otherwise treat "search" as an id.
+// Documented in config/swagger.js under the "Users" tag.
+router.get("/search", protect, searchUsers);
 
 /**
  * @swagger
@@ -71,6 +76,7 @@ router.put("/:id", protect, requireSelf, updateUser);
  * /api/users/{id}:
  *   delete:
  *     summary: Delete user
+ *     description: Also deletes the user's friendships, comments and routes, cancels their upcoming group walks and removes them from other walks.
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []

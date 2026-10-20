@@ -1,4 +1,5 @@
-import api  from './api';
+import api from './api';
+import type { ApiResponse } from '@/types/api';
 
 export interface Coordinates {
   latitude: number;
@@ -27,6 +28,7 @@ export interface GenerateRouteRequest {
 export interface Route {
   _id: string;
   userId: string;
+  name: string | null;
   type: 'circular' | 'point-to-point';
   startLocation: {
     latitude: number;
@@ -47,51 +49,48 @@ export interface Route {
   elevationLoss: number;
   maxElevation: number | null;
   minElevation: number | null;
+  isFavorite: boolean;
+  favoritedAt: string | null;
+  lastWalkedAt: string | null;
+  walkCount: number;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface GenerateRouteResponse {
-  message: string;
-  route: Route;
-}
-
-export interface GetUserRoutesResponse {
-  message: string;
-  count: number;
-  routes: Route[];
-}
+// Kept as an export from here so existing imports keep working
+export type { ApiResponse } from '@/types/api';
 
 class RouteService {
   /**
    * Generate a new walking route
    */
   async generateRoute(request: GenerateRouteRequest): Promise<Route> {
-  const response = await api.post<any>(
-    '/routes/generate',
-    request
-  );
-  return response.data.data;  // ✅ CORRECT - backend returns 'data'
-}
+    const response = await api.post<ApiResponse<Route>>('/routes/generate', request);
+    return response.data.data;
+  }
 
   /**
    * Get all routes for the current user
    */
   async getUserRoutes(userId: string): Promise<Route[]> {
-    const response = await api.get<GetUserRoutesResponse>(
-      `/routes/user/${userId}`
-    );
-    return response.data.routes;
+    const response = await api.get<ApiResponse<Route[]>>(`/routes/user/${userId}`);
+    return response.data.data;
+  }
+
+  /**
+   * Get the current user's favourite routes, most recently favourited first
+   */
+  async getFavoriteRoutes(): Promise<Route[]> {
+    const response = await api.get<ApiResponse<Route[]>>('/routes/favorites/list');
+    return response.data.data;
   }
 
   /**
    * Get a single route by ID
    */
   async getRoute(routeId: string): Promise<Route> {
-    const response = await api.get<{ message: string; route: Route }>(
-      `/routes/${routeId}`
-    );
-    return response.data.route;
+    const response = await api.get<ApiResponse<Route>>(`/routes/${routeId}`);
+    return response.data.data;
   }
 
   /**

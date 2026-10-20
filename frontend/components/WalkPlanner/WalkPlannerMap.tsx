@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from "react-native-maps";
-import { Platform, StyleSheet } from "react-native";
-import Constants, { ExecutionEnvironment } from "expo-constants";
+import MapView, { Marker, Polyline } from "react-native-maps";
+import { StyleSheet } from "react-native";
+import { mapProvider } from "@/utils/mapProvider";
 import type { Coordinates, Location } from "@/services/GooglePlacesService";
 import type { Route } from "@/services/routeService";
 
@@ -20,12 +20,6 @@ interface WalkPlannerMapProps {
   generatedRoute?: Route | null;
   onMapPress: (event: any) => void;
 }
-
-// Expo Go on iOS doesn't include Google Maps, so fall back to Apple Maps there
-const isExpoGo =
-  Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
-const mapProvider =
-  isExpoGo && Platform.OS === "ios" ? undefined : PROVIDER_GOOGLE;
 
 const WalkPlannerMap: React.FC<WalkPlannerMapProps> = ({
   mapRef,

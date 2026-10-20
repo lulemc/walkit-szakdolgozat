@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import { normalizeEmail } from "../utils/email.js";
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -11,7 +12,14 @@ const generateToken = (id) => {
 // REGISTER
 export const register = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { password } = req.body;
+    const name = typeof req.body.name === "string" ? req.body.name.trim() : "";
+    const email = normalizeEmail(req.body.email);
+
+    // The app's form asks for all three; this also covers direct API calls
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: "Name, email and password are required" });
+    }
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -42,7 +50,8 @@ export const register = async (req, res) => {
 // LOGIN
 export const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { password } = req.body;
+    const email = normalizeEmail(req.body.email);
 
     const user = await User.findOne({ email });
     if (!user) {

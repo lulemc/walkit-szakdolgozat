@@ -17,10 +17,12 @@ import type { Route } from "@/services/routeService";
 
 interface WalkPlannerScreenProps {
   onStartWalk?: (route: Route) => void; // NEW: Callback for starting walk
+  onPlanGroupWalk?: (route: Route) => void;
 }
 
 export default function WalkPlannerScreen({
   onStartWalk,
+  onPlanGroupWalk,
 }: WalkPlannerScreenProps) {
   const theme = useTheme();
 
@@ -144,6 +146,7 @@ export default function WalkPlannerScreen({
             route={generatedRoute}
             onClose={handleCloseInfoCard}
             onStartWalk={handleStartWalk}
+            onPlanGroupWalk={onPlanGroupWalk}
           />
         </View>
       )}
