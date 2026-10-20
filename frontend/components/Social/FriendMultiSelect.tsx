@@ -10,10 +10,16 @@ type LoadStatus = "loading" | "ready" | "error";
 interface FriendMultiSelectProps {
   selectedIds: string[];
   onChange: (selectedIds: string[]) => void;
+  /** Friends not to offer, e.g. people already in the walk */
+  excludeIds?: string[];
 }
 
 /** Tick the friends to invite to a group walk */
-export const FriendMultiSelect: React.FC<FriendMultiSelectProps> = ({ selectedIds, onChange }) => {
+export const FriendMultiSelect: React.FC<FriendMultiSelectProps> = ({
+  selectedIds,
+  onChange,
+  excludeIds = [],
+}) => {
   const theme = useTheme();
   const [friends, setFriends] = useState<Friend[]>([]);
   const [status, setStatus] = useState<LoadStatus>("loading");
@@ -63,17 +69,20 @@ export const FriendMultiSelect: React.FC<FriendMultiSelectProps> = ({ selectedId
     );
   }
 
-  if (friends.length === 0) {
+  const offered = friends.filter((friend) => !excludeIds.includes(friend.user._id as string));
+  if (offered.length === 0) {
     return (
       <CustomText variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-        Add friends in the Friends section to invite them.
+        {friends.length === 0
+          ? "Add friends in the Friends section to invite them."
+          : "All your friends are already invited."}
       </CustomText>
     );
   }
 
   return (
     <View>
-      {friends.map(({ friendshipId, user }) => {
+      {offered.map(({ friendshipId, user }) => {
         const userId = user._id as string;
         return (
           <Checkbox.Item

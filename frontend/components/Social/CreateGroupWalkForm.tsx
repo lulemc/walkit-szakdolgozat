@@ -1,17 +1,15 @@
 import React, { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Card, useTheme } from "react-native-paper";
-import { CustomDatePicker, CustomText, CustomTextInput, PrimaryButton } from "@/components";
+import { CustomText, PrimaryButton } from "@/components";
 import { groupWalkService } from "@/services/groupWalkService";
 import type { Route } from "@/services/routeService";
 import type { CreateGroupWalkRequest, GroupWalkDetail } from "@/types/social";
 import { apiErrorMessage } from "@/utils/apiError";
 import { FriendMultiSelect } from "./FriendMultiSelect";
 import { routeDetails, routeTitle } from "./savedRouteText";
-
-// Same limits as the backend
-const TITLE_MAX_LENGTH = 80;
-const NOTE_MAX_LENGTH = 500;
+import { WalkTextFields } from "./WalkTextFields";
+import { futureTimeError, WalkTimeFields } from "./WalkTimeFields";
 
 interface CreateGroupWalkFormProps {
   route: Route;
@@ -44,22 +42,10 @@ export const CreateGroupWalkForm: React.FC<CreateGroupWalkFormProps> = ({
   const [errors, setErrors] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
-  // The date and time pickers each change only their part of the walk's time
-  const handleDateChange = (picked: Date) => {
-    const next = new Date(scheduledAt);
-    next.setFullYear(picked.getFullYear(), picked.getMonth(), picked.getDate());
-    setScheduledAt(next);
-  };
-
-  const handleTimeChange = (picked: Date) => {
-    const next = new Date(scheduledAt);
-    next.setHours(picked.getHours(), picked.getMinutes(), 0, 0);
-    setScheduledAt(next);
-  };
-
   const validate = (): string[] => {
     const problems: string[] = [];
-    if (scheduledAt.getTime() <= Date.now()) problems.push("Pick a time in the future.");
+    const timeError = futureTimeError(scheduledAt);
+    if (timeError) problems.push(timeError);
     if (inviteeIds.length === 0) problems.push("Invite at least one friend.");
     return problems;
   };
@@ -108,42 +94,14 @@ export const CreateGroupWalkForm: React.FC<CreateGroupWalkFormProps> = ({
         ) : null}
       </Card>
 
-      <View>
-        <CustomTextInput
-          label="Title (optional)"
-          accessibilityLabel="Title (optional)"
-          value={title}
-          onChangeText={setTitle}
-          maxLength={TITLE_MAX_LENGTH}
-          autoCapitalize="sentences"
-        />
-        <CustomTextInput
-          label="Note (optional)"
-          accessibilityLabel="Note (optional)"
-          value={note}
-          onChangeText={setNote}
-          maxLength={NOTE_MAX_LENGTH}
-          autoCapitalize="sentences"
-          multiline
-        />
-      </View>
+      <WalkTextFields
+        title={title}
+        note={note}
+        onTitleChange={setTitle}
+        onNoteChange={setNote}
+      />
 
-      <View style={styles.when}>
-        <CustomDatePicker
-          testID="group-walk-date"
-          label="Date"
-          value={scheduledAt}
-          onChange={handleDateChange}
-          minimumDate={new Date()}
-        />
-        <CustomDatePicker
-          testID="group-walk-time"
-          mode="time"
-          label="Time"
-          value={scheduledAt}
-          onChange={handleTimeChange}
-        />
-      </View>
+      <WalkTimeFields value={scheduledAt} onChange={setScheduledAt} />
 
       <View>
         <CustomText variant="titleMedium">Invite friends</CustomText>
@@ -176,8 +134,5 @@ const styles = StyleSheet.create({
   container: {
     gap: 16,
     paddingBottom: 32,
-  },
-  when: {
-    gap: 12,
   },
 });
