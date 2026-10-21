@@ -1,10 +1,10 @@
-import StatisticsScreen from "@/screens/StatisticsScreen";
+import StatisticsHomeScreen from "@/screens/StatisticsHomeScreen";
 import { View, StyleSheet } from "react-native";
 
 export default function Statistics() {
   return (
     <View style={styles.container}>
-      <StatisticsScreen />
+      <StatisticsHomeScreen />
     </View>
   );
 }

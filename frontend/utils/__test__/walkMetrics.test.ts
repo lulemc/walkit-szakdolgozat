@@ -4,6 +4,7 @@ import {
   formatWalkDistance,
   haversineMeters,
   segmentsDistance,
+  startOfLocalWeek,
 } from '../walkMetrics';
 
 const a = { latitude: 47.5, longitude: 19.04 };
@@ -59,5 +60,19 @@ describe('formatPace', () => {
 
   it('shows 0:00 before any distance', () => {
     expect(formatPace(30, 0)).toBe('0:00');
+  });
+});
+
+describe('startOfLocalWeek', () => {
+  it("is Monday 00:00 in the user's time zone", () => {
+    // Wednesday, Jan 2, 2030, 22:30 in São Paulo (already Thursday in UTC)
+    const start = startOfLocalWeek(new Date(2030, 0, 2, 22, 30));
+
+    expect(start).toEqual(new Date(2029, 11, 31, 0, 0, 0, 0));
+  });
+
+  it('is the same day on a Monday, and the previous Monday on a Sunday', () => {
+    expect(startOfLocalWeek(new Date(2029, 11, 31, 9, 0))).toEqual(new Date(2029, 11, 31));
+    expect(startOfLocalWeek(new Date(2030, 0, 6, 23, 59))).toEqual(new Date(2029, 11, 31));
   });
 });

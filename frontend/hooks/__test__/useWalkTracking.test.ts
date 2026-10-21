@@ -101,6 +101,22 @@ describe('useWalkTracking with simulated GPS', () => {
     expect(onReachedEnd).toHaveBeenCalledTimes(1);
   });
 
+  it('stop() tells when the walk started and ended', () => {
+    jest.setSystemTime(new Date('2030-01-02T09:00:00.000Z'));
+    const { result } = renderHook(() => useWalkTracking({ route, mockGps: true }));
+    step(30);
+
+    let times: { startedAt: Date; endedAt: Date } | undefined;
+    act(() => {
+      times = result.current.stop();
+    });
+
+    expect(times).toEqual({
+      startedAt: new Date('2030-01-02T09:00:00.000Z'),
+      endedAt: new Date('2030-01-02T09:01:00.000Z'),
+    });
+  });
+
   it('stops counting after stop()', () => {
     const { result } = renderHook(() => useWalkTracking({ route, mockGps: true }));
     step(1);

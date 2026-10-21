@@ -45,3 +45,11 @@ export const formatPace = (seconds: number, meters: number): string => {
   const secs = Math.floor((minPerKm - mins) * 60);
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
+
+/** Monday 00:00 of the date's week, in the user's time zone */
+export const startOfLocalWeek = (date: Date): Date => {
+  const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  // getDay(): Sunday is 0, so Sunday goes back 6 days and Monday 0
+  start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+  return start;
+};

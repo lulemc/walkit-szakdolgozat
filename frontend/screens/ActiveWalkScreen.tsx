@@ -1,20 +1,29 @@
-import { useCallback, useEffect, useRef } from "react";
-import { Alert, AlertButton, BackHandler, StyleSheet, View } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Alert, BackHandler, StyleSheet, View } from "react-native";
 import { CustomText } from "@/components/CustomText";
 import { PrimaryButton } from "@/components/Button";
 import { ActiveWalkMap } from "@/components/ActiveWalk/ActiveWalkMap";
 import { WalkStatsPanel } from "@/components/ActiveWalk/WalkStatsPanel";
+import { FavoriteState, WalkSummaryView } from "@/components/ActiveWalk/WalkSummaryView";
 import { useWalkTracking } from "@/hooks/useWalkTracking";
-import { routeService, type Route as RouteType } from "@/services/routeService";
+import { routeService, type Coordinates, type Route as RouteType } from "@/services/routeService";
+import { walkService } from "@/services/walkService";
 import { colors } from "@/theme/colors";
 import { apiErrorMessage } from "@/utils/apiError";
-import { formatElapsed, formatWalkDistance } from "@/utils/walkMetrics";
 
 interface ActiveWalkScreenProps {
   route: RouteType;
   onEndWalk: () => void;
   /** Set when walking a group walk; its route is a copy, not one of my saved routes */
   groupWalkId?: string;
+}
+
+interface FinishedWalk {
+  startedAt: Date;
+  endedAt: Date;
+  distanceM: number;
+  elapsedSec: number;
+  segments: Coordinates[][];
 }
 
 /** Simulated GPS walks the route by itself, for testing at home */
@@ -28,59 +37,96 @@ export default function ActiveWalkScreen({
   const mockGps = isMockGpsEnabled();
   const canFavorite = !groupWalkId && !walkRoute.isFavorite;
 
-  // The latest numbers, for dialogs opened from callbacks
-  const latest = useRef({ distanceM: 0, elapsedSec: 0, stop: () => {} });
-  const showSummaryRef = useRef<() => void>(() => {});
+  // Set when the walk has ended: the numbers to show and save
+  const [finished, setFinished] = useState<FinishedWalk | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [favorite, setFavorite] = useState<FavoriteState>(canFavorite ? "available" : "hidden");
 
-  const handleReachedEnd = useCallback(() => showSummaryRef.current(), []);
+  // finish() is also called from the tracking hook, so it reads the latest numbers from a ref
+  const finishRef = useRef<() => void>(() => {});
+  const handleReachedEnd = useCallback(() => finishRef.current(), []);
   const tracking = useWalkTracking({ route: walkRoute, mockGps, onReachedEnd: handleReachedEnd });
-  const { stop } = tracking;
+  const { stop, distanceM, elapsedSec, segments } = tracking;
 
   useEffect(() => {
-    latest.current = { distanceM: tracking.distanceM, elapsedSec: tracking.elapsedSec, stop };
-  }, [tracking.distanceM, tracking.elapsedSec, stop]);
+    finishRef.current = () => {
+      const { startedAt, endedAt } = stop();
+      setFinished({ startedAt, endedAt, distanceM, elapsedSec, segments });
+    };
+  }, [stop, distanceM, elapsedSec, segments]);
 
-  const endWalk = useCallback(() => {
-    stop();
-    onEndWalk();
-  }, [stop, onEndWalk]);
+  const save = async () => {
+    if (!finished) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await walkService.record({
+        // A group walk's route is a copy, so it's linked by the group walk instead
+        ...(groupWalkId ? { groupWalkId } : { routeId: walkRoute._id }),
+        startedAt: finished.startedAt.toISOString(),
+        endedAt: finished.endedAt.toISOString(),
+        durationSec: finished.elapsedSec,
+        distanceM: finished.distanceM,
+        path: finished.segments.filter((segment) => segment.length > 0),
+      });
+      onEndWalk();
+    } catch (saveError) {
+      setError(apiErrorMessage(saveError));
+      setSaving(false);
+    }
+  };
 
-  const saveAsFavorite = useCallback(async () => {
-    stop();
-    const done: AlertButton[] = [{ text: "OK", onPress: onEndWalk }];
+  const addToFavorites = async () => {
+    setFavorite("saving");
+    setError(null);
     try {
       await routeService.addFavorite(walkRoute._id);
-      Alert.alert("Saved", "The route is in your favourites now.", done);
-    } catch (error) {
-      Alert.alert("Couldn't save the favourite", apiErrorMessage(error), done);
+      setFavorite("saved");
+    } catch (favoriteError) {
+      setError(apiErrorMessage(favoriteError));
+      setFavorite("available");
     }
-  }, [stop, onEndWalk, walkRoute._id]);
+  };
 
-  useEffect(() => {
-    showSummaryRef.current = () => {
-      const { distanceM, elapsedSec } = latest.current;
-      const buttons: AlertButton[] = [];
-      if (canFavorite) buttons.push({ text: "Save as Favorite", onPress: saveAsFavorite });
-      buttons.push({ text: "Finish", onPress: endWalk });
-      Alert.alert(
-        "Walk complete! 🎉",
-        `Distance: ${formatWalkDistance(distanceM)}\nTime: ${formatElapsed(elapsedSec)}`,
-        buttons,
-      );
-    };
-  }, [canFavorite, saveAsFavorite, endWalk]);
+  const confirmDiscard = useCallback(() => {
+    Alert.alert("Discard this walk?", "It won't be saved.", [
+      { text: "Keep", style: "cancel" },
+      { text: "Discard", style: "destructive", onPress: onEndWalk },
+    ]);
+  }, [onEndWalk]);
 
-  // Android back asks first, so a walk isn't ended by accident
+  // Android back asks first: during the walk whether to end it, afterwards whether to discard it
+  const hasFinished = finished !== null;
   useEffect(() => {
     const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
-      Alert.alert("End this walk?", "The walk will end here.", [
-        { text: "Keep walking", style: "cancel" },
-        { text: "End walk", style: "destructive", onPress: endWalk },
-      ]);
+      if (hasFinished) {
+        confirmDiscard();
+      } else {
+        Alert.alert("End this walk?", "You can save it on the next screen.", [
+          { text: "Keep walking", style: "cancel" },
+          { text: "End walk", onPress: () => finishRef.current() },
+        ]);
+      }
       return true;
     });
     return () => subscription.remove();
-  }, [endWalk]);
+  }, [hasFinished, confirmDiscard]);
+
+  if (finished) {
+    return (
+      <WalkSummaryView
+        distanceM={finished.distanceM}
+        elapsedSec={finished.elapsedSec}
+        saving={saving}
+        error={error}
+        favorite={favorite}
+        onSave={save}
+        onDiscard={confirmDiscard}
+        onFavorite={addToFavorites}
+      />
+    );
+  }
 
   if (tracking.status === "permission-denied" || tracking.status === "error") {
     return (
@@ -130,7 +176,7 @@ export default function ActiveWalkScreen({
 
         <PrimaryButton
           mode="contained-tonal"
-          onPress={() => showSummaryRef.current()}
+          onPress={() => finishRef.current()}
           style={styles.button}
         >
           Finish Walk

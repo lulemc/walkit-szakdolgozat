@@ -35,6 +35,7 @@ export const useWalkTracking = ({ route, mockGps, onReachedEnd }: Options) => {
   // Active time so far, and when the current running stretch started (null while paused/stopped)
   const activeMs = useRef(0);
   const runningSince = useRef<number | null>(null);
+  const startedAt = useRef<Date | null>(null);
   const paused = useRef(false);
   const stopSource = useRef<(() => void) | null>(null);
   const reachedEnd = useRef(onReachedEnd);
@@ -55,6 +56,7 @@ export const useWalkTracking = ({ route, mockGps, onReachedEnd }: Options) => {
   // The clock, running from when the walk screen opens
   useEffect(() => {
     runningSince.current = Date.now();
+    startedAt.current = new Date();
     const timer = setInterval(() => setElapsedSec(currentElapsedSec()), TICK_MS);
     return () => clearInterval(timer);
   }, []);
@@ -141,13 +143,15 @@ export const useWalkTracking = ({ route, mockGps, onReachedEnd }: Options) => {
     setSegments((current) => [...current, []]);
   }, []);
 
-  /** Ends tracking: stops the position source and the clock */
+  /** Ends tracking: stops the position source and the clock, and says when the walk started and ended */
   const stop = useCallback(() => {
-    if (runningSince.current) activeMs.current += Date.now() - runningSince.current;
+    const endedAt = new Date();
+    if (runningSince.current) activeMs.current += endedAt.getTime() - runningSince.current;
     runningSince.current = null;
     paused.current = true;
     stopSource.current?.();
     setElapsedSec(Math.floor(activeMs.current / 1000));
+    return { startedAt: startedAt.current ?? endedAt, endedAt };
   }, []);
 
   return {
