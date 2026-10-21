@@ -2,11 +2,17 @@ import { useState } from "react";
 import { View, StyleSheet } from "react-native";
 import WalkPlannerScreen from "@/screens/WalkPlanner";
 import ActiveWalkScreen from "@/screens/ActiveWalkScreen";
+import MyRoutesScreen from "@/screens/MyRoutesScreen";
 import type { Route } from "@/services/routeService";
 import { useOptionalSocialNavigation } from "@/screens/social/socialNavigation";
 
+/** The Home tab's views; they switch by state, like the Social tab's */
+type HomeView = { screen: "planner" } | { screen: "myRoutes" } | { screen: "activeWalk"; route: Route };
+
+const PLANNER: HomeView = { screen: "planner" };
+
 export default function HomeScreen() {
-  const [activeWalk, setActiveWalk] = useState<Route | null>(null);
+  const [view, setView] = useState<HomeView>(PLANNER);
   const social = useOptionalSocialNavigation();
 
   // Group walks are planned in the Social tab, so only offer it where there is one
@@ -14,22 +20,24 @@ export default function HomeScreen() {
     ? (route: Route) => social.open({ screen: "createWalk", route })
     : undefined;
 
-  const handleStartWalk = (route: Route) => {
-    setActiveWalk(route);
-  };
-
-  const handleEndWalk = () => {
-    setActiveWalk(null);
-  };
+  const startWalk = (route: Route) => setView({ screen: "activeWalk", route });
+  const showPlanner = () => setView(PLANNER);
 
   return (
     <View style={styles.container}>
-      {activeWalk ? (
-        <ActiveWalkScreen route={activeWalk} onEndWalk={handleEndWalk} />
+      {view.screen === "activeWalk" ? (
+        <ActiveWalkScreen route={view.route} onEndWalk={showPlanner} />
+      ) : view.screen === "myRoutes" ? (
+        <MyRoutesScreen
+          onBack={showPlanner}
+          onWalk={startWalk}
+          onPlanGroupWalk={handlePlanGroupWalk}
+        />
       ) : (
         <WalkPlannerScreen
-          onStartWalk={handleStartWalk}
+          onStartWalk={startWalk}
           onPlanGroupWalk={handlePlanGroupWalk}
+          onOpenMyRoutes={() => setView({ screen: "myRoutes" })}
         />
       )}
     </View>
