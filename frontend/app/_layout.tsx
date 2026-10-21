@@ -5,6 +5,8 @@ import { lightTheme, darkTheme } from "@/theme/paperTheme";
 import { useColorScheme, View, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+// Defines the background location task at start-up, so the OS can deliver walk locations
+import "@/services/walkLocationTask";
 
 function AppContent() {
   const { token, loading } = useAuth();

@@ -37,10 +37,11 @@ export default function SocialScreen({ initialView }: SocialScreenProps) {
 function SocialViews() {
   const { view, navigate, goBack } = useSocialNavigation();
 
-  // Android back returns to the hub; on the hub the system handles it as usual
+  // Android back returns to the hub. On the hub the system handles it as usual,
+  // and during a walk the walk screen does (it asks before ending the walk).
   useEffect(() => {
     const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
-      if (view.screen === "hub") return false;
+      if (view.screen === "hub" || view.screen === "activeWalk") return false;
       goBack();
       return true;
     });
@@ -57,14 +58,18 @@ function SocialViews() {
         key={view.walkId}
         walkId={view.walkId}
         onBack={goBack}
-        onStartWalk={(route) => navigate({ screen: "activeWalk", route })}
+        onStartWalk={(route) =>
+          navigate({ screen: "activeWalk", route, groupWalkId: view.walkId })
+        }
       />
     );
   }
 
   // The walk screen manages its own full-screen layout
   if (view.screen === "activeWalk") {
-    return <ActiveWalkScreen route={view.route} onEndWalk={goBack} />;
+    return (
+      <ActiveWalkScreen route={view.route} groupWalkId={view.groupWalkId} onEndWalk={goBack} />
+    );
   }
 
   return (

@@ -52,4 +52,30 @@ describe('app config', () => {
     expect(config.ios?.config?.googleMapsApiKey).toBeUndefined();
     expect(config.android?.config?.googleMaps?.apiKey).toBeUndefined();
   });
+
+  it('allows walks to be tracked with the screen locked', () => {
+    const plugin = appJson.expo.plugins.find(
+      (entry) => Array.isArray(entry) && entry[0] === 'expo-location',
+    ) as [string, Record<string, unknown>] | undefined;
+
+    expect(plugin?.[1]).toEqual(
+      expect.objectContaining({
+        isIosBackgroundLocationEnabled: true,
+        isAndroidBackgroundLocationEnabled: true,
+        isAndroidForegroundServiceEnabled: true,
+        locationAlwaysAndWhenInUsePermission: expect.stringContaining('walk'),
+      }),
+    );
+    const modes = appJson.expo.ios.infoPlist.UIBackgroundModes;
+    expect(modes).toContain('location');
+    expect(new Set(modes).size).toBe(modes.length);
+  });
+
+  it('defines the walk location task when the app starts', () => {
+    const fs = jest.requireActual('fs');
+    // Jest runs from the frontend folder
+    const layout = fs.readFileSync(`${process.cwd()}/app/_layout.tsx`, 'utf8');
+
+    expect(layout).toContain('@/services/walkLocationTask');
+  });
 });

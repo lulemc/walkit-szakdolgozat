@@ -16,7 +16,7 @@
         "NSHealthUpdateUsageDescription": "We need access to update your health data with your walking activities.",
         "UIBackgroundModes": [
           "fetch",
-          "fetch"
+          "location"
         ],
         "ITSAppUsesNonExemptEncryption": false
       },
@@ -47,6 +47,16 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "WalkIt uses your location to plan routes and track your walk.",
+          "locationAlwaysAndWhenInUsePermission": "WalkIt keeps tracking your walk while the screen is locked, so the whole route is recorded.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
       [
         "expo-splash-screen",
         {

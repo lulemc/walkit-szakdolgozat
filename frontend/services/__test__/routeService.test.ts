@@ -90,6 +90,15 @@ describe('routeService', () => {
     expect(mockedApi.delete).toHaveBeenCalledWith('/routes/r1');
   });
 
+  it('addFavorite favourites the route and returns it', async () => {
+    mockedApi.post.mockResolvedValue({ data: { success: true, data: route({ isFavorite: true }) } });
+
+    const result = await routeService.addFavorite('r1');
+
+    expect(mockedApi.post).toHaveBeenCalledWith('/routes/r1/favorite', {});
+    expect(result.isFavorite).toBe(true);
+  });
+
   it('passes request errors on to the caller', async () => {
     mockedApi.get.mockRejectedValue(new Error('Network Error'));
 
