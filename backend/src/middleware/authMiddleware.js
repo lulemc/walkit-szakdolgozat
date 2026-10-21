@@ -19,11 +19,16 @@ export const protect = async (req, res, next) => {
         return res.status(401).json({ message: "User not found" });
       }
 
+      // Tokens from before the last password change (older tokens have no version: 0)
+      if ((decoded.tokenVersion ?? 0) !== (req.user.tokenVersion ?? 0)) {
+        return res
+          .status(401)
+          .json({ message: "Your session has expired. Please log in again." });
+      }
+
       next();
-    } catch (err) {
-      return res
-        .status(401)
-        .json({ message: "Not authorized, token failed", error: err.message });
+    } catch {
+      return res.status(401).json({ message: "Not authorized, token failed" });
     }
   } else {
     return res.status(401).json({ message: "Not authorized, no token" });

@@ -4,6 +4,7 @@ import { HelperText } from "react-native-paper";
 import { useRouter } from "expo-router";
 import { useTextInput } from "@/hooks/form/useTextInput";
 import { useAuth } from "@/context/AuthProvider";
+import { MIN_PASSWORD_LENGTH, PASSWORD_TOO_SHORT_MESSAGE } from "@/utils/passwordRules";
 import {
   CustomText,
   RowLayout,
@@ -28,6 +29,10 @@ const RegisterScreen: React.FC = () => {
       setError("All fields are required");
       return;
     }
+    if (password.value.length < MIN_PASSWORD_LENGTH) {
+      setError(PASSWORD_TOO_SHORT_MESSAGE);
+      return;
+    }
 
     try {
       setLoading(true);
@@ -48,11 +53,13 @@ const RegisterScreen: React.FC = () => {
       </CustomText>
       <CustomTextInput
         label="Name"
+        accessibilityLabel="Name"
         value={name.value}
         onChangeText={name.onChangeText}
       />
       <CustomTextInput
         label="Email"
+        accessibilityLabel="Email"
         value={email.value}
         onChangeText={email.onChangeText}
         autoCapitalize="none"
@@ -60,6 +67,7 @@ const RegisterScreen: React.FC = () => {
       />
       <CustomTextInput
         label="Password"
+        accessibilityLabel="Password"
         value={password.value}
         onChangeText={password.onChangeText}
         secureTextEntry

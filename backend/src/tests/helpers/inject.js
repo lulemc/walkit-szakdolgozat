@@ -6,14 +6,17 @@ import { Socket } from "node:net";
  * the response, without opening a network port (works in sandboxes and CI).
  *
  * @param {import("express").Express} app
- * @param {{ method?: string, url: string, body?: unknown, headers?: Record<string, string> }} options
+ * @param {{ method?: string, url: string, body?: unknown, headers?: Record<string, string>, ip?: string }} options
  * @returns {Promise<{ status: number, headers: object, text: string, body: unknown }>}
  */
-export const inject = (app, { method = "GET", url, body, headers = {} }) =>
+export const inject = (app, { method = "GET", url, body, headers = {}, ip = "127.0.0.1" }) =>
   new Promise((resolve, reject) => {
     const payload = body === undefined ? null : JSON.stringify(body);
 
-    const req = new http.IncomingMessage(new Socket());
+    const socket = new Socket();
+    // The client address, e.g. for rate limiting
+    Object.defineProperty(socket, "remoteAddress", { value: ip });
+    const req = new http.IncomingMessage(socket);
     req.method = method;
     req.url = url;
     req.headers = {

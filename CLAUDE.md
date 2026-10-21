@@ -119,12 +119,17 @@ Required variables:
 - `ORS_API_KEY`: OpenRouteService API key for route generation
 - `PORT`: Server port (defaults to 4000)
 - `NODE_ENV`: Environment (development/test/production)
+- `CORS_ORIGINS` (optional): comma-separated browser origins allowed to call the API
+- `TRUST_PROXY` (optional): number of proxies in front of the API when hosted (e.g. `1`), so rate limits see each client's own IP
 
 ### Frontend (`frontend/.env`)
 Required variables:
 - `EXPO_PUBLIC_API_URL`: Backend API URL (e.g., `http://192.168.0.96:4000/api`)
 - `EXPO_PUBLIC_GOOGLE_PLACES_API_KEY`: Google Places API key for location search
 - `EXPO_PUBLIC_USE_MOCK_HEALTH`: demo health data unless set to `"false"`; set `false` in `.env` / EAS env for real health data in dev builds
+- `GOOGLE_MAPS_IOS_KEY`, `GOOGLE_MAPS_ANDROID_KEY`: Google Maps SDK keys for native builds, read by `app.config.ts` at build time (EAS environment variables for EAS builds). Never put keys in `app.json`
+
+`frontend/.env.example` lists every variable.
 
 ## Testing
 
@@ -154,7 +159,7 @@ Backend exposes three main route groups:
 - `/api/users`: User management endpoints
 - `/api/routes`: Route generation and retrieval endpoints
 
-CORS configured for `localhost:8081`, `localhost:19006`, and `localhost:4000`
+CORS allows `localhost:8081`, `localhost:19006` and `localhost:4000` by default, or the comma-separated `CORS_ORIGINS` env list; other browser origins get 403 (the mobile app sends no origin). Swagger UI is not served when `NODE_ENV=production`
 
 ## Important Notes
 

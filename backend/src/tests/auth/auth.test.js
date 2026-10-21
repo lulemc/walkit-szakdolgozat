@@ -58,6 +58,44 @@ describe("authMiddleware - protect", () => {
     expect(next).toHaveBeenCalled();
   });
 
+  it("accepts a token whose version matches the user's", async () => {
+    req.headers.authorization = "Bearer validtoken";
+    jwt.verify.mockReturnValue({ id: "123", tokenVersion: 2 });
+    User.findById.mockReturnValue({
+      select: vi.fn().mockResolvedValue({ _id: "123", tokenVersion: 2 }),
+    });
+
+    await protect(req, res, next);
+
+    expect(next).toHaveBeenCalled();
+  });
+
+  it("accepts tokens from before token versions existed while the password is unchanged", async () => {
+    req.headers.authorization = "Bearer oldtoken";
+    jwt.verify.mockReturnValue({ id: "123" });
+    User.findById.mockReturnValue({ select: vi.fn().mockResolvedValue({ _id: "123" }) });
+
+    await protect(req, res, next);
+
+    expect(next).toHaveBeenCalled();
+  });
+
+  it("rejects a token issued before the last password change", async () => {
+    req.headers.authorization = "Bearer oldtoken";
+    jwt.verify.mockReturnValue({ id: "123", tokenVersion: 0 });
+    User.findById.mockReturnValue({
+      select: vi.fn().mockResolvedValue({ _id: "123", tokenVersion: 1 }),
+    });
+
+    await protect(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith({
+      message: "Your session has expired. Please log in again.",
+    });
+    expect(next).not.toHaveBeenCalled();
+  });
+
   it("returns 401 if token verification fails", async () => {
     req.headers.authorization = "Bearer invalidtoken";
 
@@ -68,11 +106,8 @@ describe("authMiddleware - protect", () => {
     await protect(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: "Not authorized, token failed",
-      }),
-    );
+    // Without the library's own error text
+    expect(res.json).toHaveBeenCalledWith({ message: "Not authorized, token failed" });
     expect(next).not.toHaveBeenCalled();
   });
 

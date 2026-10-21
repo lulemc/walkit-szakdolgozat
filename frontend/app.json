@@ -10,9 +10,6 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "config": {
-        "googleMapsApiKey": "AIzaSyBmTTxZ5x_NIQlKyIGJaf3aqNZTgRxFLh8"
-      },
       "bundleIdentifier": "com.walkit.app",
       "infoPlist": {
         "NSHealthShareUsageDescription": "We need access to your health data to show your walking statistics and track your progress.",
@@ -37,11 +34,6 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "config": {
-        "googleMaps": {
-          "apiKey": "AIzaSyBmTTxZ5x_NIQlKyIGJaf3aqNZTgRxFLh8"
-        }
-      },
       "package": "com.walkit.app",
       "permissions": [
         "android.permission.health.READ_STEPS",

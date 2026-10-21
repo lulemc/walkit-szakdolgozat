@@ -12,6 +12,7 @@ import { CustomTextInput } from "../Inputs/CustomTextInput";
 import { PrimaryButton } from "../Button";
 import UserService from "@/services/userService";
 import { storage } from "@/utils/storage";
+import { MIN_PASSWORD_LENGTH, PASSWORD_TOO_SHORT_MESSAGE } from "@/utils/passwordRules";
 import { useTheme } from "react-native-paper";
 
 interface ChangePasswordModalProps {
@@ -40,8 +41,8 @@ export default function ChangePasswordModal({
   const theme = useTheme();
 
   const validatePassword = (password: string): string => {
-    if (password.length < 8) {
-      return "Password must be at least 8 characters long";
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      return PASSWORD_TOO_SHORT_MESSAGE;
     }
     if (!/[A-Z]/.test(password)) {
       return "Password must contain at least one uppercase letter";

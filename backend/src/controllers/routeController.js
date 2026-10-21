@@ -1,5 +1,6 @@
 import routeService from "../services/routeService.js";
 import Route from "../models/Route.js";
+import { routeRequestProblem } from "../utils/routeRequest.js";
 
 /**
  * Generate a new route
@@ -8,6 +9,11 @@ export const generateRoute = async (req, res) => {
   try {
     const userId = req.user.id;
     const routeData = req.body;
+
+    const problem = routeRequestProblem(routeData);
+    if (problem) {
+      return res.status(400).json({ success: false, message: problem });
+    }
 
     console.log("📍 Route generation request:", {
       userId,
@@ -22,10 +28,10 @@ export const generateRoute = async (req, res) => {
       data: route,
     });
   } catch (error) {
-    console.error("❌ Error generating route:", error.message);
+    console.error("❌ Error generating route:", error);
     res.status(500).json({
       success: false,
-      message: error.message || "Failed to generate route",
+      message: "Failed to generate route. Please try again.",
     });
   }
 };
