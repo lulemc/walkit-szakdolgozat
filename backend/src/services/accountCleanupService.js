@@ -2,6 +2,7 @@ import Friendship from "../models/Friendship.js";
 import GroupWalk from "../models/GroupWalk.js";
 import GroupWalkComment from "../models/GroupWalkComment.js";
 import Route from "../models/Route.js";
+import WalkSession from "../models/WalkSession.js";
 
 /**
  * Removes a user's data before their account is deleted, so nothing points
@@ -19,6 +20,7 @@ export const deleteUserData = async (userId) => {
   });
   const comments = await GroupWalkComment.deleteMany({ author: userId });
   const routes = await Route.deleteMany({ userId });
+  const walkSessions = await WalkSession.deleteMany({ user: userId });
 
   const cancelledWalks = await GroupWalk.updateMany(
     { organiser: userId, status: "scheduled", scheduledAt: { $gte: now } },
@@ -33,6 +35,7 @@ export const deleteUserData = async (userId) => {
     friendships: friendships.deletedCount,
     comments: comments.deletedCount,
     routes: routes.deletedCount,
+    walkSessions: walkSessions.deletedCount,
     cancelledWalks: cancelledWalks.modifiedCount,
     leftWalks: leftWalks.modifiedCount,
   };
