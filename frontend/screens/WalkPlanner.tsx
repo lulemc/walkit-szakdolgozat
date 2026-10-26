@@ -18,11 +18,13 @@ import type { Route } from "@/services/routeService";
 interface WalkPlannerScreenProps {
   onStartWalk?: (route: Route) => void; // NEW: Callback for starting walk
   onPlanGroupWalk?: (route: Route) => void;
+  onOpenMyRoutes?: () => void;
 }
 
 export default function WalkPlannerScreen({
   onStartWalk,
   onPlanGroupWalk,
+  onOpenMyRoutes,
 }: WalkPlannerScreenProps) {
   const theme = useTheme();
 
@@ -157,9 +159,16 @@ export default function WalkPlannerScreen({
         scrollRef={scrollRef as RefObject<any>}
         scrollEnabled={mapSelectionMode === "none"}
       >
-        <CustomText variant="titleLarge" style={styles.title}>
-          Plan Your Walk
-        </CustomText>
+        <View style={styles.titleRow}>
+          <CustomText variant="titleLarge" style={styles.title}>
+            Plan Your Walk
+          </CustomText>
+          {onOpenMyRoutes ? (
+            <PrimaryButton mode="text" icon="bookmark-outline" onPress={onOpenMyRoutes}>
+              My routes
+            </PrimaryButton>
+          ) : null}
+        </View>
 
         <View style={styles.section}>
           <CustomText variant="titleMedium" style={styles.sectionTitle}>
@@ -257,8 +266,13 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 10,
   },
-  title: {
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 24,
+  },
+  title: {
     fontWeight: "600",
   },
   section: {

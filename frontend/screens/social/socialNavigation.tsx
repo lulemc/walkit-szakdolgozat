@@ -6,7 +6,8 @@ export type SocialView =
   | { screen: "hub" }
   | { screen: "walkDetail"; walkId: string }
   | { screen: "createWalk"; route?: Route }
-  | { screen: "activeWalk"; route: Route };
+  /** groupWalkId is set when walking a group walk's route */
+  | { screen: "activeWalk"; route: Route; groupWalkId?: string };
 
 export interface SocialNavigation {
   view: SocialView;

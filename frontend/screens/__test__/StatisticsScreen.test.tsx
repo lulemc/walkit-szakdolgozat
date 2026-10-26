@@ -1,5 +1,6 @@
 /* eslint-disable import/first */
 jest.mock("@/hooks/useHealthData");
+jest.mock("@/hooks/useWalkStats", () => ({ useWalkStats: jest.fn(() => ({ stats: null })) }));
 jest.mock("react-native-gifted-charts", () => ({
   BarChart: () => null,
   LineChart: () => null,
@@ -11,6 +12,7 @@ import { fireEvent } from "@testing-library/react-native";
 import { useHealthData, UseHealthDataReturn } from "@/hooks/useHealthData";
 import { renderWithTheme } from "@/components/Statistics/__test__/renderWithTheme";
 import { summarize } from "@/utils/healthStats";
+import { useWalkStats } from "@/hooks/useWalkStats";
 import StatisticsScreen from "../StatisticsScreen";
 
 const mockedUseHealthData = useHealthData as jest.MockedFunction<typeof useHealthData>;
@@ -136,5 +138,16 @@ describe("StatisticsScreen", () => {
     const { getByText } = renderWithTheme(<StatisticsScreen />);
     expect(getByText("Couldn't refresh. Showing your last data.")).toBeTruthy();
     expect(getByText("12,847")).toBeTruthy();
+  });
+
+  it("shows this week's WalkIt walks next to the health data", () => {
+    mockedUseHealthData.mockReturnValue(healthState());
+    (useWalkStats as jest.Mock).mockReturnValue({
+      stats: { walkCount: 3, totalDistanceM: 9000, totalDurationSec: 5400 },
+    });
+
+    const { getByLabelText } = renderWithTheme(<StatisticsScreen />);
+
+    expect(getByLabelText("WalkIt walks this week: 3 walks, 9.00km, 1h 30m 0s")).toBeTruthy();
   });
 });

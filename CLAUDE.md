@@ -60,6 +60,10 @@ WalkIt is a React Native walking planner application that generates walking rout
 - Health Connect must be installed on Android 8-13 (built into Android 14+)
 - Neither works in Expo Go (mock data is used there)
 
+**Walk Tracking**:
+- `hooks/useWalkTracking.ts` tracks position, path (one segment per stretch between pauses), distance and time; paused time and movement don't count
+- With background location permission it records with the screen locked through the task in `services/walkLocationTask.ts` (defined at start-up in `app/_layout.tsx`); otherwise, and in Expo Go, it falls back to foreground tracking
+
 **Maps & Location**:
 - `react-native-maps` for map display
 - `expo-location` for location services
@@ -127,6 +131,7 @@ Required variables:
 - `EXPO_PUBLIC_API_URL`: Backend API URL (e.g., `http://192.168.0.96:4000/api`)
 - `EXPO_PUBLIC_GOOGLE_PLACES_API_KEY`: Google Places API key for location search
 - `EXPO_PUBLIC_USE_MOCK_HEALTH`: demo health data unless set to `"false"`; set `false` in `.env` / EAS env for real health data in dev builds
+- `EXPO_PUBLIC_USE_MOCK_GPS`: `"true"` makes the walk screen follow the route with simulated GPS (testing at home); real GPS otherwise
 - `GOOGLE_MAPS_IOS_KEY`, `GOOGLE_MAPS_ANDROID_KEY`: Google Maps SDK keys for native builds, read by `app.config.ts` at build time (EAS environment variables for EAS builds). Never put keys in `app.json`
 
 `frontend/.env.example` lists every variable.

@@ -371,6 +371,58 @@ const swaggerSpec = swaggerJSDoc({
             },
           },
         },
+        RecordWalkRequest: {
+          type: "object",
+          required: ["startedAt", "endedAt", "durationSec", "distanceM"],
+          properties: {
+            routeId: { type: "string", description: "One of my saved routes; its walk count is increased" },
+            groupWalkId: { type: "string", description: "A group walk I take part in" },
+            startedAt: { type: "string", format: "date-time" },
+            endedAt: { type: "string", format: "date-time", description: "Not in the future" },
+            durationSec: { type: "number", minimum: 0, description: "Time walked, without pauses" },
+            distanceM: { type: "number", minimum: 0, maximum: 200000 },
+            path: {
+              type: "array",
+              description: "One list of points per stretch between pauses; stored with at most 500 points",
+              items: { type: "array", items: { $ref: "#/components/schemas/Coordinates" } },
+            },
+          },
+        },
+        WalkSummary: {
+          type: "object",
+          properties: {
+            _id: { type: "string" },
+            routeId: { type: "string", nullable: true },
+            groupWalkId: { type: "string", nullable: true },
+            name: { type: "string", nullable: true, description: "The route's or group walk's name when saved" },
+            startedAt: { type: "string", format: "date-time" },
+            endedAt: { type: "string", format: "date-time" },
+            durationSec: { type: "number" },
+            distanceM: { type: "number" },
+          },
+        },
+        Walk: {
+          allOf: [
+            { $ref: "#/components/schemas/WalkSummary" },
+            {
+              type: "object",
+              properties: {
+                path: {
+                  type: "array",
+                  items: { type: "array", items: { $ref: "#/components/schemas/Coordinates" } },
+                },
+              },
+            },
+          ],
+        },
+        WalkStats: {
+          type: "object",
+          properties: {
+            walkCount: { type: "integer" },
+            totalDistanceM: { type: "number" },
+            totalDurationSec: { type: "number" },
+          },
+        },
         ErrorResponse: {
           type: "object",
           properties: {
@@ -1249,6 +1301,105 @@ const swaggerSpec = swaggerJSDoc({
               description: "Walk or comment not found",
               content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
             },
+          },
+        },
+      },
+      "/api/walks": {
+        post: {
+          summary: "Save a finished walk",
+          tags: ["Walks"],
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: { "application/json": { schema: { $ref: "#/components/schemas/RecordWalkRequest" } } },
+          },
+          responses: {
+            201: {
+              description: "The saved walk",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: { success: { type: "boolean" }, data: { $ref: "#/components/schemas/Walk" } },
+                  },
+                },
+              },
+            },
+            400: { description: "Invalid times, duration, distance or path", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+            404: { description: "Route or group walk not found", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+          },
+        },
+        get: {
+          summary: "My walks, newest first (without paths)",
+          tags: ["Walks"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { in: "query", name: "before", schema: { type: "string", format: "date-time" }, description: "Only walks started before this (the oldest one loaded)" },
+            { in: "query", name: "limit", schema: { type: "integer", minimum: 1, maximum: 50, default: 20 } },
+          ],
+          responses: {
+            200: {
+              description: "A page of walks",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: { type: "boolean" },
+                      data: { type: "array", items: { $ref: "#/components/schemas/WalkSummary" } },
+                    },
+                  },
+                },
+              },
+            },
+            400: { description: "Invalid before or limit", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+          },
+        },
+      },
+      "/api/walks/stats": {
+        get: {
+          summary: "Totals of my walks in a time range",
+          tags: ["Walks"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { in: "query", name: "from", schema: { type: "string", format: "date-time" }, description: "Walks started at or after this" },
+            { in: "query", name: "to", schema: { type: "string", format: "date-time" }, description: "Walks started before this" },
+          ],
+          responses: {
+            200: {
+              description: "Walk count, distance and time",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: { success: { type: "boolean" }, data: { $ref: "#/components/schemas/WalkStats" } },
+                  },
+                },
+              },
+            },
+            400: { description: "Invalid from or to", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+          },
+        },
+      },
+      "/api/walks/{id}": {
+        get: {
+          summary: "One of my walks, with its path",
+          tags: ["Walks"],
+          security: [{ bearerAuth: [] }],
+          parameters: [{ in: "path", name: "id", required: true, schema: { type: "string" } }],
+          responses: {
+            200: {
+              description: "The walk",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: { success: { type: "boolean" }, data: { $ref: "#/components/schemas/Walk" } },
+                  },
+                },
+              },
+            },
+            404: { description: "Walk not found", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
           },
         },
       },

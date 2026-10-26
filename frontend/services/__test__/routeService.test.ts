@@ -90,6 +90,33 @@ describe('routeService', () => {
     expect(mockedApi.delete).toHaveBeenCalledWith('/routes/r1');
   });
 
+  it('addFavorite favourites the route and returns it', async () => {
+    mockedApi.post.mockResolvedValue({ data: { success: true, data: route({ isFavorite: true }) } });
+
+    const result = await routeService.addFavorite('r1');
+
+    expect(mockedApi.post).toHaveBeenCalledWith('/routes/r1/favorite', {});
+    expect(result.isFavorite).toBe(true);
+  });
+
+  it('removeFavorite takes the route out of the favourites and returns it', async () => {
+    mockedApi.delete.mockResolvedValue({ data: { success: true, data: route({ isFavorite: false }) } });
+
+    const result = await routeService.removeFavorite('r1');
+
+    expect(mockedApi.delete).toHaveBeenCalledWith('/routes/r1/favorite');
+    expect(result.isFavorite).toBe(false);
+  });
+
+  it('renameRoute renames the route and returns it', async () => {
+    mockedApi.patch.mockResolvedValue({ data: { success: true, data: route({ name: 'Hill loop' }) } });
+
+    const result = await routeService.renameRoute('r1', 'Hill loop');
+
+    expect(mockedApi.patch).toHaveBeenCalledWith('/routes/r1/name', { name: 'Hill loop' });
+    expect(result.name).toBe('Hill loop');
+  });
+
   it('passes request errors on to the caller', async () => {
     mockedApi.get.mockRejectedValue(new Error('Network Error'));
 

@@ -12,6 +12,7 @@ import authRoutes from "./routes/auth.js";
 import routeRoutes from "./routes/routeRoutes.js";
 import friendRoutes from "./routes/friendRoutes.js";
 import groupWalkRoutes from "./routes/groupWalkRoutes.js";
+import walkRoutes from "./routes/walkRoutes.js";
 
 // Browser origins allowed to call the API (the mobile app sends no origin).
 // CORS_ORIGINS is a comma-separated list; the default covers local Expo web.
@@ -59,5 +60,6 @@ app.use("/api/auth", authRoutes);
 app.use("/api/routes", routeRoutes);
 app.use("/api/friends", friendRoutes);
 app.use("/api/group-walks", groupWalkRoutes);
+app.use("/api/walks", walkRoutes);
 
 export default app;

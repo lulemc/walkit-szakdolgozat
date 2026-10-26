@@ -94,6 +94,30 @@ class RouteService {
   }
 
   /**
+   * Add a route to the user's favourites; unnamed routes get a name like "Circular 5.2km"
+   */
+  async addFavorite(routeId: string): Promise<Route> {
+    const response = await api.post<ApiResponse<Route>>(`/routes/${routeId}/favorite`, {});
+    return response.data.data;
+  }
+
+  /**
+   * Take a route out of the user's favourites
+   */
+  async removeFavorite(routeId: string): Promise<Route> {
+    const response = await api.delete<ApiResponse<Route>>(`/routes/${routeId}/favorite`);
+    return response.data.data;
+  }
+
+  /**
+   * Give a route a new name
+   */
+  async renameRoute(routeId: string, name: string): Promise<Route> {
+    const response = await api.patch<ApiResponse<Route>>(`/routes/${routeId}/name`, { name });
+    return response.data.data;
+  }
+
+  /**
    * Delete a route
    */
   async deleteRoute(routeId: string): Promise<void> {

@@ -3,6 +3,7 @@ import Friendship from "../../models/Friendship.js";
 import GroupWalk from "../../models/GroupWalk.js";
 import GroupWalkComment from "../../models/GroupWalkComment.js";
 import Route from "../../models/Route.js";
+import WalkSession from "../../models/WalkSession.js";
 import { deleteUserData } from "../../services/accountCleanupService.js";
 
 vi.mock("../../models/Friendship.js", () => ({ default: { deleteMany: vi.fn() } }));
@@ -11,6 +12,10 @@ vi.mock("../../models/GroupWalkComment.js", async (importOriginal) => ({
   default: { deleteMany: vi.fn() },
 }));
 vi.mock("../../models/Route.js", async (importOriginal) => ({
+  ...(await importOriginal()),
+  default: { deleteMany: vi.fn() },
+}));
+vi.mock("../../models/WalkSession.js", async (importOriginal) => ({
   ...(await importOriginal()),
   default: { deleteMany: vi.fn() },
 }));
@@ -28,6 +33,7 @@ beforeEach(() => {
   Friendship.deleteMany.mockResolvedValue({ deletedCount: 2 });
   GroupWalkComment.deleteMany.mockResolvedValue({ deletedCount: 5 });
   Route.deleteMany.mockResolvedValue({ deletedCount: 3 });
+  WalkSession.deleteMany.mockResolvedValue({ deletedCount: 7 });
   GroupWalk.updateMany
     .mockResolvedValueOnce({ modifiedCount: 1 })
     .mockResolvedValueOnce({ modifiedCount: 4 });
@@ -53,6 +59,12 @@ describe("deleteUserData", () => {
     expect(Route.deleteMany).toHaveBeenCalledWith({ userId: me });
   });
 
+  it("removes the user's walk history", async () => {
+    await deleteUserData(me);
+
+    expect(WalkSession.deleteMany).toHaveBeenCalledWith({ user: me });
+  });
+
   it("cancels the upcoming walks the user organises", async () => {
     await deleteUserData(me);
 
@@ -76,6 +88,7 @@ describe("deleteUserData", () => {
       friendships: 2,
       comments: 5,
       routes: 3,
+      walkSessions: 7,
       cancelledWalks: 1,
       leftWalks: 4,
     });

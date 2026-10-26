@@ -3,6 +3,8 @@ import { RefreshControl, StyleSheet, View } from "react-native";
 import { SegmentedButtons, useTheme } from "react-native-paper";
 import { CustomText, ScreenContainer } from "@/components";
 import { useHealthData } from "@/hooks/useHealthData";
+import { useWalkStats } from "@/hooks/useWalkStats";
+import { WalkTotalsCard } from "@/components/Walks/WalkTotalsCard";
 import { StatisticsHeader } from "@/components/Statistics/StatisticsHeader";
 import { LoadingState } from "@/components/Statistics/LoadingState";
 import { ErrorState } from "@/components/Statistics/ErrorState";
@@ -57,6 +59,7 @@ export default function StatisticsScreen() {
     openSettings,
     openInstallPage,
   } = useHealthData();
+  const { stats: walkStats } = useWalkStats();
 
   if (status === "loading") {
     return <LoadingState />;
@@ -118,6 +121,8 @@ export default function StatisticsScreen() {
           trend={trends.calories}
         />
       </View>
+
+      {walkStats ? <WalkTotalsCard title="WalkIt walks this week" stats={walkStats} /> : null}
 
       <SegmentedButtons
         value={view}

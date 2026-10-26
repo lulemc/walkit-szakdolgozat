@@ -116,7 +116,11 @@ describe('SocialScreen', () => {
 
       expect(await findByText('Active walk')).toBeTruthy();
       expect(mockActiveWalk).toHaveBeenCalledWith(
-        expect.objectContaining({ route: expect.objectContaining({ _id: 'w7', coordinates: walk.route.coordinates }) }),
+        expect.objectContaining({
+          route: expect.objectContaining({ _id: 'w7', coordinates: walk.route.coordinates }),
+          // So the walk screen knows it isn't one of my saved routes
+          groupWalkId: 'w7',
+        }),
       );
     } finally {
       jest.useRealTimers();
@@ -166,6 +170,13 @@ describe('SocialScreen', () => {
 
     expect(getByText('New group walk')).toBeTruthy();
     await findByText('Sunday stroll');
+  });
+
+  it("leaves Android's back button to the walk screen during a walk, which asks first", () => {
+    const route = { _id: 'w1', coordinates: [] } as unknown as Route;
+    renderWithTheme(<SocialScreen initialView={{ screen: 'activeWalk', route }} />);
+
+    expect(backHandler()).toBe(false);
   });
 
   it('stops listening to the back button on unmount', () => {
