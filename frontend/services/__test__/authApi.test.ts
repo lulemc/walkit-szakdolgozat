@@ -1,52 +1,35 @@
 import api from '../api';
-import { registerUser } from '../authApi';
+import { loginUser, registerUser } from '../authApi';
 
 jest.mock('../api');
 
 const mockedApi = api as jest.Mocked<typeof api>;
+const loggedIn = { token: 'jwt', user: { _id: '123', name: 'John Doe', email: 'john@example.com' } };
 
 describe('authApi', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  describe('registerUser', () => {
-    it('should register a user successfully', async () => {
-      const mockUserData = {
-        name: 'John Doe',
-        email: 'john@example.com',
-        password: 'password123',
-      };
+  it('registers and returns the token and user from { success, data }', async () => {
+    const details = { name: 'John Doe', email: 'john@example.com', password: 'password123' };
+    mockedApi.post.mockResolvedValue({ data: { success: true, data: loggedIn } });
 
-      const mockResponse = {
-        data: {
-          id: '123',
-          name: 'John Doe',
-          email: 'john@example.com',
-        },
-      };
+    await expect(registerUser(details)).resolves.toEqual(loggedIn);
+    expect(mockedApi.post).toHaveBeenCalledWith('/auth/register', details);
+  });
 
-      mockedApi.post.mockResolvedValue(mockResponse);
+  it('logs in and returns the token and user from { success, data }', async () => {
+    const credentials = { email: 'john@example.com', password: 'password123' };
+    mockedApi.post.mockResolvedValue({ data: { success: true, data: loggedIn } });
 
-      const result = await registerUser(mockUserData);
+    await expect(loginUser(credentials)).resolves.toEqual(loggedIn);
+    expect(mockedApi.post).toHaveBeenCalledWith('/auth/login', credentials);
+  });
 
-      expect(mockedApi.post).toHaveBeenCalledWith('/auth/register', mockUserData);
-      expect(result).toEqual(mockResponse.data);
-    });
+  it('passes request errors on', async () => {
+    mockedApi.post.mockRejectedValue(new Error('Registration failed'));
 
-    it('should handle registration error', async () => {
-      const mockUserData = {
-        name: 'John Doe',
-        email: 'john@example.com',
-        password: 'password123',
-      };
-
-      const mockError = new Error('Registration failed');
-      mockedApi.post.mockRejectedValue(mockError);
-
-      await expect(registerUser(mockUserData)).rejects.toThrow('Registration failed');
-
-      expect(mockedApi.post).toHaveBeenCalledWith('/auth/register', mockUserData);
-    });
+    await expect(registerUser({ name: 'J', email: 'j@x.com', password: 'p' })).rejects.toThrow('Registration failed');
   });
 });

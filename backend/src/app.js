@@ -6,6 +6,7 @@ import helmet from "helmet";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./config/swagger.js";
 import { apiLimiter } from "./middleware/rateLimit.js";
+import { errorHandler, notFound } from "./middleware/errorHandler.js";
 
 import userRoutes from "./routes/userRoutes.js";
 import authRoutes from "./routes/auth.js";
@@ -61,5 +62,9 @@ app.use("/api/routes", routeRoutes);
 app.use("/api/friends", friendRoutes);
 app.use("/api/group-walks", groupWalkRoutes);
 app.use("/api/walks", walkRoutes);
+
+// Unknown endpoints and every error end up here, in the usual { success: false, message } shape
+app.use(notFound);
+app.use(errorHandler);
 
 export default app;

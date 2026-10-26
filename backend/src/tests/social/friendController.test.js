@@ -128,23 +128,12 @@ describe("friendController", () => {
     expect(res.json).toHaveBeenCalledWith({ success: true, message: "Friend removed" });
   });
 
-  it("sends a service HttpError with its status", async () => {
-    friendshipService.sendRequest.mockRejectedValue(new HttpError(409, "You are already friends"));
-    const res = mockRes();
+  it.each([
+    ["a service HttpError", new HttpError(409, "You are already friends")],
+    ["an unexpected error", new Error("connection lost")],
+  ])("leaves %s to the error handler", async (_case, error) => {
+    friendshipService.sendRequest.mockRejectedValue(error);
 
-    await sendFriendRequest({ user, body: { userId: "u2" } }, res);
-
-    expect(res.status).toHaveBeenCalledWith(409);
-    expect(res.json).toHaveBeenCalledWith({ success: false, message: "You are already friends" });
-  });
-
-  it("responds 500 without internal details on an unexpected error", async () => {
-    friendshipService.listFriends.mockRejectedValue(new Error("connection lost"));
-    const res = mockRes();
-
-    await listFriends({ user }, res);
-
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({ success: false, message: "Failed to load friends" });
+    await expect(sendFriendRequest({ user, body: { userId: "u2" } }, mockRes())).rejects.toBe(error);
   });
 });

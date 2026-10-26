@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useAuth } from '@/context/AuthProvider';
 import { Route, routeService } from '@/services/routeService';
 import { apiErrorMessage } from '@/utils/apiError';
 
@@ -17,24 +16,23 @@ const byFavoritedAtDesc = (a: Route, b: Route) =>
  * with actionError set.
  */
 export const useSavedRoutes = () => {
-  const { user } = useAuth();
-  const userId = user?._id;
   // Every route, newest first, as the server lists them (favourites included)
   const [routes, setRoutes] = useState<Route[]>([]);
   const [status, setStatus] = useState<SavedRoutesStatus>('loading');
   const [actionError, setActionError] = useState<string | null>(null);
 
   // State is only updated in the promise callbacks, after the request finished
-  const load = useCallback(() => {
-    if (!userId) return Promise.resolve();
-    return routeService.getUserRoutes(userId).then(
-      (loaded) => {
-        setRoutes(loaded);
-        setStatus('ready');
-      },
-      () => setStatus('error'),
-    );
-  }, [userId]);
+  const load = useCallback(
+    () =>
+      routeService.getUserRoutes().then(
+        (loaded) => {
+          setRoutes(loaded);
+          setStatus('ready');
+        },
+        () => setStatus('error'),
+      ),
+    [],
+  );
 
   useEffect(() => {
     load();

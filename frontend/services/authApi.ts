@@ -1,4 +1,5 @@
 import { User } from '@/types/User';
+import type { ApiResponse } from '@/types/api';
 import api from './api';
 
 type AuthResponse = {
@@ -7,11 +8,11 @@ type AuthResponse = {
 };
 
 export const registerUser = async (data: { name: string; email: string; password: string }) => {
-  const res = await api.post<AuthResponse>('/auth/register', data);
-  return res.data;
+  const res = await api.post<ApiResponse<AuthResponse>>('/auth/register', data);
+  return res.data.data;
 };
 
 export const loginUser = async (data: { email: string; password: string }) => {
-  const res = await api.post<AuthResponse>('/auth/login', data);
-  return res.data;
+  const res = await api.post<ApiResponse<AuthResponse>>('/auth/login', data);
+  return res.data.data;
 };

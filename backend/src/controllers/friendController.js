@@ -1,72 +1,45 @@
 import * as friendshipService from "../services/friendshipService.js";
-import { sendError } from "../utils/httpError.js";
+
+// Errors are passed on to middleware/errorHandler.js
 
 export const listFriends = async (req, res) => {
-  try {
-    const friends = await friendshipService.listFriends(req.user.id);
-    res.json({ success: true, data: friends });
-  } catch (error) {
-    sendError(res, error, "Failed to load friends");
-  }
+  const friends = await friendshipService.listFriends(req.user.id);
+  res.json({ success: true, data: friends });
 };
 
 export const listRequests = async (req, res) => {
-  try {
-    const requests = await friendshipService.listRequests(req.user.id);
-    res.json({ success: true, data: requests });
-  } catch (error) {
-    sendError(res, error, "Failed to load friend requests");
-  }
+  const requests = await friendshipService.listRequests(req.user.id);
+  res.json({ success: true, data: requests });
 };
 
 export const sendFriendRequest = async (req, res) => {
-  try {
-    const { friendship, autoAccepted } = await friendshipService.sendRequest(
-      req.user.id,
-      req.body.userId,
-    );
-    res.status(autoAccepted ? 200 : 201).json({
-      success: true,
-      data: friendship,
-      message: autoAccepted ? "Friend request accepted" : "Friend request sent",
-    });
-  } catch (error) {
-    sendError(res, error, "Failed to send friend request");
-  }
+  const { friendship, autoAccepted } = await friendshipService.sendRequest(
+    req.user.id,
+    req.body.userId,
+  );
+  res.status(autoAccepted ? 200 : 201).json({
+    success: true,
+    data: friendship,
+    message: autoAccepted ? "Friend request accepted" : "Friend request sent",
+  });
 };
 
 export const acceptFriendRequest = async (req, res) => {
-  try {
-    const friendship = await friendshipService.acceptRequest(req.user.id, req.params.id);
-    res.json({ success: true, data: friendship, message: "Friend request accepted" });
-  } catch (error) {
-    sendError(res, error, "Failed to accept friend request");
-  }
+  const friendship = await friendshipService.acceptRequest(req.user.id, req.params.id);
+  res.json({ success: true, data: friendship, message: "Friend request accepted" });
 };
 
 export const declineFriendRequest = async (req, res) => {
-  try {
-    await friendshipService.declineRequest(req.user.id, req.params.id);
-    res.json({ success: true, message: "Friend request declined" });
-  } catch (error) {
-    sendError(res, error, "Failed to decline friend request");
-  }
+  await friendshipService.declineRequest(req.user.id, req.params.id);
+  res.json({ success: true, message: "Friend request declined" });
 };
 
 export const cancelFriendRequest = async (req, res) => {
-  try {
-    await friendshipService.cancelRequest(req.user.id, req.params.id);
-    res.json({ success: true, message: "Friend request cancelled" });
-  } catch (error) {
-    sendError(res, error, "Failed to cancel friend request");
-  }
+  await friendshipService.cancelRequest(req.user.id, req.params.id);
+  res.json({ success: true, message: "Friend request cancelled" });
 };
 
 export const unfriend = async (req, res) => {
-  try {
-    await friendshipService.unfriend(req.user.id, req.params.userId);
-    res.json({ success: true, message: "Friend removed" });
-  } catch (error) {
-    sendError(res, error, "Failed to remove friend");
-  }
+  await friendshipService.unfriend(req.user.id, req.params.userId);
+  res.json({ success: true, message: "Friend removed" });
 };

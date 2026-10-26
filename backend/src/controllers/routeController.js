@@ -1,324 +1,100 @@
 import routeService from "../services/routeService.js";
 import Route from "../models/Route.js";
+import { HttpError } from "../utils/httpError.js";
 import { routeRequestProblem } from "../utils/routeRequest.js";
 
-/**
- * Generate a new route
- */
+// Errors are thrown or passed on to middleware/errorHandler.js
+
+const routeNotFound = () => new HttpError(404, "Route not found");
+
+/** One of the user's own routes, or 404 */
+const findMyRoute = async (req) => {
+  const route = await Route.findOne({ _id: req.params.routeId, userId: req.user.id });
+  if (!route) throw routeNotFound();
+  return route;
+};
+
 export const generateRoute = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const routeData = req.body;
+  const problem = routeRequestProblem(req.body);
+  if (problem) throw new HttpError(400, problem);
 
-    const problem = routeRequestProblem(routeData);
-    if (problem) {
-      return res.status(400).json({ success: false, message: problem });
-    }
-
-    console.log("📍 Route generation request:", {
-      userId,
-      type: routeData.routeType,
-      distance: routeData.distance,
-    });
-
-    const route = await routeService.generateRoute(routeData, userId);
-
-    res.status(201).json({
-      success: true,
-      data: route,
-    });
-  } catch (error) {
-    console.error("❌ Error generating route:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to generate route. Please try again.",
-    });
-  }
+  const route = await routeService.generateRoute(req.body, req.user.id);
+  res.status(201).json({ success: true, data: route });
 };
 
-/**
- * Get all routes for user
- */
 export const getUserRoutes = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const routes = await routeService.getUserRoutes(userId);
-
-    res.json({
-      success: true,
-      data: routes,
-    });
-  } catch (error) {
-    console.error("Error fetching routes:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch routes",
-    });
-  }
+  const routes = await routeService.getUserRoutes(req.user.id);
+  res.json({ success: true, data: routes });
 };
 
-/**
- * Get a specific route
- */
 export const getRoute = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { routeId } = req.params;
-
-    const route = await routeService.getRoute(routeId, userId);
-
-    if (!route) {
-      return res.status(404).json({
-        success: false,
-        message: "Route not found",
-      });
-    }
-
-    res.json({
-      success: true,
-      data: route,
-    });
-  } catch (error) {
-    console.error("Error fetching route:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch route",
-    });
-  }
+  const route = await routeService.getRoute(req.params.routeId, req.user.id);
+  if (!route) throw routeNotFound();
+  res.json({ success: true, data: route });
 };
 
-/**
- * Delete a route
- */
 export const deleteRoute = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { routeId } = req.params;
-
-    const route = await routeService.deleteRoute(routeId, userId);
-
-    if (!route) {
-      return res.status(404).json({
-        success: false,
-        message: "Route not found",
-      });
-    }
-
-    res.json({
-      success: true,
-      message: "Route deleted successfully",
-    });
-  } catch (error) {
-    console.error("Error deleting route:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to delete route",
-    });
-  }
+  const route = await routeService.deleteRoute(req.params.routeId, req.user.id);
+  if (!route) throw routeNotFound();
+  res.json({ success: true, message: "Route deleted successfully" });
 };
 
-/**
- * Add route to favorites
- */
+/** Optional body: { name } for the favourite; unnamed routes get a name like "Circular 5.2km" */
 export const addToFavorites = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { routeId } = req.params;
-    const { name } = req.body; // Optional custom name
+  const route = await findMyRoute(req);
 
-    console.log(`⭐ Adding route ${routeId} to favorites for user ${userId}`);
-
-    // Find route and verify ownership
-    const route = await Route.findOne({ _id: routeId, userId });
-
-    if (!route) {
-      return res.status(404).json({
-        success: false,
-        message: "Route not found",
-      });
-    }
-
-    // Update to favorite
-    route.isFavorite = true;
-    route.favoritedAt = new Date();
-
-    // Set custom name if provided
-    if (name) {
-      route.name = name;
-    } else if (!route.name) {
-      // Auto-generate name if not provided
-      route.name = `${route.type === "circular" ? "Circular" : "Point-to-Point"} ${(route.totalDistance / 1000).toFixed(1)}km`;
-    }
-
-    await route.save();
-
-    console.log("✅ Route added to favorites");
-
-    res.json({
-      success: true,
-      message: "Route added to favorites",
-      data: route,
-    });
-  } catch (error) {
-    console.error("❌ Error adding to favorites:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to add route to favorites",
-    });
+  route.isFavorite = true;
+  route.favoritedAt = new Date();
+  if (req.body.name) {
+    route.name = req.body.name;
+  } else if (!route.name) {
+    const kind = route.type === "circular" ? "Circular" : "Point-to-Point";
+    route.name = `${kind} ${(route.totalDistance / 1000).toFixed(1)}km`;
   }
+  await route.save();
+
+  res.json({ success: true, message: "Route added to favorites", data: route });
 };
 
-/**
- * Remove route from favorites
- */
 export const removeFromFavorites = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { routeId } = req.params;
+  const route = await findMyRoute(req);
 
-    console.log(
-      `❌ Removing route ${routeId} from favorites for user ${userId}`,
-    );
+  route.isFavorite = false;
+  route.favoritedAt = null;
+  await route.save();
 
-    const route = await Route.findOne({ _id: routeId, userId });
-
-    if (!route) {
-      return res.status(404).json({
-        success: false,
-        message: "Route not found",
-      });
-    }
-
-    route.isFavorite = false;
-    route.favoritedAt = null;
-    await route.save();
-
-    console.log("✅ Route removed from favorites");
-
-    res.json({
-      success: true,
-      message: "Route removed from favorites",
-      data: route,
-    });
-  } catch (error) {
-    console.error("❌ Error removing from favorites:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to remove route from favorites",
-    });
-  }
+  res.json({ success: true, message: "Route removed from favorites", data: route });
 };
 
-/**
- * Get favorite routes
- */
+/** Most recently favourited first */
 export const getFavoriteRoutes = async (req, res) => {
-  try {
-    const userId = req.user.id;
-
-    console.log(`⭐ Fetching favorite routes for user ${userId}`);
-
-    const favorites = await Route.find({
-      userId,
-      isFavorite: true,
-    }).sort({ favoritedAt: -1 }); // Most recently favorited first
-
-    console.log(`✅ Found ${favorites.length} favorite routes`);
-
-    res.json({
-      success: true,
-      data: favorites,
-      count: favorites.length,
-    });
-  } catch (error) {
-    console.error("❌ Error fetching favorites:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch favorite routes",
-    });
-  }
+  const favorites = await Route.find({ userId: req.user.id, isFavorite: true }).sort({
+    favoritedAt: -1,
+  });
+  res.json({ success: true, data: favorites });
 };
 
-/**
- * Update route name
- */
 export const updateRouteName = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { routeId } = req.params;
-    const { name } = req.body;
+  const name = typeof req.body.name === "string" ? req.body.name.trim() : "";
+  if (!name) throw new HttpError(400, "Route name is required");
 
-    if (!name || name.trim().length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Route name is required",
-      });
-    }
+  const route = await findMyRoute(req);
+  route.name = name;
+  await route.save();
 
-    const route = await Route.findOne({ _id: routeId, userId });
-
-    if (!route) {
-      return res.status(404).json({
-        success: false,
-        message: "Route not found",
-      });
-    }
-
-    route.name = name.trim();
-    await route.save();
-
-    res.json({
-      success: true,
-      message: "Route name updated",
-      data: route,
-    });
-  } catch (error) {
-    console.error("Error updating route name:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to update route name",
-    });
-  }
+  res.json({ success: true, message: "Route name updated", data: route });
 };
 
-/**
- * Record walk completion
- */
 export const recordWalkCompletion = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { routeId } = req.params;
+  const route = await findMyRoute(req);
 
-    const route = await Route.findOne({ _id: routeId, userId });
+  route.lastWalkedAt = new Date();
+  route.walkCount = (route.walkCount || 0) + 1;
+  await route.save();
 
-    if (!route) {
-      return res.status(404).json({
-        success: false,
-        message: "Route not found",
-      });
-    }
-
-    route.lastWalkedAt = new Date();
-    route.walkCount = (route.walkCount || 0) + 1;
-    await route.save();
-
-    console.log(
-      `🚶 Walk completed: Route ${routeId}, Count: ${route.walkCount}`,
-    );
-
-    res.json({
-      success: true,
-      message: "Walk recorded",
-      data: {
-        walkCount: route.walkCount,
-        lastWalkedAt: route.lastWalkedAt,
-      },
-    });
-  } catch (error) {
-    console.error("Error recording walk:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to record walk completion",
-    });
-  }
+  res.json({
+    success: true,
+    message: "Walk recorded",
+    data: { walkCount: route.walkCount, lastWalkedAt: route.lastWalkedAt },
+  });
 };

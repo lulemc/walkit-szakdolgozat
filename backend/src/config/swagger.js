@@ -1,5 +1,35 @@
 import swaggerJSDoc from "swagger-jsdoc";
 
+/* Every response is `{ success, data?, message? }`; these keep the paths below short */
+const json = (schema) => ({ "application/json": { schema } });
+const ref = (name) => ({ $ref: `#/components/schemas/${name}` });
+const ok = (description, data) => ({
+  description,
+  content: json({
+    type: "object",
+    properties: {
+      success: { type: "boolean", example: true },
+      message: { type: "string" },
+      ...(data && { data }),
+    },
+  }),
+});
+const fail = (description) => ({ description, content: json(ref("ErrorResponse")) });
+const routeIdParam = {
+  in: "path",
+  name: "routeId",
+  required: true,
+  schema: { type: "string" },
+  description: "Route id",
+};
+const userIdParam = {
+  in: "path",
+  name: "id",
+  required: true,
+  schema: { type: "string" },
+  description: "My own user id",
+};
+
 const swaggerSpec = swaggerJSDoc({
   definition: {
     openapi: "3.0.0",
@@ -24,10 +54,34 @@ const swaggerSpec = swaggerJSDoc({
       schemas: {
         User: {
           type: "object",
+          description: "The logged-in user's own profile (never the password hash)",
           properties: {
-            id: { type: "string" },
-            email: { type: "string" },
+            _id: { type: "string" },
             name: { type: "string" },
+            email: { type: "string" },
+            dateOfBirth: { type: "string", format: "date-time" },
+            sex: { type: "string", enum: ["male", "female", "other"] },
+            height: { type: "number", minimum: 50, maximum: 300, description: "cm" },
+            weight: { type: "number", minimum: 20, maximum: 500, description: "kg" },
+            activityLevel: {
+              type: "string",
+              enum: ["sedentary", "light", "moderate", "active", "very_active"],
+            },
+            createdAt: { type: "string", format: "date-time" },
+            updatedAt: { type: "string", format: "date-time" },
+          },
+        },
+        UpdateUserRequest: {
+          type: "object",
+          properties: {
+            name: { type: "string", maxLength: 50 },
+            email: { type: "string", format: "email" },
+            currentPassword: { type: "string", description: "Required when changing the email" },
+            dateOfBirth: { type: "string", format: "date-time" },
+            sex: { type: "string", enum: ["male", "female", "other"] },
+            height: { type: "number" },
+            weight: { type: "number" },
+            activityLevel: { type: "string" },
           },
         },
         AuthRequest: {
@@ -54,7 +108,8 @@ const swaggerSpec = swaggerJSDoc({
         AuthResponse: {
           type: "object",
           properties: {
-            token: { type: "string" },
+            token: { type: "string", description: "Send as `Authorization: Bearer <token>`; valid for 7 days" },
+            user: { $ref: "#/components/schemas/User" },
           },
         },
         // Route schemas
@@ -441,44 +496,102 @@ const swaggerSpec = swaggerJSDoc({
             required: true,
             content: {
               "application/json": {
-                schema: { $ref: "#/components/schemas/RegisterRequest" },
+                schema: ref("RegisterRequest"),
                 example: { name: "Test User", email: "test@example.com", password: "secret123" },
               },
             },
           },
           responses: {
-            201: {
-              description: "User registered successfully",
-            },
-            400: {
-              description: "Name, email or password missing, or the user already exists",
-            },
+            201: ok("Registered and logged in", ref("AuthResponse")),
+            400: fail("Name, email or password missing or invalid, or the user already exists"),
+            429: fail("Too many attempts"),
           },
         },
       },
       "/api/auth/login": {
         post: {
-          summary: "Login user and return JWT",
+          summary: "Log in and get a token",
           tags: ["Auth"],
           requestBody: {
             required: true,
             content: {
               "application/json": {
-                schema: { $ref: "#/components/schemas/AuthRequest" },
-                example: { email: "test@example.com", password: "123456" },
+                schema: ref("AuthRequest"),
+                example: { email: "test@example.com", password: "secret123" },
               },
             },
           },
           responses: {
-            200: {
-              description: "Login successful",
-              content: {
-                "application/json": {
-                  schema: { $ref: "#/components/schemas/AuthResponse" },
-                  example: { token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." },
-                },
+            200: ok("Logged in", ref("AuthResponse")),
+            400: fail("Email or password missing, or invalid credentials"),
+            429: fail("Too many attempts"),
+          },
+        },
+      },
+      "/api/users/{id}": {
+        get: {
+          summary: "My profile",
+          tags: ["Users"],
+          security: [{ bearerAuth: [] }],
+          parameters: [userIdParam],
+          responses: {
+            200: ok("The profile", ref("User")),
+            403: fail("Not my own id"),
+            404: fail("User not found"),
+          },
+        },
+        put: {
+          summary: "Update my profile",
+          description: "Changing the email requires `currentPassword`.",
+          tags: ["Users"],
+          security: [{ bearerAuth: [] }],
+          parameters: [userIdParam],
+          requestBody: { required: true, content: json(ref("UpdateUserRequest")) },
+          responses: {
+            200: ok("The updated profile", ref("User")),
+            400: fail("Invalid name, email, height or weight, or currentPassword missing for an email change"),
+            401: fail("Current password is incorrect"),
+            403: fail("Not my own id"),
+            404: fail("User not found"),
+            409: fail("Email already in use"),
+          },
+        },
+        delete: {
+          summary: "Delete my account and my data",
+          tags: ["Users"],
+          security: [{ bearerAuth: [] }],
+          parameters: [userIdParam],
+          responses: {
+            200: ok("Account deleted"),
+            403: fail("Not my own id"),
+            404: fail("User not found"),
+          },
+        },
+      },
+      "/api/users/{id}/change-password": {
+        post: {
+          summary: "Change my password",
+          description: "Logs out every other session; use the returned token from now on.",
+          tags: ["Users"],
+          security: [{ bearerAuth: [] }],
+          parameters: [userIdParam],
+          requestBody: {
+            required: true,
+            content: json({
+              type: "object",
+              required: ["currentPassword", "newPassword"],
+              properties: {
+                currentPassword: { type: "string" },
+                newPassword: { type: "string", minLength: 8 },
               },
-            },
+            }),
+          },
+          responses: {
+            200: ok("Password changed", { type: "object", properties: { token: { type: "string" } } }),
+            400: fail("A password is missing, too short, or the same as before"),
+            401: fail("Current password is incorrect"),
+            403: fail("Not my own id"),
+            404: fail("User not found"),
           },
         },
       },
@@ -494,182 +607,138 @@ const swaggerSpec = swaggerJSDoc({
             required: true,
             content: {
               "application/json": {
-                schema: { $ref: "#/components/schemas/GenerateRouteRequest" },
+                schema: ref("GenerateRouteRequest"),
                 example: {
-                  startLocation: {
-                    latitude: 47.4979,
-                    longitude: 19.0402,
-                  },
+                  startLocation: { latitude: 47.4979, longitude: 19.0402 },
                   distance: 5,
                   routeType: "circular",
-                  preferences: {
-                    parks: true,
-                    waterfront: true,
-                    avoidHighways: true,
-                    scenic: false,
-                  },
+                  preferences: { parks: true, waterfront: true, avoidHighways: true, scenic: false },
                 },
               },
             },
           },
           responses: {
-            201: {
-              description: "Route generated successfully",
-              content: {
-                "application/json": {
-                  schema: {
-                    type: "object",
-                    properties: {
-                      message: {
-                        type: "string",
-                        example: "Route generated successfully",
-                      },
-                      route: { $ref: "#/components/schemas/Route" },
-                    },
-                  },
-                },
-              },
-            },
-            400: {
-              description: "Invalid request data",
-              content: {
-                "application/json": {
-                  schema: {
-                    type: "object",
-                    properties: {
-                      message: {
-                        type: "string",
-                        example: "Distance must be greater than 0",
-                      },
-                    },
-                  },
-                },
-              },
-            },
-            401: {
-              description: "Unauthorized - Invalid or missing token",
-            },
+            201: ok("The generated route (saved for the user)", ref("Route")),
+            400: fail("Invalid route type, coordinates or distance (0.5-50 km)"),
+            401: fail("Missing or invalid token"),
+            429: fail("Too many routes generated; try again later"),
+            500: fail("The routing services failed"),
+          },
+        },
+      },
+      "/api/routes": {
+        get: {
+          summary: "My routes, newest first",
+          tags: ["Routes"],
+          security: [{ bearerAuth: [] }],
+          responses: {
+            200: ok("My routes", { type: "array", items: ref("Route") }),
           },
         },
       },
       "/api/routes/user/{userId}": {
         get: {
-          summary: "Get all routes for a user",
-          description: "Retrieves all saved routes for the specified user",
+          summary: "My routes (old path)",
+          description: "Same as GET /api/routes; the userId is ignored. Kept for older app versions.",
+          deprecated: true,
           tags: ["Routes"],
           security: [{ bearerAuth: [] }],
-          parameters: [
-            {
-              in: "path",
-              name: "userId",
-              required: true,
-              schema: { type: "string" },
-              description: "User ID",
-              example: "65a1b2c3d4e5f6789013",
-            },
-          ],
+          parameters: [{ in: "path", name: "userId", required: true, schema: { type: "string" } }],
           responses: {
-            200: {
-              description: "Routes retrieved successfully",
-              content: {
-                "application/json": {
-                  schema: {
-                    type: "object",
-                    properties: {
-                      message: {
-                        type: "string",
-                        example: "Routes retrieved successfully",
-                      },
-                      count: { type: "number", example: 5 },
-                      routes: {
-                        type: "array",
-                        items: { $ref: "#/components/schemas/Route" },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-            403: {
-              description: "Forbidden - Cannot access other user's routes",
-            },
+            200: ok("My routes", { type: "array", items: ref("Route") }),
+          },
+        },
+      },
+      "/api/routes/favorites/list": {
+        get: {
+          summary: "My favourite routes, most recently favourited first",
+          tags: ["Routes"],
+          security: [{ bearerAuth: [] }],
+          responses: {
+            200: ok("My favourite routes", { type: "array", items: ref("Route") }),
           },
         },
       },
       "/api/routes/{routeId}": {
         get: {
-          summary: "Get a single route by ID",
-          description: "Retrieves detailed information about a specific route",
+          summary: "One of my routes",
           tags: ["Routes"],
           security: [{ bearerAuth: [] }],
-          parameters: [
-            {
-              in: "path",
-              name: "routeId",
-              required: true,
-              schema: { type: "string" },
-              description: "Route ID",
-              example: "65a1b2c3d4e5f6789012",
-            },
-          ],
+          parameters: [routeIdParam],
           responses: {
-            200: {
-              description: "Route retrieved successfully",
-              content: {
-                "application/json": {
-                  schema: {
-                    type: "object",
-                    properties: {
-                      message: {
-                        type: "string",
-                        example: "Route retrieved successfully",
-                      },
-                      route: { $ref: "#/components/schemas/Route" },
-                    },
-                  },
-                },
-              },
-            },
-            404: {
-              description: "Route not found",
-            },
+            200: ok("The route", ref("Route")),
+            404: fail("Route not found"),
           },
         },
         delete: {
-          summary: "Delete a route",
-          description: "Permanently deletes a route from the database",
+          summary: "Delete one of my routes",
+          description: "Walks saved on it stay in the walk history.",
           tags: ["Routes"],
           security: [{ bearerAuth: [] }],
-          parameters: [
-            {
-              in: "path",
-              name: "routeId",
-              required: true,
-              schema: { type: "string" },
-              description: "Route ID",
-              example: "65a1b2c3d4e5f6789012",
-            },
-          ],
+          parameters: [routeIdParam],
           responses: {
-            200: {
-              description: "Route deleted successfully",
-              content: {
-                "application/json": {
-                  schema: {
-                    type: "object",
-                    properties: {
-                      message: {
-                        type: "string",
-                        example: "Route deleted successfully",
-                      },
-                    },
-                  },
-                },
+            200: ok("Route deleted"),
+            404: fail("Route not found"),
+          },
+        },
+      },
+      "/api/routes/{routeId}/favorite": {
+        post: {
+          summary: "Add a route to my favourites",
+          description: "Unnamed routes get a name like \"Circular 5.2km\" unless one is given.",
+          tags: ["Routes"],
+          security: [{ bearerAuth: [] }],
+          parameters: [routeIdParam],
+          requestBody: { content: json({ type: "object", properties: { name: { type: "string" } } }) },
+          responses: {
+            200: ok("The route, now a favourite", ref("Route")),
+            404: fail("Route not found"),
+          },
+        },
+        delete: {
+          summary: "Remove a route from my favourites",
+          tags: ["Routes"],
+          security: [{ bearerAuth: [] }],
+          parameters: [routeIdParam],
+          responses: {
+            200: ok("The route, no longer a favourite", ref("Route")),
+            404: fail("Route not found"),
+          },
+        },
+      },
+      "/api/routes/{routeId}/name": {
+        patch: {
+          summary: "Rename one of my routes",
+          tags: ["Routes"],
+          security: [{ bearerAuth: [] }],
+          parameters: [routeIdParam],
+          requestBody: {
+            required: true,
+            content: json({ type: "object", required: ["name"], properties: { name: { type: "string" } } }),
+          },
+          responses: {
+            200: ok("The renamed route", ref("Route")),
+            400: fail("Route name is required"),
+            404: fail("Route not found"),
+          },
+        },
+      },
+      "/api/routes/{routeId}/complete": {
+        post: {
+          summary: "Count a walk on one of my routes",
+          description: "POST /api/walks does this too when saving a walk with a routeId.",
+          tags: ["Routes"],
+          security: [{ bearerAuth: [] }],
+          parameters: [routeIdParam],
+          responses: {
+            200: ok("The new walk count", {
+              type: "object",
+              properties: {
+                walkCount: { type: "integer" },
+                lastWalkedAt: { type: "string", format: "date-time" },
               },
-            },
-            404: {
-              description: "Route not found",
-            },
+            }),
+            404: fail("Route not found"),
           },
         },
       },
@@ -1292,7 +1361,7 @@ const swaggerSpec = swaggerJSDoc({
             { in: "path", name: "commentId", required: true, schema: { type: "string" } },
           ],
           responses: {
-            200: { description: "Comment deleted" },
+            200: ok("Comment deleted"),
             403: {
               description: "Only the author or the organiser can delete this comment",
               content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },

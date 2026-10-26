@@ -5,10 +5,6 @@ import { routeService } from '@/services/routeService';
 import { SavedRoutePicker } from '../SavedRoutePicker';
 import { makeRoute } from './routeFixtures';
 
-jest.mock('@/context/AuthProvider', () => ({
-  useAuth: () => ({ user: { _id: 'u1', name: 'Me' } }),
-}));
-
 // Only the request is replaced; the formatters stay real
 const getUserRoutes = jest.spyOn(routeService, 'getUserRoutes');
 
@@ -33,7 +29,7 @@ describe('SavedRoutePicker', () => {
     expect(getByText(/3\.0km/)).toBeTruthy();
     // A favourite isn't repeated among the recent routes
     expect(getAllByText('Riverside loop')).toHaveLength(1);
-    expect(getUserRoutes).toHaveBeenCalledWith('u1');
+    expect(getUserRoutes).toHaveBeenCalled();
   });
 
   it('shows only the 10 most recent routes', async () => {

@@ -70,10 +70,10 @@ class RouteService {
   }
 
   /**
-   * Get all routes for the current user
+   * Get all of the logged-in user's routes, newest first
    */
-  async getUserRoutes(userId: string): Promise<Route[]> {
-    const response = await api.get<ApiResponse<Route[]>>(`/routes/user/${userId}`);
+  async getUserRoutes(): Promise<Route[]> {
+    const response = await api.get<ApiResponse<Route[]>>('/routes');
     return response.data.data;
   }
 

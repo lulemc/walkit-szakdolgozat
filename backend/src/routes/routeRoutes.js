@@ -165,6 +165,8 @@ router.get("/favorites/list", protect, getFavoriteRoutes);
  *       403:
  *         description: Forbidden
  */
+router.get("/", protect, getUserRoutes);
+// Old path: the id was always ignored (it's the logged-in user's routes). Kept until older app versions are gone.
 router.get("/user/:userId", protect, getUserRoutes);
 
 /**

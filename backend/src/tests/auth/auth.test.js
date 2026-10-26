@@ -91,6 +91,7 @@ describe("authMiddleware - protect", () => {
 
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({
+      success: false,
       message: "Your session has expired. Please log in again.",
     });
     expect(next).not.toHaveBeenCalled();
@@ -107,7 +108,7 @@ describe("authMiddleware - protect", () => {
 
     expect(res.status).toHaveBeenCalledWith(401);
     // Without the library's own error text
-    expect(res.json).toHaveBeenCalledWith({ message: "Not authorized, token failed" });
+    expect(res.json).toHaveBeenCalledWith({ success: false, message: "Not authorized, token failed" });
     expect(next).not.toHaveBeenCalled();
   });
 
@@ -115,9 +116,7 @@ describe("authMiddleware - protect", () => {
     await protect(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith({
-      message: "Not authorized, no token",
-    });
+    expect(res.json).toHaveBeenCalledWith({ success: false, message: "Not authorized, no token" });
     expect(next).not.toHaveBeenCalled();
   });
 
@@ -127,9 +126,7 @@ describe("authMiddleware - protect", () => {
     await protect(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith({
-      message: "Not authorized, no token",
-    });
+    expect(res.json).toHaveBeenCalledWith({ success: false, message: "Not authorized, no token" });
     expect(next).not.toHaveBeenCalled();
   });
 });
@@ -160,7 +157,7 @@ describe("authMiddleware - requireSelf", () => {
     requireSelf(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(403);
-    expect(res.json).toHaveBeenCalledWith({ message: "Forbidden" });
+    expect(res.json).toHaveBeenCalledWith({ success: false, message: "Forbidden" });
     expect(next).not.toHaveBeenCalled();
   });
 });

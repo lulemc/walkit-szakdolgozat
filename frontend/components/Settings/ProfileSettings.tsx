@@ -49,11 +49,11 @@ export default function ProfileSettings({
         activityLevel,
       };
 
-      const response = await UserService.updateUserProfile(
+      const updatedUser = await UserService.updateUserProfile(
         user._id,
         updateData,
       );
-      await userStorage.setUser(response.user);
+      await userStorage.setUser(updatedUser);
 
       Alert.alert("Success", "Profile updated successfully!");
     } catch (error: any) {

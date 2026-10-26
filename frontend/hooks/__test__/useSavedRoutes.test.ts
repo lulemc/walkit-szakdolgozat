@@ -3,10 +3,6 @@ import { routeService } from '@/services/routeService';
 import { makeRoute } from '@/components/Social/__test__/routeFixtures';
 import { RECENT_ROUTE_LIMIT, useSavedRoutes } from '../useSavedRoutes';
 
-jest.mock('@/context/AuthProvider', () => ({
-  useAuth: () => ({ user: { _id: 'u1', name: 'Me' } }),
-}));
-
 const getUserRoutes = jest.spyOn(routeService, 'getUserRoutes');
 const addFavorite = jest.spyOn(routeService, 'addFavorite');
 const removeFavorite = jest.spyOn(routeService, 'removeFavorite');
@@ -35,7 +31,7 @@ describe('useSavedRoutes', () => {
   it('loads my routes: favourites (most recently favourited first) and the other recent routes', async () => {
     const { result } = await loaded();
 
-    expect(getUserRoutes).toHaveBeenCalledWith('u1');
+    expect(getUserRoutes).toHaveBeenCalled();
     expect(ids(result.current.favourites)).toEqual(['new', 'old']);
     expect(ids(result.current.recent)).toEqual(['plain']);
   });
