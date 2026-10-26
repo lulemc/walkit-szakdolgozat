@@ -1,11 +1,11 @@
 import { createContext, ReactNode, useCallback, useContext, useMemo, useState } from "react";
-import type { Route } from "@/services/routeService";
+import type { Route, RouteSummary } from "@/services/routeService";
 
 /** The views inside the Social tab (it has no stack navigator; views switch by state) */
 export type SocialView =
   | { screen: "hub" }
   | { screen: "walkDetail"; walkId: string }
-  | { screen: "createWalk"; route?: Route }
+  | { screen: "createWalk"; route?: RouteSummary }
   /** groupWalkId is set when walking a group walk's route */
   | { screen: "activeWalk"; route: Route; groupWalkId?: string };
 

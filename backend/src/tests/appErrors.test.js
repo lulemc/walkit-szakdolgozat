@@ -11,7 +11,7 @@ vi.mock("../middleware/authMiddleware.js", () => ({
   requireSelf: vi.fn((req, res, next) => next()),
 }));
 vi.mock("../services/routeService.js", () => ({
-  default: { getUserRoutes: vi.fn(), getRoute: vi.fn() },
+  default: { listRoutes: vi.fn(), getRoute: vi.fn() },
 }));
 
 describe("errors through the whole app", () => {
@@ -45,7 +45,7 @@ describe("errors through the whole app", () => {
 
   it("hides unexpected errors behind a 500", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
-    routeService.getUserRoutes.mockRejectedValue(new Error("connect ECONNREFUSED 10.0.0.5:27017"));
+    routeService.listRoutes.mockRejectedValue(new Error("connect ECONNREFUSED 10.0.0.5:27017"));
 
     const response = await inject(app, { url: "/api/routes" });
 
@@ -54,13 +54,13 @@ describe("errors through the whole app", () => {
   });
 
   it("lists my routes at GET /api/routes, and still at the old path", async () => {
-    routeService.getUserRoutes.mockResolvedValue([{ _id: "r1" }]);
+    routeService.listRoutes.mockResolvedValue([{ _id: "r1" }]);
 
     const current = await inject(app, { url: "/api/routes" });
     const old = await inject(app, { url: "/api/routes/user/whatever" });
 
     expect(current.body).toEqual({ success: true, data: [{ _id: "r1" }] });
     expect(old.body).toEqual({ success: true, data: [{ _id: "r1" }] });
-    expect(routeService.getUserRoutes).toHaveBeenCalledWith("u1");
+    expect(routeService.listRoutes).toHaveBeenCalledWith("u1", {});
   });
 });

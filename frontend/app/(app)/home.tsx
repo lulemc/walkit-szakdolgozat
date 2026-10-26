@@ -3,7 +3,7 @@ import { View, StyleSheet } from "react-native";
 import WalkPlannerScreen from "@/screens/WalkPlanner";
 import ActiveWalkScreen from "@/screens/ActiveWalkScreen";
 import MyRoutesScreen from "@/screens/MyRoutesScreen";
-import type { Route } from "@/services/routeService";
+import type { Route, RouteSummary } from "@/services/routeService";
 import { useOptionalSocialNavigation } from "@/screens/social/socialNavigation";
 
 /** The Home tab's views; they switch by state, like the Social tab's */
@@ -17,7 +17,7 @@ export default function HomeScreen() {
 
   // Group walks are planned in the Social tab, so only offer it where there is one
   const handlePlanGroupWalk = social
-    ? (route: Route) => social.open({ screen: "createWalk", route })
+    ? (route: RouteSummary) => social.open({ screen: "createWalk", route })
     : undefined;
 
   const startWalk = (route: Route) => setView({ screen: "activeWalk", route });

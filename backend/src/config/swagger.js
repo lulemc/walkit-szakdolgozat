@@ -195,6 +195,13 @@ const swaggerSpec = swaggerJSDoc({
         Route: {
           type: "object",
           properties: {
+            status: {
+              type: "string",
+              enum: ["draft", "saved"],
+              description:
+                "Generated routes are drafts, removed after 7 days unless favourited, named, walked or used for a group walk",
+            },
+            draftExpiresAt: { type: "string", format: "date-time", description: "Drafts only" },
             _id: { type: "string", example: "65a1b2c3d4e5f6789012" },
             userId: { type: "string", example: "65a1b2c3d4e5f6789013" },
             type: {
@@ -629,10 +636,16 @@ const swaggerSpec = swaggerJSDoc({
       "/api/routes": {
         get: {
           summary: "My routes, newest first",
+          description: "Without coordinates; load one route for its map. Pages by creation time.",
           tags: ["Routes"],
           security: [{ bearerAuth: [] }],
+          parameters: [
+            { in: "query", name: "before", schema: { type: "string", format: "date-time" }, description: "Only routes before this (the oldest one loaded)" },
+            { in: "query", name: "limit", schema: { type: "integer", minimum: 1, maximum: 50, default: 20 } },
+          ],
           responses: {
-            200: ok("My routes", { type: "array", items: ref("Route") }),
+            200: ok("A page of my routes (without coordinates)", { type: "array", items: ref("Route") }),
+            400: fail("Invalid before or limit"),
           },
         },
       },
@@ -652,10 +665,16 @@ const swaggerSpec = swaggerJSDoc({
       "/api/routes/favorites/list": {
         get: {
           summary: "My favourite routes, most recently favourited first",
+          description: "Without coordinates. Pages by the time they were favourited; 50 at a time by default.",
           tags: ["Routes"],
           security: [{ bearerAuth: [] }],
+          parameters: [
+            { in: "query", name: "before", schema: { type: "string", format: "date-time" }, description: "Only routes favourited before this" },
+            { in: "query", name: "limit", schema: { type: "integer", minimum: 1, maximum: 50, default: 50 } },
+          ],
           responses: {
-            200: ok("My favourite routes", { type: "array", items: ref("Route") }),
+            200: ok("A page of my favourites (without coordinates)", { type: "array", items: ref("Route") }),
+            400: fail("Invalid before or limit"),
           },
         },
       },

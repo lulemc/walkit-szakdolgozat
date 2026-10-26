@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import GroupWalk, { PARTICIPANT_STATUSES } from "../models/GroupWalk.js";
-import Route from "../models/Route.js";
+import Route, { SAVE_ROUTE_UPDATE } from "../models/Route.js";
 import { getFriendIds } from "./friendshipService.js";
 import { HttpError } from "../utils/httpError.js";
 import { sameId } from "../utils/ids.js";
@@ -178,6 +178,9 @@ export const createGroupWalk = async (
   } catch (error) {
     throw asBadRequest(error);
   }
+
+  // A walk is planned on the route, so it's kept for good (generated routes start as drafts)
+  await Route.updateOne({ _id: route._id }, SAVE_ROUTE_UPDATE);
 
   return getGroupWalk(userId, created._id);
 };

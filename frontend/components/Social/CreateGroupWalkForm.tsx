@@ -3,7 +3,7 @@ import { StyleSheet, View } from "react-native";
 import { Card, useTheme } from "react-native-paper";
 import { CustomText, PrimaryButton } from "@/components";
 import { groupWalkService } from "@/services/groupWalkService";
-import type { Route } from "@/services/routeService";
+import type { RouteSummary } from "@/services/routeService";
 import type { CreateGroupWalkRequest, GroupWalkDetail } from "@/types/social";
 import { apiErrorMessage } from "@/utils/apiError";
 import { FriendMultiSelect } from "./FriendMultiSelect";
@@ -12,7 +12,8 @@ import { WalkTextFields } from "./WalkTextFields";
 import { futureTimeError, WalkTimeFields } from "./WalkTimeFields";
 
 interface CreateGroupWalkFormProps {
-  route: Route;
+  /** The route's id and details; the backend copies the whole route */
+  route: RouteSummary;
   onCreated: (walk: GroupWalkDetail) => void;
   onCancel: () => void;
   /** Shows a "Change route" button */

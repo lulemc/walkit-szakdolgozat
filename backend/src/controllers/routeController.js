@@ -1,5 +1,5 @@
 import routeService from "../services/routeService.js";
-import Route from "../models/Route.js";
+import Route, { markSaved } from "../models/Route.js";
 import { HttpError } from "../utils/httpError.js";
 import { routeRequestProblem } from "../utils/routeRequest.js";
 
@@ -22,8 +22,9 @@ export const generateRoute = async (req, res) => {
   res.status(201).json({ success: true, data: route });
 };
 
+/** A page of my routes (?before=&limit=), without coordinates */
 export const getUserRoutes = async (req, res) => {
-  const routes = await routeService.getUserRoutes(req.user.id);
+  const routes = await routeService.listRoutes(req.user.id, req.query);
   res.json({ success: true, data: routes });
 };
 
@@ -45,6 +46,7 @@ export const addToFavorites = async (req, res) => {
 
   route.isFavorite = true;
   route.favoritedAt = new Date();
+  markSaved(route);
   if (req.body.name) {
     route.name = req.body.name;
   } else if (!route.name) {
@@ -66,11 +68,9 @@ export const removeFromFavorites = async (req, res) => {
   res.json({ success: true, message: "Route removed from favorites", data: route });
 };
 
-/** Most recently favourited first */
+/** A page of my favourites (?before=&limit=), most recently favourited first */
 export const getFavoriteRoutes = async (req, res) => {
-  const favorites = await Route.find({ userId: req.user.id, isFavorite: true }).sort({
-    favoritedAt: -1,
-  });
+  const favorites = await routeService.listFavoriteRoutes(req.user.id, req.query);
   res.json({ success: true, data: favorites });
 };
 
@@ -80,6 +80,7 @@ export const updateRouteName = async (req, res) => {
 
   const route = await findMyRoute(req);
   route.name = name;
+  markSaved(route);
   await route.save();
 
   res.json({ success: true, message: "Route name updated", data: route });
@@ -90,6 +91,7 @@ export const recordWalkCompletion = async (req, res) => {
 
   route.lastWalkedAt = new Date();
   route.walkCount = (route.walkCount || 0) + 1;
+  markSaved(route);
   await route.save();
 
   res.json({

@@ -23,7 +23,7 @@ vi.mock("../../models/GroupWalk.js", async (importOriginal) => ({
 }));
 vi.mock("../../models/Route.js", async (importOriginal) => ({
   ...(await importOriginal()),
-  default: { findOne: vi.fn() },
+  default: { findOne: vi.fn(), updateOne: vi.fn() },
 }));
 vi.mock("../../services/friendshipService.js", () => ({ getFriendIds: vi.fn() }));
 
@@ -154,6 +154,15 @@ describe("createGroupWalk", () => {
       ],
     });
     expect(result).toEqual(expect.objectContaining({ _id: walkId }));
+  });
+
+  it("keeps the route for good, since a walk is planned on it", async () => {
+    await createGroupWalk(me, input());
+
+    expect(Route.updateOne).toHaveBeenCalledWith(
+      { _id: savedRoute._id },
+      { $set: { status: "saved" }, $unset: { draftExpiresAt: 1 } },
+    );
   });
 
   it("returns 404 when the route isn't mine", async () => {

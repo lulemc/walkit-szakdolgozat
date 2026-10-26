@@ -4,13 +4,13 @@ import { List, useTheme } from "react-native-paper";
 import { CustomText, PrimaryButton } from "@/components";
 import { routeDetails, routeTitle } from "@/components/Social/savedRouteText";
 import type { SavedRoutesStatus } from "@/hooks/useSavedRoutes";
-import type { Route } from "@/services/routeService";
+import type { RouteSummary } from "@/services/routeService";
 
 interface SavedRouteListProps {
-  favourites: Route[];
-  recent: Route[];
+  favourites: RouteSummary[];
+  recent: RouteSummary[];
   status: SavedRoutesStatus;
-  onOpen: (route: Route) => void;
+  onOpen: (route: RouteSummary) => void;
   onRetry: () => void;
 }
 
@@ -24,7 +24,7 @@ export const SavedRouteList: React.FC<SavedRouteListProps> = ({
 }) => {
   const theme = useTheme();
 
-  const renderRoute = (route: Route) => (
+  const renderRoute = (route: RouteSummary) => (
     <List.Item
       key={route._id}
       title={routeTitle(route)}

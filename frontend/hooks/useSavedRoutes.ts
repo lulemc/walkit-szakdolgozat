@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Route, routeService } from '@/services/routeService';
+import { RouteSummary, routeService } from '@/services/routeService';
 import { apiErrorMessage } from '@/utils/apiError';
 
 /** How many of the newest routes are offered besides the favourites */
 export const RECENT_ROUTE_LIMIT = 10;
+/** How many of the newest routes are loaded to find them (some may be favourites) */
+export const RECENT_PAGE_SIZE = 20;
 
 export type SavedRoutesStatus = 'loading' | 'ready' | 'error';
 
-const byFavoritedAtDesc = (a: Route, b: Route) =>
+const byFavoritedAtDesc = (a: RouteSummary, b: RouteSummary) =>
   (b.favoritedAt ?? '').localeCompare(a.favoritedAt ?? '');
 
 /**
@@ -16,17 +18,21 @@ const byFavoritedAtDesc = (a: Route, b: Route) =>
  * with actionError set.
  */
 export const useSavedRoutes = () => {
-  // Every route, newest first, as the server lists them (favourites included)
-  const [routes, setRoutes] = useState<Route[]>([]);
+  // The newest routes (by creation) followed by the favourites that aren't among them
+  const [routes, setRoutes] = useState<RouteSummary[]>([]);
   const [status, setStatus] = useState<SavedRoutesStatus>('loading');
   const [actionError, setActionError] = useState<string | null>(null);
 
-  // State is only updated in the promise callbacks, after the request finished
+  // State is only updated in the promise callbacks, after the requests finished
   const load = useCallback(
     () =>
-      routeService.getUserRoutes().then(
-        (loaded) => {
-          setRoutes(loaded);
+      Promise.all([
+        routeService.getUserRoutes({ limit: RECENT_PAGE_SIZE }),
+        routeService.getFavoriteRoutes(),
+      ]).then(
+        ([newest, favourites]) => {
+          const newestIds = new Set(newest.map((route) => route._id));
+          setRoutes([...newest, ...favourites.filter((route) => !newestIds.has(route._id))]);
           setStatus('ready');
         },
         () => setStatus('error'),
@@ -64,11 +70,11 @@ export const useSavedRoutes = () => {
   }, []);
 
   /** Puts the server's updated copy of a route in place of the old one */
-  const replace = (updated: Route) =>
+  const replace = (updated: RouteSummary) =>
     setRoutes((current) => current.map((route) => (route._id === updated._id ? updated : route)));
 
   const toggleFavorite = useCallback(
-    (route: Route) =>
+    (route: RouteSummary) =>
       runAction(async () =>
         replace(
           await (route.isFavorite

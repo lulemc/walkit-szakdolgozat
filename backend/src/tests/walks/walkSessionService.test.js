@@ -180,9 +180,14 @@ describe("recordWalk - saving", () => {
     await recordWalk(me, input({ routeId }));
 
     expect(Route.findOne).toHaveBeenCalledWith({ _id: routeId, userId: me });
+    // Walking a route also keeps it for good (generated routes start as drafts)
     expect(Route.updateOne).toHaveBeenCalledWith(
       { _id: routeId },
-      { $inc: { walkCount: 1 }, $set: { lastWalkedAt: new Date("2030-01-02T10:00:00.000Z") } },
+      {
+        $inc: { walkCount: 1 },
+        $set: { lastWalkedAt: new Date("2030-01-02T10:00:00.000Z"), status: "saved" },
+        $unset: { draftExpiresAt: 1 },
+      },
     );
     expect(WalkSession.create).toHaveBeenCalledWith(
       expect.objectContaining({ route: routeId, name: "Riverside loop" }),

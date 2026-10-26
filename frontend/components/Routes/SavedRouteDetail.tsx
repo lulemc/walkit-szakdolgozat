@@ -1,19 +1,21 @@
 import React, { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { useTheme } from "react-native-paper";
 import { CustomText, CustomTextInput, PrimaryButton } from "@/components";
 import ConfirmationModal from "@/components/ConformationModal";
 import { GroupWalkMap } from "@/components/Social/GroupWalkMap";
 import { routeDetails, routeTitle } from "@/components/Social/savedRouteText";
-import type { Route } from "@/services/routeService";
+import { useFullRoute } from "@/hooks/useFullRoute";
+import type { Route, RouteSummary } from "@/services/routeService";
 
 interface SavedRouteDetailProps {
-  route: Route;
+  /** From the list; the whole route (for the map and walking) is loaded here */
+  route: RouteSummary;
   actionError: string | null;
   onWalk: (route: Route) => void;
   /** Shows "Plan group walk"; leave out where there is no Social tab */
-  onPlanGroupWalk?: (route: Route) => void;
-  onToggleFavorite: (route: Route) => void;
+  onPlanGroupWalk?: (route: RouteSummary) => void;
+  onToggleFavorite: (route: RouteSummary) => void;
   /** Resolves with whether renaming worked */
   onRename: (name: string) => Promise<boolean>;
   onDelete: () => void;
@@ -30,6 +32,7 @@ export const SavedRouteDetail: React.FC<SavedRouteDetailProps> = ({
   onDelete,
 }) => {
   const theme = useTheme();
+  const full = useFullRoute(route._id);
   const [newName, setNewName] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [renaming, setRenaming] = useState(false);
@@ -58,7 +61,26 @@ export const SavedRouteDetail: React.FC<SavedRouteDetailProps> = ({
         ) : null}
       </View>
 
-      <GroupWalkMap coordinates={route.coordinates} />
+      {route.status === "draft" ? (
+        <CustomText variant="bodySmall" style={muted}>
+          Generated routes are removed after 7 days unless you favourite, rename or walk it.
+        </CustomText>
+      ) : null}
+
+      {full.status === "loading" ? (
+        <ActivityIndicator color={theme.colors.primary} accessibilityLabel="Loading the route" />
+      ) : null}
+      {full.status === "error" ? (
+        <View style={styles.row}>
+          <CustomText variant="bodyMedium" style={styles.flex}>
+            {"Couldn't load the route."}
+          </CustomText>
+          <PrimaryButton mode="outlined" onPress={full.retry}>
+            Try again
+          </PrimaryButton>
+        </View>
+      ) : null}
+      {full.route ? <GroupWalkMap coordinates={full.route.coordinates} /> : null}
 
       {actionError ? (
         <CustomText variant="bodySmall" style={{ color: theme.colors.error }}>
@@ -93,11 +115,20 @@ export const SavedRouteDetail: React.FC<SavedRouteDetailProps> = ({
         </View>
       ) : (
         <>
-          <PrimaryButton icon="walk" onPress={() => onWalk(route)}>
+          <PrimaryButton
+            icon="walk"
+            onPress={() => full.route && onWalk(full.route)}
+            disabled={!full.route}
+            accessibilityLabel="Walk this route"
+          >
             Walk this route
           </PrimaryButton>
           {onPlanGroupWalk ? (
-            <PrimaryButton mode="outlined" icon="people" onPress={() => onPlanGroupWalk(route)}>
+            <PrimaryButton
+              mode="outlined"
+              icon="people"
+              onPress={() => onPlanGroupWalk(full.route ?? route)}
+            >
               Plan group walk
             </PrimaryButton>
           ) : null}

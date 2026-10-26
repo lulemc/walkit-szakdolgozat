@@ -52,3 +52,18 @@ describe("Swagger spec: response envelope", () => {
     expect(swaggerSpec.paths[path]?.[method]).toBeDefined();
   });
 });
+
+describe("Swagger spec: route lists", () => {
+  it.each(["/api/routes", "/api/routes/favorites/list"])("documents paging for %s", (path) => {
+    const names = swaggerSpec.paths[path].get.parameters.map((parameter) => parameter.name);
+
+    expect(names).toEqual(expect.arrayContaining(["before", "limit"]));
+  });
+
+  it("documents drafts on routes", () => {
+    const route = propertiesOf(schemas.Route);
+
+    expect(route.status.enum).toEqual(["draft", "saved"]);
+    expect(route).toHaveProperty("draftExpiresAt");
+  });
+});

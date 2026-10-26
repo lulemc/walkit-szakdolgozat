@@ -51,10 +51,22 @@ export interface Route {
   minElevation: number | null;
   isFavorite: boolean;
   favoritedAt: string | null;
+  /** Generated routes are drafts, removed after 7 days unless kept (favourite, name, walk, group walk) */
+  status?: 'draft' | 'saved';
+  draftExpiresAt?: string | null;
   lastWalkedAt: string | null;
   walkCount: number;
   createdAt: string;
   updatedAt: string;
+}
+
+/** A route in a list: lists leave out the coordinates (load the route for its map) */
+export type RouteSummary = Omit<Route, 'coordinates'>;
+
+/** Lists page backwards: `before` is the oldest date already loaded */
+export interface RoutePage {
+  before?: string;
+  limit?: number;
 }
 
 // Kept as an export from here so existing imports keep working
@@ -70,18 +82,20 @@ class RouteService {
   }
 
   /**
-   * Get all of the logged-in user's routes, newest first
+   * A page of the logged-in user's routes, newest first, without coordinates
    */
-  async getUserRoutes(): Promise<Route[]> {
-    const response = await api.get<ApiResponse<Route[]>>('/routes');
+  async getUserRoutes(page: RoutePage = {}): Promise<RouteSummary[]> {
+    const response = await api.get<ApiResponse<RouteSummary[]>>('/routes', { params: page });
     return response.data.data;
   }
 
   /**
    * Get the current user's favourite routes, most recently favourited first
    */
-  async getFavoriteRoutes(): Promise<Route[]> {
-    const response = await api.get<ApiResponse<Route[]>>('/routes/favorites/list');
+  async getFavoriteRoutes(page: RoutePage = {}): Promise<RouteSummary[]> {
+    const response = await api.get<ApiResponse<RouteSummary[]>>('/routes/favorites/list', {
+      params: page,
+    });
     return response.data.data;
   }
 

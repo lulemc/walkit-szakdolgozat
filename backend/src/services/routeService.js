@@ -1,10 +1,15 @@
-import Route from "../models/Route.js";
+import Route, { draftExpiry } from "../models/Route.js";
+import { parsePage } from "../utils/paging.js";
 import circularRouteGenerator from "./circularRouteGenerator.js";
 import osmOverpassService from "./osmOverpassService.js";
 import axios from "axios";
 
 const ORS_API_KEY = process.env.ORS_API_KEY;
 const ORS_BASE_URL = "https://api.openrouteservice.org/v2";
+
+export const ROUTES_PAGE_SIZE = 20;
+export const FAVORITES_PAGE_SIZE = 50;
+const MAX_PAGE_SIZE = 50;
 
 class RouteService {
   async generateRoute(routeData, userId) {
@@ -73,8 +78,11 @@ class RouteService {
       preferenceScore = 50;
     }
 
+    // A draft until the user keeps it (favourite, name, walk, group walk)
     const route = new Route({
       userId,
+      status: "draft",
+      draftExpiresAt: draftExpiry(),
       type: routeType,
       startLocation: {
         latitude: startLocation.latitude,
@@ -186,8 +194,24 @@ class RouteService {
     }
   }
 
-  async getUserRoutes(userId) {
-    return await Route.find({ userId }).sort({ createdAt: -1 });
+  /** My routes, newest first, without coordinates (load one route for its map) */
+  async listRoutes(userId, query = {}) {
+    const { before, limit } = parsePage(query, { defaultLimit: ROUTES_PAGE_SIZE, maxLimit: MAX_PAGE_SIZE });
+    return Route.find({ userId, ...(before && { createdAt: { $lt: before } }) })
+      .select("-coordinates")
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
+  }
+
+  /** My favourites, most recently favourited first, without coordinates */
+  async listFavoriteRoutes(userId, query = {}) {
+    const { before, limit } = parsePage(query, { defaultLimit: FAVORITES_PAGE_SIZE, maxLimit: MAX_PAGE_SIZE });
+    return Route.find({ userId, isFavorite: true, ...(before && { favoritedAt: { $lt: before } }) })
+      .select("-coordinates")
+      .sort({ favoritedAt: -1 })
+      .limit(limit)
+      .lean();
   }
 
   async getRoute(routeId, userId) {

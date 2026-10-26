@@ -5,9 +5,18 @@ import * as controller from "../../controllers/routeController.js";
 import { HttpError } from "../../utils/httpError.js";
 
 vi.mock("../../services/routeService.js", () => ({
-  default: { generateRoute: vi.fn(), getUserRoutes: vi.fn(), getRoute: vi.fn(), deleteRoute: vi.fn() },
+  default: {
+    generateRoute: vi.fn(),
+    listRoutes: vi.fn(),
+    listFavoriteRoutes: vi.fn(),
+    getRoute: vi.fn(),
+    deleteRoute: vi.fn(),
+  },
 }));
-vi.mock("../../models/Route.js", () => ({ default: { findOne: vi.fn(), find: vi.fn() } }));
+vi.mock("../../models/Route.js", async (importOriginal) => ({
+  ...(await importOriginal()),
+  default: { findOne: vi.fn(), find: vi.fn() },
+}));
 
 const mockRes = () => ({ status: vi.fn().mockReturnThis(), json: vi.fn() });
 const request = (overrides = {}) => ({ user: { id: "u1" }, params: { routeId: "r1" }, body: {}, ...overrides });
@@ -24,6 +33,8 @@ const routeDoc = (fields = {}) => ({
   totalDistance: 5200,
   name: null,
   walkCount: 0,
+  status: "draft",
+  draftExpiresAt: new Date("2030-01-08T10:00:00.000Z"),
   save: vi.fn().mockResolvedValue(undefined),
   ...fields,
 });
@@ -73,13 +84,13 @@ describe("generateRoute", () => {
 });
 
 describe("reading and deleting routes", () => {
-  it("lists my routes", async () => {
-    routeService.getUserRoutes.mockResolvedValue([{ _id: "r1" }]);
+  it("lists my routes a page at a time", async () => {
+    routeService.listRoutes.mockResolvedValue([{ _id: "r1" }]);
     const res = mockRes();
 
-    await controller.getUserRoutes(request(), res);
+    await controller.getUserRoutes(request({ query: { limit: "5" } }), res);
 
-    expect(routeService.getUserRoutes).toHaveBeenCalledWith("u1");
+    expect(routeService.listRoutes).toHaveBeenCalledWith("u1", { limit: "5" });
     expect(res.json).toHaveBeenCalledWith({ success: true, data: [{ _id: "r1" }] });
   });
 
@@ -141,16 +152,38 @@ describe("favourites, names and walks", () => {
     expect(route.save).toHaveBeenCalled();
   });
 
-  it("lists favourites, most recent first", async () => {
-    const sort = vi.fn().mockResolvedValue([{ _id: "r1" }]);
-    Route.find.mockReturnValue({ sort });
+  it("lists favourites a page at a time", async () => {
+    routeService.listFavoriteRoutes.mockResolvedValue([{ _id: "r1" }]);
     const res = mockRes();
 
-    await controller.getFavoriteRoutes(request(), res);
+    await controller.getFavoriteRoutes(request({ query: { before: "2030-01-01" } }), res);
 
-    expect(Route.find).toHaveBeenCalledWith({ userId: "u1", isFavorite: true });
-    expect(sort).toHaveBeenCalledWith({ favoritedAt: -1 });
+    expect(routeService.listFavoriteRoutes).toHaveBeenCalledWith("u1", { before: "2030-01-01" });
     expect(res.json).toHaveBeenCalledWith({ success: true, data: [{ _id: "r1" }] });
+  });
+
+  it.each([
+    ["addToFavorites", {}],
+    ["updateRouteName", { name: "Hill loop" }],
+    ["recordWalkCompletion", {}],
+  ])("%s keeps a draft for good", async (action, body) => {
+    const route = routeDoc();
+    Route.findOne.mockResolvedValue(route);
+
+    await controller[action](request({ body }), mockRes());
+
+    expect(route.status).toBe("saved");
+    expect(route.draftExpiresAt).toBeUndefined();
+    expect(route.save).toHaveBeenCalled();
+  });
+
+  it("removing a favourite keeps the route saved", async () => {
+    const route = routeDoc({ status: "saved", draftExpiresAt: undefined, isFavorite: true });
+    Route.findOne.mockResolvedValue(route);
+
+    await controller.removeFromFavorites(request(), mockRes());
+
+    expect(route.status).toBe("saved");
   });
 
   it("renames a route, trimming the name; an empty name is 400", async () => {
