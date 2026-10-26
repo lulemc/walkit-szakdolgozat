@@ -240,9 +240,7 @@ export const useWalkPlanner = () => {
         }),
       };
 
-      console.log('🎯 Generating route with request:', request);
       const route = await routeService.generateRoute(request);
-      console.log('✅ Route generated:', route);
 
       setGeneratedRoute(route);
     } catch (error) {

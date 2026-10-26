@@ -1,12 +1,12 @@
 import React, { useEffect } from "react";
-import MapView, { Marker, Polyline } from "react-native-maps";
+import MapView, { MapPressEvent, Marker, Polyline } from "react-native-maps";
 import { StyleSheet } from "react-native";
 import { mapProvider } from "@/utils/mapProvider";
 import type { Coordinates, Location } from "@/services/GooglePlacesService";
 import type { Route } from "@/services/routeService";
 
 interface WalkPlannerMapProps {
-  mapRef: React.RefObject<MapView>;
+  mapRef: React.RefObject<MapView | null>;
   mapRegion: {
     latitude: number;
     longitude: number;
@@ -18,7 +18,7 @@ interface WalkPlannerMapProps {
   destinationLocation: Location | null;
   routeType: "circular" | "point-to-point";
   generatedRoute?: Route | null;
-  onMapPress: (event: any) => void;
+  onMapPress: (event: MapPressEvent) => void;
 }
 
 const WalkPlannerMap: React.FC<WalkPlannerMapProps> = ({
@@ -89,7 +89,7 @@ const WalkPlannerMap: React.FC<WalkPlannerMapProps> = ({
         />
       )}
 
-      {/* NEW: ROUTE POLYLINE */}
+      {/* The generated route */}
       {generatedRoute && generatedRoute.coordinates.length > 0 && (
         <Polyline
           coordinates={generatedRoute.coordinates.map((coord) => ({

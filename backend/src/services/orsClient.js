@@ -1,5 +1,6 @@
 import axios from "axios";
 import { HttpError } from "../utils/httpError.js";
+import { logger } from "../utils/logger.js";
 
 /**
  * The OpenRouteService client: walking routes through waypoints, snapped to
@@ -30,12 +31,12 @@ const toHttpError = (error) => {
   if (status === 429) return new HttpError(503, BUSY);
   if (status === 401 || status === 403) {
     // Our key is wrong or blocked: the user can't fix that, we can
-    console.error("OpenRouteService rejected the API key:", status, error.response?.data);
+    logger.error("OpenRouteService rejected the API key:", status, error.response?.data);
     return new HttpError(503, UNAVAILABLE);
   }
   if (status === 400 || status === 404) return new HttpError(422, NO_ROUTE);
   if (status === undefined && !error.request) return error;
-  console.warn("OpenRouteService failed:", status ?? error.code ?? error.message);
+  logger.warn("OpenRouteService failed:", status ?? error.code ?? error.message);
   return new HttpError(503, DOWN);
 };
 
@@ -58,7 +59,7 @@ const summarizeElevation = (points, properties) => {
 export const getWalkingRoute = async (waypoints, { wait = sleep } = {}) => {
   const apiKey = process.env.ORS_API_KEY;
   if (!apiKey) {
-    console.error("ORS_API_KEY is not set");
+    logger.error("ORS_API_KEY is not set");
     throw new HttpError(503, UNAVAILABLE);
   }
 

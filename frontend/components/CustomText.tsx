@@ -1,9 +1,9 @@
 import { colors } from "@/theme/colors";
 import React, { ReactNode } from "react";
-import { Text, TextProps } from "react-native-paper";
-import { useTheme } from "react-native-paper";
+import { Text, TextProps, useTheme } from "react-native-paper";
 
-interface CustomTextProps extends TextProps<any> {
+// `never`: only the theme's own text variants (no custom ones)
+interface CustomTextProps extends TextProps<never> {
   children: ReactNode;
   custom?: "link" | "span" | "error";
 }

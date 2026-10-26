@@ -1,4 +1,5 @@
 import { HttpError } from "../utils/httpError.js";
+import { logger } from "../utils/logger.js";
 
 export const SERVER_ERROR_MESSAGE = "Something went wrong. Please try again.";
 
@@ -39,6 +40,6 @@ export const errorHandler = (error, req, res, next) => {
     return fail(res, error.status, error.message);
   }
 
-  console.error(`Unhandled error on ${req.method} ${req.originalUrl}:`, error);
+  logger.error(`Unhandled error on ${req.method} ${req.originalUrl}:`, error);
   return fail(res, 500, SERVER_ERROR_MESSAGE);
 };

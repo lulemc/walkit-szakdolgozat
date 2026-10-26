@@ -23,7 +23,6 @@
   },
   "homepage": "https://github.com/lulemc/szakdolgozat#readme",
   "dependencies": {
-    "@dotenvx/dotenvx": "^1.75.1",
     "axios": "^1.20.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
@@ -32,7 +31,6 @@
     "express-rate-limit": "^8.7.1",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.2",
-    "mongodb": "^7.7.0",
     "mongoose": "^9.11.1",
     "swagger-jsdoc": "^6.3.0",
     "swagger-ui-express": "^5.0.1"

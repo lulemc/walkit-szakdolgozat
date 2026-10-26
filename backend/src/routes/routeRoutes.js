@@ -1,6 +1,3 @@
-// backend/src/routes/routes.js
-// UPDATED: Added favorites endpoints with Swagger documentation
-
 import express from "express";
 import mongoose from "mongoose";
 import {

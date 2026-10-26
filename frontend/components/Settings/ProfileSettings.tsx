@@ -11,6 +11,7 @@ import UserService from "@/services/userService";
 import { userStorage } from "@/utils/userStorage";
 import ConfirmationModal from "../ConformationModal";
 import ChangePasswordModal from "./ChangePasswordModal";
+import { apiErrorMessage } from "@/utils/apiError";
 
 interface ProfileSettingsProps extends User {
   onProfileUpdate?: (updatedUser: User) => void;
@@ -56,11 +57,8 @@ export default function ProfileSettings({
       await userStorage.setUser(updatedUser);
 
       Alert.alert("Success", "Profile updated successfully!");
-    } catch (error: any) {
-      Alert.alert(
-        "Error",
-        error.response?.data?.message || "Failed to update profile",
-      );
+    } catch (error) {
+      Alert.alert("Error", apiErrorMessage(error, "Failed to update profile"));
     } finally {
       setIsLoading(false);
     }
@@ -73,10 +71,6 @@ export default function ProfileSettings({
   const handlePasswordConfirm = () => {
     setShowPasswordConfirmation(false);
     setShowPasswordModal(true);
-  };
-
-  const handlePasswordChanged = () => {
-    console.log("Password changed successfully");
   };
 
   return (
@@ -173,7 +167,6 @@ export default function ProfileSettings({
         visible={showPasswordModal}
         onClose={() => setShowPasswordModal(false)}
         userId={user._id}
-        onPasswordChanged={handlePasswordChanged}
       />
     </View>
   );

@@ -14,6 +14,7 @@ import UserService from "@/services/userService";
 import { storage } from "@/utils/storage";
 import { MIN_PASSWORD_LENGTH, PASSWORD_TOO_SHORT_MESSAGE } from "@/utils/passwordRules";
 import { useTheme } from "react-native-paper";
+import { apiErrorMessage } from "@/utils/apiError";
 
 interface ChangePasswordModalProps {
   visible: boolean;
@@ -123,12 +124,14 @@ export default function ChangePasswordModal({
       Alert.alert("Success", "Your password has been changed successfully!");
 
       onPasswordChanged?.();
-    } catch (error: any) {
+    } catch (error) {
       setIsLoading(false);
       Alert.alert(
         "Error",
-        error.response?.data?.message ||
+        apiErrorMessage(
+          error,
           "Failed to change password. Please check your current password and try again.",
+        ),
       );
     }
   };

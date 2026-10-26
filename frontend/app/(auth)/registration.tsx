@@ -12,6 +12,7 @@ import {
   ScreenContainer,
   PrimaryButton,
 } from "@/components";
+import { apiErrorMessage } from "@/utils/apiError";
 
 const RegisterScreen: React.FC = () => {
   const router = useRouter();
@@ -39,8 +40,8 @@ const RegisterScreen: React.FC = () => {
       setError(null);
 
       await register(name.value, email.value, password.value);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Registration failed");
+    } catch (err) {
+      setError(apiErrorMessage(err, "Registration failed"));
     } finally {
       setLoading(false);
     }

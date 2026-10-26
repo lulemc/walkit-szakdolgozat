@@ -4,12 +4,15 @@ import { useTheme } from "react-native-paper";
 import { GestureDetector } from "react-native-gesture-handler";
 import Animated from "react-native-reanimated";
 import { CustomText } from "@/components/CustomText";
+import type { useDraggablePanel } from "@/hooks/useDraggablePanel";
+
+type DraggablePanelState = ReturnType<typeof useDraggablePanel>;
 
 interface DraggablePanelProps {
   children: React.ReactNode;
-  panGesture: any;
-  animatedPanelStyle: any;
-  scrollRef: React.RefObject<ScrollView>;
+  panGesture: DraggablePanelState["panGesture"];
+  animatedPanelStyle: DraggablePanelState["animatedPanelStyle"];
+  scrollRef: React.RefObject<ScrollView | null>;
   scrollEnabled: boolean;
 }
 

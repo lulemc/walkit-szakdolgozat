@@ -1,5 +1,6 @@
 import axios from "axios";
 import { HttpError } from "../utils/httpError.js";
+import { logger } from "../utils/logger.js";
 
 const OVERPASS_API_URL = "https://overpass-api.de/api/interpreter";
 
@@ -261,7 +262,7 @@ class OSMOverpassService {
         features[requested[i].key] = result.value;
       } else {
         failed += 1;
-        console.warn(`OSM lookup for ${requested[i].key} failed:`, result.reason?.message);
+        logger.warn(`OSM lookup for ${requested[i].key} failed:`, result.reason?.message);
       }
     });
 
@@ -330,45 +331,6 @@ class OSMOverpassService {
     }
   }
 
-  /**
-   * Find nearest features of a specific type
-   * @param {Array} features - Array of features
-   * @param {number} limit - Maximum number to return
-   * @returns {Array} Sorted array of nearest features
-   */
-  findNearestFeatures(features, limit = 5) {
-    return features
-      .sort((a, b) => (a.distance || 0) - (b.distance || 0))
-      .slice(0, limit);
-  }
-
-  /**
-   * Filter features within a distance range
-   * @param {Array} features - Array of features
-   * @param {number} minDistance - Minimum distance in meters
-   * @param {number} maxDistance - Maximum distance in meters
-   * @returns {Array} Filtered features
-   */
-  filterByDistanceRange(features, minDistance = 0, maxDistance = 5000) {
-    return features.filter(
-      (f) =>
-        f.distance !== undefined &&
-        f.distance >= minDistance &&
-        f.distance <= maxDistance,
-    );
-  }
-
-  /**
-   * Filter features by elevation (for uphill routes)
-   * @param {Array} features - Array of features with elevation
-   * @param {number} minElevation - Minimum elevation in meters
-   * @returns {Array} Features above minimum elevation
-   */
-  filterByElevation(features, minElevation = 100) {
-    return features.filter(
-      (f) => f.elevation !== null && f.elevation >= minElevation,
-    );
-  }
 }
 
 export default new OSMOverpassService();

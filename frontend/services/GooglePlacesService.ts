@@ -15,6 +15,18 @@ interface Location {
   address: string;
 }
 
+/* The parts of Google's answers that are used here */
+interface GooglePrediction {
+  place_id: string;
+  description: string;
+  structured_formatting: { main_text: string; secondary_text: string };
+}
+
+interface GoogleAddressComponent {
+  long_name: string;
+  types: string[];
+}
+
 interface PlaceSuggestion {
   placeId: string;
   description: string;
@@ -39,7 +51,7 @@ class GooglePlacesService {
     try {
       const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json`;
       
-      const params: any = {
+      const params: Record<string, string | number | undefined> = {
         input: query,
         key: GOOGLE_PLACES_API_KEY,
         language: 'en',
@@ -58,7 +70,7 @@ class GooglePlacesService {
         throw googleError('Google Places API', response.data);
       }
 
-      return response.data.predictions.map((prediction: any) => ({
+      return (response.data.predictions as GooglePrediction[]).map((prediction) => ({
         placeId: prediction.place_id,
         description: prediction.description,
         mainText: prediction.structured_formatting.main_text,
@@ -128,11 +140,11 @@ class GooglePlacesService {
       const result = response.data.results[0];
 
       // Extract name from address components
-      const streetNumber = result.address_components.find((c: any) => 
+      const streetNumber = (result.address_components as GoogleAddressComponent[]).find((c) =>
         c.types.includes('street_number')
       )?.long_name || '';
       
-      const street = result.address_components.find((c: any) => 
+      const street = (result.address_components as GoogleAddressComponent[]).find((c) =>
         c.types.includes('route')
       )?.long_name || '';
 
