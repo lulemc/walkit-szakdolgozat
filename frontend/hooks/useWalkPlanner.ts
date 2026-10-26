@@ -9,6 +9,7 @@ import type {
   Location as LocationType,
   PlaceSuggestion,
 } from '@/services/GooglePlacesService';
+import { apiErrorMessage } from '@/utils/apiError';
 
 type RouteType = 'circular' | 'point-to-point';
 type MapSelectionMode = 'none' | 'start' | 'destination';
@@ -248,7 +249,8 @@ export const useWalkPlanner = () => {
       setGeneratedRoute(route);
     } catch (error) {
       console.error('❌ Error generating route:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to generate route';
+      // The server explains what went wrong (e.g. the routing service is busy)
+      const errorMessage = apiErrorMessage(error, 'Failed to generate route');
       setRouteError(errorMessage);
       Alert.alert('Error', errorMessage);
     } finally {

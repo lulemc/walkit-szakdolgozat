@@ -1,6 +1,44 @@
 import axios from "axios";
+import { HttpError } from "../utils/httpError.js";
 
 const OVERPASS_API_URL = "https://overpass-api.de/api/interpreter";
+
+/** Which feature types are looked up for which preferences (null: the basic ones) */
+const FEATURE_LOOKUPS = [
+  { key: "parks", query: "queryParks", wanted: (p) => !p || p.parks },
+  { key: "waterfront", query: "queryWaterfront", wanted: (p) => !p || p.waterfront },
+  { key: "highways", query: "queryHighways", wanted: (p) => !p || p.avoidHighways },
+  { key: "scenic", query: "queryScenicPoints", wanted: (p) => !p || p.scenic },
+  { key: "elevation", query: "queryElevation", wanted: (p) => Boolean(p && (p.uphill || p.mountain)) },
+  { key: "trails", query: "queryTrails", wanted: (p) => Boolean(p && (p.uphill || p.mountain)) },
+  { key: "quietStreets", query: "queryQuietStreets", wanted: (p) => Boolean(p?.quietStreets) },
+  { key: "beaches", query: "queryBeaches", wanted: (p) => Boolean(p?.beach) },
+];
+
+/* ---------------- cache ----------------
+ * Map features hardly change, and the public Overpass server is slow and
+ * rate limited, so lookups are kept in memory for a while. */
+export const FEATURE_CACHE_TTL_MS = 60 * 60 * 1000;
+const MAX_CACHED_AREAS = 200;
+const featureCache = new Map();
+
+/** Same area: rounded to about 100 m; same radius to 100 m; same feature types */
+const cacheKey = (center, radiusMeters, lookups) =>
+  [
+    center.latitude.toFixed(3),
+    center.longitude.toFixed(3),
+    Math.round(radiusMeters / 100),
+    lookups.map(({ key }) => key).join(","),
+  ].join("|");
+
+const remember = (key, features) => {
+  featureCache.delete(key);
+  featureCache.set(key, { features, expiresAt: Date.now() + FEATURE_CACHE_TTL_MS });
+  // A Map keeps insertion order, so the first entry is the oldest
+  if (featureCache.size > MAX_CACHED_AREAS) featureCache.delete(featureCache.keys().next().value);
+};
+
+export const clearFeatureCache = () => featureCache.clear();
 
 class OSMOverpassService {
   /**
@@ -197,116 +235,44 @@ class OSMOverpassService {
   }
 
   /**
-   * Get all preference features for a location
+   * The map features near a location for the user's preferences. Lookups that
+   * fail count as "none found"; if every requested lookup fails, it says so
+   * (503) instead of scoring a route against nothing. Complete results are
+   * cached per area and preference set for FEATURE_CACHE_TTL_MS.
    * @param {Object} center - {latitude, longitude}
    * @param {number} radiusMeters - Search radius in meters
-   * @param {Object} preferences - User preferences
+   * @param {Object|null} preferences - User preferences (null: the basic feature types)
    * @returns {Promise<Object>} Object with feature arrays
    */
-  async getAllPreferenceFeatures(
-    center,
-    radiusMeters = 2000,
-    preferences = null,
-  ) {
-    console.log("🔍 Querying OSM for features...");
-    console.log(`   Center: (${center.latitude}, ${center.longitude})`);
-    console.log(`   Radius: ${radiusMeters}m`);
+  async getAllPreferenceFeatures(center, radiusMeters = 2000, preferences = null) {
+    const requested = FEATURE_LOOKUPS.filter(({ wanted }) => wanted(preferences));
+    const key = cacheKey(center, radiusMeters, requested);
+    const cached = featureCache.get(key);
+    if (cached && cached.expiresAt > Date.now()) return cached.features;
 
-    try {
-      const queries = [];
+    const results = await Promise.allSettled(
+      requested.map(({ query }) => this[query](center, radiusMeters)),
+    );
 
-      // Only query for features the user wants
-      if (!preferences || preferences.parks) {
-        queries.push(this.queryParks(center, radiusMeters));
+    const features = Object.fromEntries(FEATURE_LOOKUPS.map(({ key: name }) => [name, []]));
+    let failed = 0;
+    results.forEach((result, i) => {
+      if (result.status === "fulfilled") {
+        features[requested[i].key] = result.value;
       } else {
-        queries.push(Promise.resolve([]));
+        failed += 1;
+        console.warn(`OSM lookup for ${requested[i].key} failed:`, result.reason?.message);
       }
+    });
 
-      if (!preferences || preferences.waterfront) {
-        queries.push(this.queryWaterfront(center, radiusMeters));
-      } else {
-        queries.push(Promise.resolve([]));
-      }
-
-      if (!preferences || preferences.avoidHighways) {
-        queries.push(this.queryHighways(center, radiusMeters));
-      } else {
-        queries.push(Promise.resolve([]));
-      }
-
-      if (!preferences || preferences.scenic) {
-        queries.push(this.queryScenicPoints(center, radiusMeters));
-      } else {
-        queries.push(Promise.resolve([]));
-      }
-
-      // Elevation and trails
-      if (preferences && (preferences.uphill || preferences.mountain)) {
-        queries.push(this.queryElevation(center, radiusMeters));
-        queries.push(this.queryTrails(center, radiusMeters));
-      } else {
-        queries.push(Promise.resolve([]));
-        queries.push(Promise.resolve([]));
-      }
-
-      // Quiet Streets
-      if (preferences && preferences.quietStreets) {
-        queries.push(this.queryQuietStreets(center, radiusMeters));
-      } else {
-        queries.push(Promise.resolve([]));
-      }
-
-      // Beach/Coast
-      if (preferences && preferences.beach) {
-        queries.push(this.queryBeaches(center, radiusMeters));
-      } else {
-        queries.push(Promise.resolve([]));
-      }
-
-      const [
-        parks,
-        waterfront,
-        highways,
-        scenic,
-        elevation,
-        trails,
-        quietStreets,
-        beaches,
-      ] = await Promise.all(queries);
-
-      console.log("✅ OSM features found:");
-      console.log(`   Parks: ${parks.length}`);
-      console.log(`   Waterfront: ${waterfront.length}`);
-      console.log(`   Highways: ${highways.length}`);
-      console.log(`   Scenic: ${scenic.length}`);
-      console.log(`   Elevation points: ${elevation.length}`);
-      console.log(`   Trails: ${trails.length}`);
-      console.log(`   Quiet streets: ${quietStreets.length}`);
-      console.log(`   Beaches: ${beaches.length}`);
-
-      return {
-        parks,
-        waterfront,
-        highways,
-        scenic,
-        elevation,
-        trails,
-        quietStreets,
-        beaches,
-      };
-    } catch (error) {
-      console.error("❌ Error fetching OSM features:", error.message);
-      return {
-        parks: [],
-        waterfront: [],
-        highways: [],
-        scenic: [],
-        elevation: [],
-        trails: [],
-        quietStreets: [],
-        beaches: [],
-      };
+    if (requested.length > 0 && failed === requested.length) {
+      throw new HttpError(
+        503,
+        "Couldn't check the map for your preferences right now. Try again, or turn the preferences off.",
+      );
     }
+    if (failed === 0) remember(key, features);
+    return features;
   }
 
   /**
@@ -358,8 +324,9 @@ class OSMOverpassService {
         };
       });
     } catch (error) {
-      console.error(`❌ Error querying OSM for ${type}:`, error.message);
-      return [];
+      // Passed on, so a failed lookup isn't mistaken for "nothing nearby"
+      error.message = `OSM ${type} lookup failed: ${error.message}`;
+      throw error;
     }
   }
 

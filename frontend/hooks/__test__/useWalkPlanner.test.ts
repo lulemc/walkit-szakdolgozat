@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 import * as Location from 'expo-location';
 import { useWalkPlanner } from '../useWalkPlanner';
 import GooglePlacesService from '@/services/GooglePlacesService';
+import { routeService } from '@/services/routeService';
 
 jest.mock('expo-location');
 jest.mock('@/services/GooglePlacesService');
@@ -331,6 +332,34 @@ describe('useWalkPlanner', () => {
       });
 
       expect(result.current.selectedDistance).toBe(10);
+    });
+  });
+
+  describe('generateRoute', () => {
+    it("shows the server's explanation when a route can't be generated", async () => {
+      jest.spyOn(console, 'log').mockImplementation(() => {});
+      jest.spyOn(routeService, 'generateRoute').mockRejectedValue({
+        message: 'Request failed with status code 503',
+        response: { data: { message: 'The routing service is busy. Please try again in a minute.' } },
+      });
+      const { result } = renderHook(() => useWalkPlanner());
+      act(() => {
+        result.current.setStartLocation({
+          coordinates: { latitude: 47.5, longitude: 19.04 },
+          name: 'Start',
+          address: 'Start',
+        });
+      });
+
+      await act(async () => {
+        await result.current.generateRoute();
+      });
+
+      expect(Alert.alert).toHaveBeenCalledWith(
+        'Error',
+        'The routing service is busy. Please try again in a minute.',
+      );
+      expect(result.current.isGeneratingRoute).toBe(false);
     });
   });
 });
