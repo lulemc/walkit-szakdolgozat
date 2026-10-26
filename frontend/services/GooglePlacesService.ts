@@ -22,11 +22,20 @@ interface PlaceSuggestion {
   secondaryText: string;
 }
 
+/** Google's status, plus its explanation when it sends one */
+const googleError = (api: string, data: { status: string; error_message?: string }) =>
+  new Error(`${api} error: ${data.status}${data.error_message ? ` (${data.error_message})` : ''}`);
+
 class GooglePlacesService {
   /**
-   * Search for places using Google Places Autocomplete API
+   * Search for places using Google Places Autocomplete API. Pass the same
+   * sessionToken for every search until a place is picked (see getPlaceDetails).
    */
-  async searchPlaces(query: string, location?: Coordinates): Promise<PlaceSuggestion[]> {
+  async searchPlaces(
+    query: string,
+    location?: Coordinates,
+    sessionToken?: string,
+  ): Promise<PlaceSuggestion[]> {
     try {
       const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json`;
       
@@ -34,6 +43,7 @@ class GooglePlacesService {
         input: query,
         key: GOOGLE_PLACES_API_KEY,
         language: 'en',
+        ...(sessionToken && { sessiontoken: sessionToken }),
       };
 
       // Add location bias if provided (searches near user's location)
@@ -45,7 +55,7 @@ class GooglePlacesService {
       const response = await axios.get(url, { params });
 
       if (response.data.status !== 'OK' && response.data.status !== 'ZERO_RESULTS') {
-        throw new Error(`Google Places API error: ${response.data.status}`);
+        throw googleError('Google Places API', response.data);
       }
 
       return response.data.predictions.map((prediction: any) => ({
@@ -61,9 +71,10 @@ class GooglePlacesService {
   }
 
   /**
-   * Get detailed information about a place using Place Details API
+   * Get detailed information about a place using Place Details API. With the
+   * search's sessionToken, this ends the session (one billed search).
    */
-  async getPlaceDetails(placeId: string): Promise<Location> {
+  async getPlaceDetails(placeId: string, sessionToken?: string): Promise<Location> {
     try {
       const url = `https://maps.googleapis.com/maps/api/place/details/json`;
       
@@ -71,12 +82,13 @@ class GooglePlacesService {
         place_id: placeId,
         fields: 'name,formatted_address,geometry',
         key: GOOGLE_PLACES_API_KEY,
+        ...(sessionToken && { sessiontoken: sessionToken }),
       };
 
       const response = await axios.get(url, { params });
 
       if (response.data.status !== 'OK') {
-        throw new Error(`Google Places API error: ${response.data.status}`);
+        throw googleError('Google Places API', response.data);
       }
 
       const result = response.data.result;
@@ -110,7 +122,7 @@ class GooglePlacesService {
       const response = await axios.get(url, { params });
 
       if (response.data.status !== 'OK') {
-        throw new Error(`Geocoding API error: ${response.data.status}`);
+        throw googleError('Geocoding API', response.data);
       }
 
       const result = response.data.results[0];

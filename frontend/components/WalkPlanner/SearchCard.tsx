@@ -14,6 +14,8 @@ interface SearchCardProps {
   onSelectSuggestion: (suggestion: PlaceSuggestion) => void;
   onCancel: () => void;
   isSearching: boolean;
+  /** Shown under the input, e.g. when search is unavailable */
+  error?: string | null;
 }
 
 export default function SearchCard({
@@ -24,6 +26,7 @@ export default function SearchCard({
   onSelectSuggestion,
   onCancel,
   isSearching,
+  error,
 }: SearchCardProps) {
   const theme = useTheme();
 
@@ -32,6 +35,7 @@ export default function SearchCard({
       <View style={styles.inputContainer}>
         <CustomTextInput
           label="Search for a place"
+          accessibilityLabel="Search for a place"
           value={value}
           onChangeText={onChangeText}
           placeholder="Enter address, place name..."
@@ -55,6 +59,12 @@ export default function SearchCard({
           Searching...
         </CustomText>
       )}
+
+      {error ? (
+        <CustomText variant="bodySmall" style={[styles.searchingText, { color: theme.colors.error }]}>
+          {error}
+        </CustomText>
+      ) : null}
 
       {suggestions.length > 0 && (
         <ScrollView style={styles.suggestionsList} nestedScrollEnabled={true}>

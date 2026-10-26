@@ -175,24 +175,22 @@ export const useWalkPlanner = () => {
     }
   };
 
-  const handleSearchLocation = async (
+  /** Errors are passed on, so the search box can say search is unavailable */
+  const handleSearchLocation = (
     query: string,
-    type: 'start' | 'destination'
-  ): Promise<PlaceSuggestion[]> => {
-    try {
-      return await GooglePlacesService.searchPlaces(query, currentLocation || undefined);
-    } catch (error) {
-      console.error('Error searching location:', error);
-      return [];
-    }
-  };
+    type: 'start' | 'destination',
+    sessionToken?: string
+  ): Promise<PlaceSuggestion[]> =>
+    GooglePlacesService.searchPlaces(query, currentLocation || undefined, sessionToken);
 
+  /** The search's session token ends the session with the picked place */
   const handleSelectPlace = async (
     placeId: string,
-    type: 'start' | 'destination'
+    type: 'start' | 'destination',
+    sessionToken?: string
   ): Promise<void> => {
     try {
-      const location = await GooglePlacesService.getPlaceDetails(placeId);
+      const location = await GooglePlacesService.getPlaceDetails(placeId, sessionToken);
 
       if (type === 'start') {
         setStartLocation(location);
