@@ -2,12 +2,12 @@ name: CI
 on:
   pull_request:
   push:
+
 jobs:
   backend:
-    name: Backend tests
+    name: Backend lint and tests
     runs-on: ubuntu-latest
-    
-    # Add MongoDB service
+
     services:
       mongodb:
         image: mongo:7
@@ -18,15 +18,15 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    
+
     defaults:
       run:
         working-directory: backend
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -39,7 +39,10 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-      
+
+      - name: Lint
+        run: npm run lint
+
       - name: Run backend tests
         env:
           MONGO_URI: mongodb://localhost:27017/walkit_test
@@ -47,9 +50,9 @@ jobs:
           ORS_API_KEY: mock_ors_key_for_testing
           NODE_ENV: test
         run: npm run test:run
-  
+
   frontend:
-    name: Frontend tests
+    name: Frontend lint, types and tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -57,7 +60,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -70,6 +73,79 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-      
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run typecheck
+
       - name: Run frontend tests
         run: npm run test:ci
+
+  bundle:
+    name: App bundles build (iOS and Android)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Catches import and bundling errors in minutes, without a native build
+      - name: Export the JavaScript bundles
+        run: npx expo export --platform ios --platform android --output-dir dist
+
+  eas-build:
+    name: EAS build (Android preview)
+    # A full native build only for pull requests into develop: it takes a while and uses EAS build minutes
+    if: github.event_name == 'pull_request' && github.base_ref == 'develop'
+    runs-on: ubuntu-latest
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Skip without an Expo token
+        if: env.EXPO_TOKEN == ''
+        working-directory: .
+        run: echo "::notice::EXPO_TOKEN secret not set - skipping the EAS build. Add it under Settings > Secrets and variables > Actions."
+
+      - name: Checkout repository
+        if: env.EXPO_TOKEN != ''
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        if: env.EXPO_TOKEN != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Setup EAS
+        if: env.EXPO_TOKEN != ''
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        if: env.EXPO_TOKEN != ''
+        run: npm ci
+
+      - name: Build
+        if: env.EXPO_TOKEN != ''
+        run: eas build --platform android --profile preview --non-interactive
