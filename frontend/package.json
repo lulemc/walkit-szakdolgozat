@@ -24,7 +24,19 @@
     },
     "setupFiles": [
       "<rootDir>/jest.setup.fonts.ts"
-    ]
+    ],
+    "collectCoverageFrom": [
+      "{app,components,context,hooks,screens,services,utils}/**/*.{ts,tsx}",
+      "!**/__test__/**"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "lines": 90,
+        "statements": 90,
+        "functions": 87,
+        "branches": 79
+      }
+    }
   },
   "dependencies": {
     "@expo/html-elements": "^0.13.7",

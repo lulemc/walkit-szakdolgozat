@@ -55,6 +55,8 @@ export default function ProfileSettings({
         updateData,
       );
       await userStorage.setUser(updatedUser);
+      // So the settings screen shows the new profile without reloading
+      onProfileUpdate?.(updatedUser);
 
       Alert.alert("Success", "Profile updated successfully!");
     } catch (error) {

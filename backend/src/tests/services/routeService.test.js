@@ -21,6 +21,8 @@ vi.mock("../../models/Route.js", async (importOriginal) => {
     this.save = vi.fn().mockResolvedValue(this);
   });
   MockRoute.find = vi.fn();
+  MockRoute.findOne = vi.fn();
+  MockRoute.findOneAndDelete = vi.fn();
   return { ...actual, default: MockRoute };
 });
 
@@ -201,5 +203,22 @@ describe("listing routes", () => {
   it("rejects paging values that don't fit with 400", async () => {
     await expect(routeService.listRoutes("u1", { limit: "500" })).rejects.toBeInstanceOf(HttpError);
     await expect(routeService.listFavoriteRoutes("u1", { before: "soon" })).rejects.toBeInstanceOf(HttpError);
+  });
+});
+
+describe("one route", () => {
+  it("gets one of my routes, with its coordinates", async () => {
+    Route.findOne.mockResolvedValue({ _id: "r1", coordinates: [] });
+
+    await expect(routeService.getRoute("r1", "u1")).resolves.toEqual({ _id: "r1", coordinates: [] });
+    expect(Route.findOne).toHaveBeenCalledWith({ _id: "r1", userId: "u1" });
+  });
+
+  it("deletes only my own route", async () => {
+    Route.findOneAndDelete.mockResolvedValue({ _id: "r1" });
+
+    await routeService.deleteRoute("r1", "u1");
+
+    expect(Route.findOneAndDelete).toHaveBeenCalledWith({ _id: "r1", userId: "u1" });
   });
 });

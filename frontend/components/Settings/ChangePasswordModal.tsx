@@ -95,7 +95,8 @@ export default function ChangePasswordModal({
       hasErrors = true;
     }
 
-    if (currentPassword === newPassword) {
+    // Only compared when both are filled in, so empty fields say "required"
+    if (currentPassword && currentPassword === newPassword) {
       newErrors.newPassword =
         "New password must be different from current password";
       hasErrors = true;

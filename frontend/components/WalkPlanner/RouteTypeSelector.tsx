@@ -31,6 +31,9 @@ export default function RouteTypeSelector({
           },
         ]}
         onPress={() => onChange("circular")}
+        accessibilityRole="radio"
+        accessibilityState={{ checked: value === "circular" }}
+        accessibilityLabel="Circular Loop, returns to start"
       >
         <View style={styles.routeIcon}>
           <CustomText variant="headlineSmall">🔄</CustomText>
@@ -80,6 +83,9 @@ export default function RouteTypeSelector({
           },
         ]}
         onPress={() => onChange("point-to-point")}
+        accessibilityRole="radio"
+        accessibilityState={{ checked: value === "point-to-point" }}
+        accessibilityLabel="Point-to-Point, different end point"
       >
         <View style={styles.routeIcon}>
           <CustomText variant="headlineSmall">➡️</CustomText>

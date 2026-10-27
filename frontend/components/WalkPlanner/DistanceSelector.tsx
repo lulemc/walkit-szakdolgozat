@@ -41,6 +41,7 @@ export default function DistanceSelector({
       <View style={styles.inputContainer}>
         <CustomTextInput
           label="Distance (km)"
+          accessibilityLabel="Distance (km)"
           value={inputValue}
           onChangeText={handleInputChange}
           keyboardType="number-pad"

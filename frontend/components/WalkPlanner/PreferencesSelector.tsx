@@ -116,6 +116,8 @@ const PreferencesSelector: React.FC<PreferencesSelectorProps> = ({
               </View>
             </View>
             <Switch
+              accessibilityLabel={option.label}
+              accessibilityHint={option.description}
               value={preferences[option.key]}
               onValueChange={() => togglePreference(option.key)}
               color={theme.colors.primary}

@@ -43,13 +43,14 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Run backend tests
+      # Fails when coverage drops below the floor in vitest.config.js
+      - name: Run backend tests with coverage
         env:
           MONGO_URI: mongodb://localhost:27017/walkit_test
           JWT_SECRET: test_jwt_secret_key_for_ci
           ORS_API_KEY: mock_ors_key_for_testing
           NODE_ENV: test
-        run: npm run test:run
+        run: npm run test:coverage
 
   frontend:
     name: Frontend lint, types and tests
@@ -80,8 +81,9 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
-      - name: Run frontend tests
-        run: npm run test:ci
+      # Fails when coverage drops below the floor in package.json (jest.coverageThreshold)
+      - name: Run frontend tests with coverage
+        run: npm run test:coverage -- --ci
 
   bundle:
     name: App bundles build (iOS and Android)

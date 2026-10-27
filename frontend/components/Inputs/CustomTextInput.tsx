@@ -26,6 +26,8 @@ export const CustomTextInput: React.FC<CustomTextInputProps> = ({
     <TextInput
       mode="outlined"
       label={label}
+      // Screen readers read the visible label, unless a more specific one is passed
+      accessibilityLabel={label}
       value={value}
       onChangeText={onChangeText}
       secureTextEntry={secureTextEntry}
