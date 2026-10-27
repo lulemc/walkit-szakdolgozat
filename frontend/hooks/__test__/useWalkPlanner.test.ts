@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 import * as Location from 'expo-location';
 import { useWalkPlanner } from '../useWalkPlanner';
 import GooglePlacesService from '@/services/GooglePlacesService';
+import { routeService } from '@/services/routeService';
 
 jest.mock('expo-location');
 jest.mock('@/services/GooglePlacesService');
@@ -167,29 +168,18 @@ describe('useWalkPlanner', () => {
 
       let suggestions;
       await act(async () => {
-        suggestions = await result.current.handleSearchLocation('Heroes', 'start');
+        suggestions = await result.current.handleSearchLocation('Heroes', 'start', 'token-1');
       });
 
       expect(suggestions).toEqual(mockSuggestions);
-      expect(mockedGooglePlaces.searchPlaces).toHaveBeenCalledWith(
-        'Heroes',
-        undefined
-      );
+      expect(mockedGooglePlaces.searchPlaces).toHaveBeenCalledWith('Heroes', undefined, 'token-1');
     });
 
-    it('returns empty array on error', async () => {
-      mockedGooglePlaces.searchPlaces.mockRejectedValueOnce(
-        new Error('API error')
-      );
-
+    it('passes errors on, so the search box can say search is unavailable', async () => {
+      mockedGooglePlaces.searchPlaces.mockRejectedValueOnce(new Error('API error'));
       const { result } = renderHook(() => useWalkPlanner());
 
-      let suggestions;
-      await act(async () => {
-        suggestions = await result.current.handleSearchLocation('test', 'start');
-      });
-
-      expect(suggestions).toEqual([]);
+      await expect(result.current.handleSearchLocation('test', 'start', 'token-1')).rejects.toThrow('API error');
     });
   });
 
@@ -206,10 +196,12 @@ describe('useWalkPlanner', () => {
       const { result } = renderHook(() => useWalkPlanner());
 
       await act(async () => {
-        await result.current.handleSelectPlace('123', 'start');
+        await result.current.handleSelectPlace('123', 'start', 'token-1');
       });
 
       expect(result.current.startLocation).toEqual(mockLocation);
+      // The search's session ends with the pick
+      expect(mockedGooglePlaces.getPlaceDetails).toHaveBeenCalledWith('123', 'token-1');
     });
 
     it('sets destination location from place details', async () => {
@@ -331,6 +323,34 @@ describe('useWalkPlanner', () => {
       });
 
       expect(result.current.selectedDistance).toBe(10);
+    });
+  });
+
+  describe('generateRoute', () => {
+    it("shows the server's explanation when a route can't be generated", async () => {
+      jest.spyOn(console, 'log').mockImplementation(() => {});
+      jest.spyOn(routeService, 'generateRoute').mockRejectedValue({
+        message: 'Request failed with status code 503',
+        response: { data: { message: 'The routing service is busy. Please try again in a minute.' } },
+      });
+      const { result } = renderHook(() => useWalkPlanner());
+      act(() => {
+        result.current.setStartLocation({
+          coordinates: { latitude: 47.5, longitude: 19.04 },
+          name: 'Start',
+          address: 'Start',
+        });
+      });
+
+      await act(async () => {
+        await result.current.generateRoute();
+      });
+
+      expect(Alert.alert).toHaveBeenCalledWith(
+        'Error',
+        'The routing service is busy. Please try again in a minute.',
+      );
+      expect(result.current.isGeneratingRoute).toBe(false);
     });
   });
 });

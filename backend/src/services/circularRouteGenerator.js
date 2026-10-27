@@ -1,57 +1,8 @@
 import osmOverpassService from "./osmOverpassService.js";
 
+/** Scores how well a route matches the walker's preferences, from the map features near it */
 class CircularRouteGenerator {
-  async generateCircularPath(startLocation, targetDistanceKm) {
-    const radiusMeters = (targetDistanceKm * 1000) / (2 * Math.PI);
-
-    console.log("🎯 Generating true circular path:");
-    console.log(`   Target distance: ${targetDistanceKm}km`);
-    console.log(`   Calculated radius: ${radiusMeters.toFixed(0)}m`);
-
-    const circlePoints = this.generatePerfectCircle(
-      startLocation,
-      radiusMeters,
-      targetDistanceKm,
-    );
-
-    console.log(
-      `✅ Generated ${circlePoints.length} points forming a perfect circle`,
-    );
-
-    return circlePoints;
-  }
-
-  generatePerfectCircle(center, radiusMeters, distanceKm) {
-    const pointsPerKm = 50;
-    const totalPoints = Math.max(50, Math.floor(distanceKm * pointsPerKm));
-
-    const points = [];
-
-    const startAngle = Math.random() * (2 * Math.PI);
-
-    for (let i = 0; i <= totalPoints; i++) {
-      const angle = startAngle + (i / totalPoints) * (2 * Math.PI);
-
-      const radiusVar = radiusMeters * (0.95 + Math.random() * 0.1);
-
-      const lat = center.latitude + (radiusVar / 111320) * Math.cos(angle);
-      const lng =
-        center.longitude +
-        (radiusVar / (111320 * Math.cos((center.latitude * Math.PI) / 180))) *
-          Math.sin(angle);
-
-      points.push({
-        latitude: lat,
-        longitude: lng,
-      });
-    }
-
-    points.push(points[0]);
-
-    return points;
-  }
-
-  calculatePreferenceScore(circlePoints, preferences, features) {
+  calculatePreferenceScore(routePoints, preferences, features) {
     if (!preferences || !features) {
       return 50;
     }
@@ -60,7 +11,7 @@ class CircularRouteGenerator {
     let matchCount = 0;
     let totalPreferences = 0;
 
-    const samplePoints = this.samplePoints(circlePoints, 20);
+    const samplePoints = this.samplePoints(routePoints, 20);
 
     if (preferences.parks) {
       totalPreferences++;
@@ -205,13 +156,6 @@ class CircularRouteGenerator {
     return count;
   }
 
-  calculatePathDistance(points) {
-    let total = 0;
-    for (let i = 1; i < points.length; i++) {
-      total += osmOverpassService.calculateDistance(points[i - 1], points[i]);
-    }
-    return total;
-  }
 }
 
 export default new CircularRouteGenerator();

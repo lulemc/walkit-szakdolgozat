@@ -9,6 +9,7 @@ import type {
   Location as LocationType,
   PlaceSuggestion,
 } from '@/services/GooglePlacesService';
+import { apiErrorMessage } from '@/utils/apiError';
 
 type RouteType = 'circular' | 'point-to-point';
 type MapSelectionMode = 'none' | 'start' | 'destination';
@@ -174,24 +175,22 @@ export const useWalkPlanner = () => {
     }
   };
 
-  const handleSearchLocation = async (
+  /** Errors are passed on, so the search box can say search is unavailable */
+  const handleSearchLocation = (
     query: string,
-    type: 'start' | 'destination'
-  ): Promise<PlaceSuggestion[]> => {
-    try {
-      return await GooglePlacesService.searchPlaces(query, currentLocation || undefined);
-    } catch (error) {
-      console.error('Error searching location:', error);
-      return [];
-    }
-  };
+    type: 'start' | 'destination',
+    sessionToken?: string
+  ): Promise<PlaceSuggestion[]> =>
+    GooglePlacesService.searchPlaces(query, currentLocation || undefined, sessionToken);
 
+  /** The search's session token ends the session with the picked place */
   const handleSelectPlace = async (
     placeId: string,
-    type: 'start' | 'destination'
+    type: 'start' | 'destination',
+    sessionToken?: string
   ): Promise<void> => {
     try {
-      const location = await GooglePlacesService.getPlaceDetails(placeId);
+      const location = await GooglePlacesService.getPlaceDetails(placeId, sessionToken);
 
       if (type === 'start') {
         setStartLocation(location);
@@ -241,14 +240,13 @@ export const useWalkPlanner = () => {
         }),
       };
 
-      console.log('🎯 Generating route with request:', request);
       const route = await routeService.generateRoute(request);
-      console.log('✅ Route generated:', route);
 
       setGeneratedRoute(route);
     } catch (error) {
       console.error('❌ Error generating route:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to generate route';
+      // The server explains what went wrong (e.g. the routing service is busy)
+      const errorMessage = apiErrorMessage(error, 'Failed to generate route');
       setRouteError(errorMessage);
       Alert.alert('Error', errorMessage);
     } finally {

@@ -80,27 +80,14 @@ describe("groupWalkController: comments and summary", () => {
     });
   });
 
-  it("passes on a service error with its status", async () => {
-    commentService.addComment.mockRejectedValue(
-      new HttpError(403, "Participants who declined can't comment"),
-    );
-    const res = mockRes();
+  it.each([
+    ["a service HttpError", new HttpError(403, "Participants who declined can't comment")],
+    ["an unexpected error", new Error("connection lost")],
+  ])("leaves %s to the error handler", async (_case, error) => {
+    commentService.addComment.mockRejectedValue(error);
 
-    await addGroupWalkComment({ user, params: { id: "w1" }, body: { text: "Hi" } }, res);
-
-    expect(res.status).toHaveBeenCalledWith(403);
-  });
-
-  it("responds 500 without internal details on an unexpected error", async () => {
-    summaryService.getSocialSummary.mockRejectedValue(new Error("connection lost"));
-    const res = mockRes();
-
-    await getSocialSummary({ user }, res);
-
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({
-      success: false,
-      message: "Failed to load social summary",
-    });
+    await expect(
+      addGroupWalkComment({ user, params: { id: "w1" }, body: { text: "Hi" } }, mockRes()),
+    ).rejects.toBe(error);
   });
 });

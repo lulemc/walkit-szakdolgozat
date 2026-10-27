@@ -24,7 +24,7 @@ describe('UserService', () => {
     it('should get user by id successfully', async () => {
       const mockUser = { _id: '123', name: 'John Doe', email: 'john@test.com' };
 
-      mockedApi.get.mockResolvedValue({ data: mockUser });
+      mockedApi.get.mockResolvedValue({ data: { success: true, data: mockUser } });
 
       const result = await UserService.getById('123');
 
@@ -61,12 +61,15 @@ describe('UserService', () => {
         },
       };
 
-      mockedApi.put.mockResolvedValue({ data: mockResponse });
+      mockedApi.put.mockResolvedValue({
+        data: { success: true, message: mockResponse.message, data: mockResponse.user },
+      });
 
       const result = await UserService.updateUserProfile(userId, updateData);
 
       expect(mockedApi.put).toHaveBeenCalledWith(`/users/${userId}`, updateData);
-      expect(result).toEqual(mockResponse);
+      // The updated user
+      expect(result).toEqual(mockResponse.user);
     });
 
     it('should handle error when updating user profile', async () => {
@@ -90,16 +93,15 @@ describe('UserService', () => {
         newPassword: 'newPassword123',
       };
 
-      const mockResponse = {
-        message: 'Password changed successfully',
-      };
-
-      mockedApi.post.mockResolvedValue({ data: mockResponse });
+      mockedApi.post.mockResolvedValue({
+        data: { success: true, message: 'Password changed successfully', data: { token: 'new-token' } },
+      });
 
       const result = await UserService.changePassword(userId, passwordData);
 
       expect(mockedApi.post).toHaveBeenCalledWith(`/users/${userId}/change-password`, passwordData);
-      expect(result).toEqual(mockResponse);
+      // The new token: every other session is logged out
+      expect(result).toEqual({ token: 'new-token' });
     });
 
     it('should handle error when current password is incorrect', async () => {

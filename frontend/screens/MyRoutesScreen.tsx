@@ -4,13 +4,13 @@ import { CustomText, PrimaryButton, ScreenContainer } from "@/components";
 import { SavedRouteDetail } from "@/components/Routes/SavedRouteDetail";
 import { SavedRouteList } from "@/components/Routes/SavedRouteList";
 import { useSavedRoutes } from "@/hooks/useSavedRoutes";
-import type { Route } from "@/services/routeService";
+import type { Route, RouteSummary } from "@/services/routeService";
 
 interface MyRoutesScreenProps {
   onBack: () => void;
   onWalk: (route: Route) => void;
   /** Leave out where there is no Social tab */
-  onPlanGroupWalk?: (route: Route) => void;
+  onPlanGroupWalk?: (route: RouteSummary) => void;
 }
 
 /** My saved routes: see one on the map, walk it again, rename, favourite or delete it */
@@ -47,6 +47,7 @@ export default function MyRoutesScreen({ onBack, onWalk, onPlanGroupWalk }: MyRo
 
       {openRoute ? (
         <SavedRouteDetail
+          key={openRoute._id}
           route={openRoute}
           actionError={saved.actionError}
           onWalk={onWalk}

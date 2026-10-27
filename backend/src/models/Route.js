@@ -102,11 +102,20 @@ const routeSchema = new mongoose.Schema(
       type: Number,
       default: null,
     },
-    // NEW: Favorites support
+    // Generated routes are drafts until the user keeps them (favourite, name, walk,
+    // group walk); drafts are removed after DRAFT_LIFETIME_DAYS by the TTL index below.
+    // Routes from before drafts existed have no status and count as saved.
+    status: {
+      type: String,
+      enum: ["draft", "saved"],
+      default: "saved",
+    },
+    draftExpiresAt: {
+      type: Date,
+    },
     isFavorite: {
       type: Boolean,
       default: false,
-      index: true, // Index for efficient queries
     },
     favoritedAt: {
       type: Date,
@@ -127,11 +136,28 @@ const routeSchema = new mongoose.Schema(
   },
 );
 
+// MongoDB deletes a draft once its draftExpiresAt has passed; saved routes have none
+routeSchema.index({ draftExpiresAt: 1 }, { expireAfterSeconds: 0 });
+
 // Compound index for efficient favorite queries
 routeSchema.index({ userId: 1, isFavorite: 1, favoritedAt: -1 });
 
 // Compound index for recent routes
 routeSchema.index({ userId: 1, createdAt: -1 });
+
+export const DRAFT_LIFETIME_DAYS = 7;
+
+/** When a route generated now expires, unless it is kept */
+export const draftExpiry = () => new Date(Date.now() + DRAFT_LIFETIME_DAYS * 24 * 60 * 60 * 1000);
+
+/** For updateOne: keeps a draft for good */
+export const SAVE_ROUTE_UPDATE = { $set: { status: "saved" }, $unset: { draftExpiresAt: 1 } };
+
+/** Keeps a draft for good, on a loaded document (save it afterwards) */
+export const markSaved = (route) => {
+  route.status = "saved";
+  route.draftExpiresAt = undefined;
+};
 
 const Route = mongoose.model("Route", routeSchema);
 

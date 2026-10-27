@@ -125,29 +125,12 @@ describe("groupWalkController", () => {
     expect(res.json).toHaveBeenCalledWith({ success: true, data: { myStatus: "accepted" } });
   });
 
-  it("passes on invalid invitees with a 400", async () => {
-    groupWalkService.createGroupWalk.mockRejectedValue(
-      new HttpError(400, "You can only invite friends", { invalidIds: ["u9"] }),
-    );
-    const res = mockRes();
+  it.each([
+    ["invalid invitees (HttpError)", new HttpError(400, "You can only invite friends", { invalidIds: ["u9"] })],
+    ["an unexpected error", new Error("connection lost")],
+  ])("leaves %s to the error handler", async (_case, error) => {
+    groupWalkService.createGroupWalk.mockRejectedValue(error);
 
-    await createGroupWalk({ user, body: {} }, res);
-
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({
-      success: false,
-      message: "You can only invite friends",
-      invalidIds: ["u9"],
-    });
-  });
-
-  it("responds 500 without internal details on an unexpected error", async () => {
-    groupWalkService.getGroupWalk.mockRejectedValue(new Error("connection lost"));
-    const res = mockRes();
-
-    await getGroupWalk({ user, params: { id: "w1" } }, res);
-
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({ success: false, message: "Failed to load group walk" });
+    await expect(createGroupWalk({ user, body: {} }, mockRes())).rejects.toBe(error);
   });
 });

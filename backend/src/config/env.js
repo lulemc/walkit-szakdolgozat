@@ -1,4 +1,5 @@
 import dotenv from "dotenv";
+import { logger } from "../utils/logger.js";
 
 dotenv.config();
 
@@ -18,13 +19,12 @@ const isProduction = process.env.NODE_ENV === "production";
 
 if (missing.length > 0) {
   if (isTest) {
-    console.warn("⚠️  Warning: Missing environment variables in test environment:");
-    missing.forEach((name) => console.warn(`   - ${name}`));
-    console.warn("   Some tests may fail or be skipped.");
+    logger.warn(`Missing environment variables in the test environment: ${missing.join(", ")}`);
   } else {
-    console.error("❌ Error: Missing required environment variables:");
-    missing.forEach((name) => console.error(`   - ${name}`));
-    console.error("   Make sure your .env file exists and contains these variables");
+    logger.error(
+      `Missing required environment variables: ${missing.join(", ")}. ` +
+        "Make sure your .env file exists and contains them.",
+    );
     process.exit(1);
   }
 }
@@ -34,10 +34,10 @@ if (weakJwtSecret && !isTest) {
     `JWT_SECRET should be at least ${MIN_JWT_SECRET_LENGTH} characters. Generate one with:\n` +
     `   node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"`;
   if (isProduction) {
-    console.error(`❌ Error: ${advice}`);
+    logger.error(advice);
     process.exit(1);
   }
-  console.warn(`⚠️  Warning: ${advice}`);
+  logger.warn(advice);
 }
 
 export default {

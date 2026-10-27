@@ -1,27 +1,25 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { routeService } from '@/services/routeService';
 import { makeRoute } from '@/components/Social/__test__/routeFixtures';
-import { RECENT_ROUTE_LIMIT, useSavedRoutes } from '../useSavedRoutes';
-
-jest.mock('@/context/AuthProvider', () => ({
-  useAuth: () => ({ user: { _id: 'u1', name: 'Me' } }),
-}));
+import { RECENT_PAGE_SIZE, RECENT_ROUTE_LIMIT, useSavedRoutes } from '../useSavedRoutes';
 
 const getUserRoutes = jest.spyOn(routeService, 'getUserRoutes');
+const getFavoriteRoutes = jest.spyOn(routeService, 'getFavoriteRoutes');
 const addFavorite = jest.spyOn(routeService, 'addFavorite');
 const removeFavorite = jest.spyOn(routeService, 'removeFavorite');
 const renameRoute = jest.spyOn(routeService, 'renameRoute');
 const deleteRoute = jest.spyOn(routeService, 'deleteRoute');
 
-// The server lists every route, newest first; favourites are among them
+// Favourites come from their own list; the newest routes from a page of all routes
 const older = makeRoute({ _id: 'old', isFavorite: true, favoritedAt: '2030-01-01T10:00:00.000Z' });
 const newer = makeRoute({ _id: 'new', isFavorite: true, favoritedAt: '2030-01-05T10:00:00.000Z' });
 const plain = makeRoute({ _id: 'plain' });
 
 beforeEach(() => {
   jest.clearAllMocks();
-  // Listed by creation; the route favourited last was created first
-  getUserRoutes.mockResolvedValue([plain, older, newer]);
+  getFavoriteRoutes.mockResolvedValue([newer, older]);
+  // The newest routes, by creation: the favourite `newer` is older than this page
+  getUserRoutes.mockResolvedValue([plain, older]);
 });
 
 const loaded = async () => {
@@ -35,12 +33,15 @@ describe('useSavedRoutes', () => {
   it('loads my routes: favourites (most recently favourited first) and the other recent routes', async () => {
     const { result } = await loaded();
 
-    expect(getUserRoutes).toHaveBeenCalledWith('u1');
+    expect(getFavoriteRoutes).toHaveBeenCalled();
+    expect(getUserRoutes).toHaveBeenCalledWith({ limit: RECENT_PAGE_SIZE });
+    // Also favourites that aren't among the newest routes
     expect(ids(result.current.favourites)).toEqual(['new', 'old']);
     expect(ids(result.current.recent)).toEqual(['plain']);
   });
 
   it(`keeps only the ${RECENT_ROUTE_LIMIT} newest non-favourite routes`, async () => {
+    getFavoriteRoutes.mockResolvedValue([]);
     getUserRoutes.mockResolvedValue(Array.from({ length: 12 }, (_, i) => makeRoute({ _id: `r${i}` })));
 
     const { result } = await loaded();

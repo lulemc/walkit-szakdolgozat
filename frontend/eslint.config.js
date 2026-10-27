@@ -5,6 +5,7 @@ const expoConfig = require('eslint-config-expo/flat');
 module.exports = defineConfig([
   expoConfig,
   {
-    ignores: ['dist/*'],
+    // app-example: Expo's template, kept locally (git-ignored), not part of the app
+    ignores: ['dist/*', 'app-example/*'],
   },
 ]);

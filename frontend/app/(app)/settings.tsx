@@ -13,7 +13,7 @@ export default function Settings() {
   const [user, setUser] = useState<User | null>(null);
 
   const onLogout = async () => {
-    await logout().then((res) => console.log(res));
+    await logout();
   };
 
   const handleProfileUpdate = (updatedUser: User) => {

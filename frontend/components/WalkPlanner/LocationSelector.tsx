@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { usePlaceSearch } from "@/hooks/usePlaceSearch";
 import { View, StyleSheet } from "react-native";
 import { CustomText } from "@/components/CustomText";
 import LocationCard from "./LocationCard";
@@ -20,11 +21,13 @@ interface LocationSelectorProps {
   onDestinationLocationChange: (location: Location | null) => void;
   onUseCurrentLocation: () => void;
   onEnableMapSelection: (type: LocationType) => void;
+  /** sessionToken: the same for every search until a place is picked */
   onSearchLocation: (
     query: string,
     type: LocationType,
+    sessionToken: string,
   ) => Promise<PlaceSuggestion[]>;
-  onSelectPlace: (placeId: string, type: LocationType) => Promise<void>;
+  onSelectPlace: (placeId: string, type: LocationType, sessionToken: string) => Promise<void>;
 }
 
 export default function LocationSelector({
@@ -39,19 +42,13 @@ export default function LocationSelector({
   onSearchLocation,
   onSelectPlace,
 }: LocationSelectorProps) {
-  const [startSearchQuery, setStartSearchQuery] = useState("");
-  const [startSuggestions, setStartSuggestions] = useState<PlaceSuggestion[]>(
-    [],
-  );
   const [isSearchingStart, setIsSearchingStart] = useState(false);
-  const [searchingStart, setSearchingStart] = useState(false);
-
-  const [destinationSearchQuery, setDestinationSearchQuery] = useState("");
-  const [destinationSuggestions, setDestinationSuggestions] = useState<
-    PlaceSuggestion[]
-  >([]);
   const [isSearchingDestination, setIsSearchingDestination] = useState(false);
-  const [searchingDestination, setSearchingDestination] = useState(false);
+  // Each box waits until typing pauses and ignores out-of-date answers
+  const startSearch = usePlaceSearch((query, token) => onSearchLocation(query, "start", token));
+  const destinationSearch = usePlaceSearch((query, token) =>
+    onSearchLocation(query, "destination", token),
+  );
 
   const isUsingCurrentLocation =
     currentLocation &&
@@ -59,65 +56,19 @@ export default function LocationSelector({
     currentLocation.latitude === startLocation.coordinates.latitude &&
     currentLocation.longitude === startLocation.coordinates.longitude;
 
-  const handleStartSearch = async (query: string) => {
-    setStartSearchQuery(query);
-
-    if (query.length < 3) {
-      setStartSuggestions([]);
-      return;
-    }
-
+  /** Picks a place, which ends the search session; the box shows its name */
+  const selectPlace = async (
+    search: typeof startSearch,
+    type: LocationType,
+    suggestion: PlaceSuggestion,
+    closeSearch: () => void,
+  ) => {
     try {
-      setSearchingStart(true);
-      const suggestions = await onSearchLocation(query, "start");
-      setStartSuggestions(suggestions);
+      await onSelectPlace(suggestion.placeId, type, search.sessionToken);
+      search.endSession(suggestion.description);
+      closeSearch();
     } catch (error) {
-      console.error("Error searching start location:", error);
-      setStartSuggestions([]);
-    } finally {
-      setSearchingStart(false);
-    }
-  };
-
-  const handleDestinationSearch = async (query: string) => {
-    setDestinationSearchQuery(query);
-
-    if (query.length < 3) {
-      setDestinationSuggestions([]);
-      return;
-    }
-
-    try {
-      setSearchingDestination(true);
-      const suggestions = await onSearchLocation(query, "destination");
-      setDestinationSuggestions(suggestions);
-    } catch (error) {
-      console.error("Error searching destination:", error);
-      setDestinationSuggestions([]);
-    } finally {
-      setSearchingDestination(false);
-    }
-  };
-
-  const handleSelectStartPlace = async (suggestion: PlaceSuggestion) => {
-    try {
-      await onSelectPlace(suggestion.placeId, "start");
-      setStartSearchQuery(suggestion.description);
-      setStartSuggestions([]);
-      setIsSearchingStart(false);
-    } catch (error) {
-      console.error("Error selecting start place:", error);
-    }
-  };
-
-  const handleSelectDestinationPlace = async (suggestion: PlaceSuggestion) => {
-    try {
-      await onSelectPlace(suggestion.placeId, "destination");
-      setDestinationSearchQuery(suggestion.description);
-      setDestinationSuggestions([]);
-      setIsSearchingDestination(false);
-    } catch (error) {
-      console.error("Error selecting destination place:", error);
+      console.error(`Error selecting ${type} place:`, error);
     }
   };
 
@@ -139,17 +90,19 @@ export default function LocationSelector({
           />
         ) : (
           <SearchCard
-            value={startSearchQuery}
-            onChangeText={handleStartSearch}
-            onClear={() => setStartSearchQuery("")}
-            suggestions={startSuggestions}
-            onSelectSuggestion={handleSelectStartPlace}
+            value={startSearch.query}
+            onChangeText={startSearch.setQuery}
+            onClear={startSearch.reset}
+            suggestions={startSearch.suggestions}
+            onSelectSuggestion={(suggestion) =>
+              selectPlace(startSearch, "start", suggestion, () => setIsSearchingStart(false))
+            }
             onCancel={() => {
               setIsSearchingStart(false);
-              setStartSearchQuery("");
-              setStartSuggestions([]);
+              startSearch.reset();
             }}
-            isSearching={searchingStart}
+            isSearching={startSearch.searching}
+            error={startSearch.error}
           />
         )}
       </View>
@@ -171,17 +124,21 @@ export default function LocationSelector({
             />
           ) : (
             <SearchCard
-              value={destinationSearchQuery}
-              onChangeText={handleDestinationSearch}
-              onClear={() => setDestinationSearchQuery("")}
-              suggestions={destinationSuggestions}
-              onSelectSuggestion={handleSelectDestinationPlace}
+              value={destinationSearch.query}
+              onChangeText={destinationSearch.setQuery}
+              onClear={destinationSearch.reset}
+              suggestions={destinationSearch.suggestions}
+              onSelectSuggestion={(suggestion) =>
+                selectPlace(destinationSearch, "destination", suggestion, () =>
+                  setIsSearchingDestination(false),
+                )
+              }
               onCancel={() => {
                 setIsSearchingDestination(false);
-                setDestinationSearchQuery("");
-                setDestinationSuggestions([]);
+                destinationSearch.reset();
               }}
-              isSearching={searchingDestination}
+              isSearching={destinationSearch.searching}
+              error={destinationSearch.error}
             />
           )}
         </View>

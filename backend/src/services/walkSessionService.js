@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import WalkSession from "../models/WalkSession.js";
-import Route from "../models/Route.js";
+import Route, { SAVE_ROUTE_UPDATE } from "../models/Route.js";
 import GroupWalk from "../models/GroupWalk.js";
 import { HttpError } from "../utils/httpError.js";
 
@@ -135,9 +135,14 @@ export const recordWalk = async (userId, body = {}) => {
   });
 
   if (route) {
+    // Counts the walk, and keeps the route for good (generated routes start as drafts)
     await Route.updateOne(
       { _id: route },
-      { $inc: { walkCount: 1 }, $set: { lastWalkedAt: walk.endedAt } },
+      {
+        $inc: { walkCount: 1 },
+        $set: { lastWalkedAt: walk.endedAt, ...SAVE_ROUTE_UPDATE.$set },
+        $unset: SAVE_ROUTE_UPDATE.$unset,
+      },
     );
   }
 

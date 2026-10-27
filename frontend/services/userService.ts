@@ -1,6 +1,7 @@
 import api from "./api";
 import type { ApiResponse } from "@/types/api";
 import type { UserSearchResult } from "@/types/social";
+import type { User } from "@/types/User";
 
 export interface UpdateUserData {
   name?: string;
@@ -24,21 +25,25 @@ const UserService = {
     return response.data.data;
   },
 
-  // GET user by ID
-  getById: async (id:string) => {
-    const response = await api.get(`/users/${id}`);
-    return response.data;
+  // GET my profile
+  getById: async (id: string): Promise<User> => {
+    const response = await api.get<ApiResponse<User>>(`/users/${id}`);
+    return response.data.data;
   },
 
-  // UPDATE user
-  updateUserProfile: async (id:string, updatedData:UpdateUserData) => {
-    const response = await api.put(`/users/${id}`, updatedData);
-    return response.data;
+  // UPDATE my profile; resolves with the updated user
+  updateUserProfile: async (id: string, updatedData: UpdateUserData): Promise<User> => {
+    const response = await api.put<ApiResponse<User>>(`/users/${id}`, updatedData);
+    return response.data.data;
   },
 
-   changePassword: async (id: string, passwordData: ChangePasswordData) => {
-    const response = await api.post(`/users/${id}/change-password`, passwordData);
-    return response.data;
+  // Resolves with the new token; every other session is logged out
+  changePassword: async (id: string, passwordData: ChangePasswordData): Promise<{ token: string }> => {
+    const response = await api.post<ApiResponse<{ token: string }>>(
+      `/users/${id}/change-password`,
+      passwordData,
+    );
+    return response.data.data;
   },
   
   // DELETE user

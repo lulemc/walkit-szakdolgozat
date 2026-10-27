@@ -2,11 +2,21 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import routeService from "../../services/routeService.js";
 import Route from "../../models/Route.js";
 import * as controller from "../../controllers/routeController.js";
+import { HttpError } from "../../utils/httpError.js";
 
 vi.mock("../../services/routeService.js", () => ({
-  default: { generateRoute: vi.fn(), getUserRoutes: vi.fn(), getRoute: vi.fn(), deleteRoute: vi.fn() },
+  default: {
+    generateRoute: vi.fn(),
+    listRoutes: vi.fn(),
+    listFavoriteRoutes: vi.fn(),
+    getRoute: vi.fn(),
+    deleteRoute: vi.fn(),
+  },
 }));
-vi.mock("../../models/Route.js", () => ({ default: { findOne: vi.fn(), find: vi.fn() } }));
+vi.mock("../../models/Route.js", async (importOriginal) => ({
+  ...(await importOriginal()),
+  default: { findOne: vi.fn(), find: vi.fn() },
+}));
 
 const mockRes = () => ({ status: vi.fn().mockReturnThis(), json: vi.fn() });
 const request = (overrides = {}) => ({ user: { id: "u1" }, params: { routeId: "r1" }, body: {}, ...overrides });
@@ -23,11 +33,21 @@ const routeDoc = (fields = {}) => ({
   totalDistance: 5200,
   name: null,
   walkCount: 0,
+  status: "draft",
+  draftExpiresAt: new Date("2030-01-08T10:00:00.000Z"),
   save: vi.fn().mockResolvedValue(undefined),
   ...fields,
 });
 
 const internalError = new Error("connect ECONNREFUSED 10.0.0.5:27017");
+
+/** The controller rejects with an HttpError, which the error handler sends */
+const expectHttpError = async (promise, status, message) => {
+  const error = await promise.catch((e) => e);
+  expect(error).toBeInstanceOf(HttpError);
+  expect(error.status).toBe(status);
+  expect(error.message).toBe(message);
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -48,40 +68,29 @@ describe("generateRoute", () => {
   });
 
   it("answers 400 for an invalid request without calling the routing services", async () => {
-    const res = mockRes();
-
-    await controller.generateRoute(request({ body: { ...validBody, distance: 500 } }), res);
-
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({
-      success: false,
-      message: "distance must be between 0.5 and 50 km",
-    });
+    await expectHttpError(
+      controller.generateRoute(request({ body: { ...validBody, distance: 500 } }), mockRes()),
+      400,
+      "distance must be between 0.5 and 50 km",
+    );
     expect(routeService.generateRoute).not.toHaveBeenCalled();
   });
 
-  it("doesn't pass internal error text to the client", async () => {
+  it("leaves unexpected errors to the error handler, which hides their text", async () => {
     routeService.generateRoute.mockRejectedValue(internalError);
-    const res = mockRes();
 
-    await controller.generateRoute(request({ body: validBody }), res);
-
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({
-      success: false,
-      message: "Failed to generate route. Please try again.",
-    });
+    await expect(controller.generateRoute(request({ body: validBody }), mockRes())).rejects.toBe(internalError);
   });
 });
 
 describe("reading and deleting routes", () => {
-  it("lists my routes", async () => {
-    routeService.getUserRoutes.mockResolvedValue([{ _id: "r1" }]);
+  it("lists my routes a page at a time", async () => {
+    routeService.listRoutes.mockResolvedValue([{ _id: "r1" }]);
     const res = mockRes();
 
-    await controller.getUserRoutes(request(), res);
+    await controller.getUserRoutes(request({ query: { limit: "5" } }), res);
 
-    expect(routeService.getUserRoutes).toHaveBeenCalledWith("u1");
+    expect(routeService.listRoutes).toHaveBeenCalledWith("u1", { limit: "5" });
     expect(res.json).toHaveBeenCalledWith({ success: true, data: [{ _id: "r1" }] });
   });
 
@@ -91,11 +100,10 @@ describe("reading and deleting routes", () => {
     const missing = mockRes();
 
     await controller.getRoute(request(), found);
-    await controller.getRoute(request(), missing);
+    await expectHttpError(controller.getRoute(request(), missing), 404, "Route not found");
 
     expect(routeService.getRoute).toHaveBeenCalledWith("r1", "u1");
     expect(found.json).toHaveBeenCalledWith({ success: true, data: { _id: "r1" } });
-    expect(missing.status).toHaveBeenCalledWith(404);
   });
 
   it("deletes one of my routes, or 404", async () => {
@@ -104,11 +112,10 @@ describe("reading and deleting routes", () => {
     const missing = mockRes();
 
     await controller.deleteRoute(request(), deleted);
-    await controller.deleteRoute(request(), missing);
+    await expectHttpError(controller.deleteRoute(request(), missing), 404, "Route not found");
 
     expect(routeService.deleteRoute).toHaveBeenCalledWith("r1", "u1");
     expect(deleted.json).toHaveBeenCalledWith({ success: true, message: "Route deleted successfully" });
-    expect(missing.status).toHaveBeenCalledWith(404);
   });
 });
 
@@ -145,28 +152,52 @@ describe("favourites, names and walks", () => {
     expect(route.save).toHaveBeenCalled();
   });
 
-  it("lists favourites, most recent first", async () => {
-    const sort = vi.fn().mockResolvedValue([{ _id: "r1" }]);
-    Route.find.mockReturnValue({ sort });
+  it("lists favourites a page at a time", async () => {
+    routeService.listFavoriteRoutes.mockResolvedValue([{ _id: "r1" }]);
     const res = mockRes();
 
-    await controller.getFavoriteRoutes(request(), res);
+    await controller.getFavoriteRoutes(request({ query: { before: "2030-01-01" } }), res);
 
-    expect(Route.find).toHaveBeenCalledWith({ userId: "u1", isFavorite: true });
-    expect(sort).toHaveBeenCalledWith({ favoritedAt: -1 });
-    expect(res.json).toHaveBeenCalledWith({ success: true, data: [{ _id: "r1" }], count: 1 });
+    expect(routeService.listFavoriteRoutes).toHaveBeenCalledWith("u1", { before: "2030-01-01" });
+    expect(res.json).toHaveBeenCalledWith({ success: true, data: [{ _id: "r1" }] });
+  });
+
+  it.each([
+    ["addToFavorites", {}],
+    ["updateRouteName", { name: "Hill loop" }],
+    ["recordWalkCompletion", {}],
+  ])("%s keeps a draft for good", async (action, body) => {
+    const route = routeDoc();
+    Route.findOne.mockResolvedValue(route);
+
+    await controller[action](request({ body }), mockRes());
+
+    expect(route.status).toBe("saved");
+    expect(route.draftExpiresAt).toBeUndefined();
+    expect(route.save).toHaveBeenCalled();
+  });
+
+  it("removing a favourite keeps the route saved", async () => {
+    const route = routeDoc({ status: "saved", draftExpiresAt: undefined, isFavorite: true });
+    Route.findOne.mockResolvedValue(route);
+
+    await controller.removeFromFavorites(request(), mockRes());
+
+    expect(route.status).toBe("saved");
   });
 
   it("renames a route, trimming the name; an empty name is 400", async () => {
     const route = routeDoc();
     Route.findOne.mockResolvedValue(route);
-    const empty = mockRes();
 
     await controller.updateRouteName(request({ body: { name: "  Hill loop " } }), mockRes());
-    await controller.updateRouteName(request({ body: { name: "   " } }), empty);
+    await expectHttpError(
+      controller.updateRouteName(request({ body: { name: "   " } }), mockRes()),
+      400,
+      "Route name is required",
+    );
 
     expect(route.name).toBe("Hill loop");
-    expect(empty.status).toHaveBeenCalledWith(400);
   });
 
   it("records a completed walk", async () => {
@@ -187,25 +218,17 @@ describe("favourites, names and walks", () => {
     "%s answers 404 for a route that isn't mine",
     async (action) => {
       Route.findOne.mockResolvedValue(null);
-      const res = mockRes();
 
-      await controller[action](request({ body: { name: "X" } }), res);
-
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({ success: false, message: "Route not found" });
+      await expectHttpError(controller[action](request({ body: { name: "X" } }), mockRes()), 404, "Route not found");
     },
   );
 
   it.each(["addToFavorites", "removeFromFavorites", "updateRouteName", "recordWalkCompletion"])(
-    "%s doesn't reveal internal errors",
+    "%s leaves unexpected errors to the error handler",
     async (action) => {
       Route.findOne.mockRejectedValue(internalError);
-      const res = mockRes();
 
-      await controller[action](request({ body: { name: "X" } }), res);
-
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(JSON.stringify(res.json.mock.calls[0][0])).not.toContain("ECONNREFUSED");
+      await expect(controller[action](request({ body: { name: "X" } }), mockRes())).rejects.toBe(internalError);
     },
   );
 });

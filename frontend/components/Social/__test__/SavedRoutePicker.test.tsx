@@ -5,18 +5,16 @@ import { routeService } from '@/services/routeService';
 import { SavedRoutePicker } from '../SavedRoutePicker';
 import { makeRoute } from './routeFixtures';
 
-jest.mock('@/context/AuthProvider', () => ({
-  useAuth: () => ({ user: { _id: 'u1', name: 'Me' } }),
-}));
-
-// Only the request is replaced; the formatters stay real
+// Only the requests are replaced; the formatters stay real
 const getUserRoutes = jest.spyOn(routeService, 'getUserRoutes');
+const getFavoriteRoutes = jest.spyOn(routeService, 'getFavoriteRoutes');
 
 const riverside = makeRoute({ _id: 'fav', name: 'Riverside loop', isFavorite: true });
 const recent = makeRoute({ _id: 'new', totalDistance: 3000 });
 
 beforeEach(() => {
   jest.clearAllMocks();
+  getFavoriteRoutes.mockResolvedValue([riverside]);
   getUserRoutes.mockResolvedValue([recent, riverside]);
 });
 
@@ -33,10 +31,11 @@ describe('SavedRoutePicker', () => {
     expect(getByText(/3\.0km/)).toBeTruthy();
     // A favourite isn't repeated among the recent routes
     expect(getAllByText('Riverside loop')).toHaveLength(1);
-    expect(getUserRoutes).toHaveBeenCalledWith('u1');
+    expect(getUserRoutes).toHaveBeenCalled();
   });
 
   it('shows only the 10 most recent routes', async () => {
+    getFavoriteRoutes.mockResolvedValue([]);
     getUserRoutes.mockResolvedValue(
       Array.from({ length: 12 }, (_, i) => makeRoute({ _id: `r${i}`, name: `Route ${i}` })),
     );
@@ -60,6 +59,7 @@ describe('SavedRoutePicker', () => {
   });
 
   it('explains how to get a route when there are none', async () => {
+    getFavoriteRoutes.mockResolvedValue([]);
     getUserRoutes.mockResolvedValue([]);
     const { findByText } = renderWithTheme(
       <SavedRoutePicker onSelect={jest.fn()} onBack={jest.fn()} />,

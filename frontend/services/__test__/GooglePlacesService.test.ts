@@ -98,6 +98,27 @@ describe('GooglePlacesService', () => {
       expect(results).toEqual([]);
     });
 
+    it('sends the session token, so Google bills the searches and the pick as one', async () => {
+      mockedAxios.get.mockResolvedValueOnce({ data: { status: 'ZERO_RESULTS', predictions: [] } });
+
+      await GooglePlacesService.searchPlaces('Heroes', undefined, 'token-1');
+
+      expect(mockedAxios.get).toHaveBeenCalledWith(
+        'https://maps.googleapis.com/maps/api/place/autocomplete/json',
+        expect.objectContaining({ params: expect.objectContaining({ sessiontoken: 'token-1' }) }),
+      );
+    });
+
+    it("includes Google's explanation in the error", async () => {
+      mockedAxios.get.mockResolvedValueOnce({
+        data: { status: 'REQUEST_DENIED', error_message: 'This API project is not authorized to use this API.' },
+      });
+
+      await expect(GooglePlacesService.searchPlaces('test')).rejects.toThrow(
+        'Google Places API error: REQUEST_DENIED (This API project is not authorized to use this API.)',
+      );
+    });
+
     it('throws error on API failure', async () => {
       const mockResponse = {
         data: {
@@ -143,6 +164,22 @@ describe('GooglePlacesService', () => {
         name: 'Heroes Square',
         address: 'Budapest, Hősök tere, 1146 Hungary',
       });
+    });
+
+    it('ends the search session with the same token', async () => {
+      mockedAxios.get.mockResolvedValueOnce({
+        data: {
+          status: 'OK',
+          result: { name: 'H', formatted_address: 'A', geometry: { location: { lat: 1, lng: 2 } } },
+        },
+      });
+
+      await GooglePlacesService.getPlaceDetails('123', 'token-1');
+
+      expect(mockedAxios.get).toHaveBeenCalledWith(
+        'https://maps.googleapis.com/maps/api/place/details/json',
+        expect.objectContaining({ params: expect.objectContaining({ place_id: '123', sessiontoken: 'token-1' }) }),
+      );
     });
 
     it('throws error on API failure', async () => {

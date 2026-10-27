@@ -123,6 +123,7 @@ Required variables:
 - `ORS_API_KEY`: OpenRouteService API key for route generation
 - `PORT`: Server port (defaults to 4000)
 - `NODE_ENV`: Environment (development/test/production)
+- `LOG_LEVEL` (optional): `debug`, `info` (default), `warn`, `error` or `silent`; the backend logs through `src/utils/logger.js` (never personal data at info or above)
 - `CORS_ORIGINS` (optional): comma-separated browser origins allowed to call the API
 - `TRUST_PROXY` (optional): number of proxies in front of the API when hosted (e.g. `1`), so rate limits see each client's own IP
 

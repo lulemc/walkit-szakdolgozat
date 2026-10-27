@@ -58,12 +58,12 @@ describe('routeService', () => {
     expect(mockedApi.post).toHaveBeenCalledWith('/routes/generate', request);
   });
 
-  it("getUserRoutes returns the user's routes from { success, data }", async () => {
+  it("getUserRoutes returns my routes from GET /routes", async () => {
     const routes = [route(), route({ _id: 'r2' })];
     mockedApi.get.mockResolvedValue({ data: { success: true, data: routes } });
 
-    await expect(routeService.getUserRoutes('u1')).resolves.toEqual(routes);
-    expect(mockedApi.get).toHaveBeenCalledWith('/routes/user/u1');
+    await expect(routeService.getUserRoutes({ limit: 20 })).resolves.toEqual(routes);
+    expect(mockedApi.get).toHaveBeenCalledWith('/routes', { params: { limit: 20 } });
   });
 
   it('getRoute returns one route from { success, data }', async () => {
@@ -74,12 +74,12 @@ describe('routeService', () => {
     expect(mockedApi.get).toHaveBeenCalledWith('/routes/r1');
   });
 
-  it('getFavoriteRoutes returns the favourite routes from { success, data, count }', async () => {
+  it('getFavoriteRoutes returns a page of favourite routes from { success, data }', async () => {
     const favorites = [route({ isFavorite: true, favoritedAt: '2026-10-02T10:00:00.000Z' })];
-    mockedApi.get.mockResolvedValue({ data: { success: true, data: favorites, count: 1 } });
+    mockedApi.get.mockResolvedValue({ data: { success: true, data: favorites } });
 
     await expect(routeService.getFavoriteRoutes()).resolves.toEqual(favorites);
-    expect(mockedApi.get).toHaveBeenCalledWith('/routes/favorites/list');
+    expect(mockedApi.get).toHaveBeenCalledWith('/routes/favorites/list', { params: {} });
   });
 
   it('deleteRoute deletes the route', async () => {
@@ -120,6 +120,6 @@ describe('routeService', () => {
   it('passes request errors on to the caller', async () => {
     mockedApi.get.mockRejectedValue(new Error('Network Error'));
 
-    await expect(routeService.getUserRoutes('u1')).rejects.toThrow('Network Error');
+    await expect(routeService.getUserRoutes()).rejects.toThrow('Network Error');
   });
 });

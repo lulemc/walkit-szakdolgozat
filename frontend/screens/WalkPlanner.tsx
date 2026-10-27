@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, RefObject } from "react";
+import { useState, useEffect, useRef } from "react";
 import { View, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { useTheme } from "react-native-paper";
 import { CustomText } from "@/components/CustomText";
@@ -16,7 +16,7 @@ import RouteInfoCard from "@/components/WalkPlanner/RouteInfoCard";
 import type { Route } from "@/services/routeService";
 
 interface WalkPlannerScreenProps {
-  onStartWalk?: (route: Route) => void; // NEW: Callback for starting walk
+  onStartWalk?: (route: Route) => void;
   onPlanGroupWalk?: (route: Route) => void;
   onOpenMyRoutes?: () => void;
 }
@@ -125,7 +125,7 @@ export default function WalkPlannerScreen({
   return (
     <View style={styles.container}>
       <WalkPlannerMap
-        mapRef={mapRef as RefObject<any>}
+        mapRef={mapRef}
         mapRegion={mapRegion}
         currentLocation={currentLocation}
         startLocation={startLocation}
@@ -156,7 +156,7 @@ export default function WalkPlannerScreen({
       <DraggablePanel
         panGesture={panGesture}
         animatedPanelStyle={animatedPanelStyle}
-        scrollRef={scrollRef as RefObject<any>}
+        scrollRef={scrollRef}
         scrollEnabled={mapSelectionMode === "none"}
       >
         <View style={styles.titleRow}>

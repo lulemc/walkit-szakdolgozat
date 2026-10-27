@@ -11,6 +11,7 @@ import {
   ScreenContainer,
   PrimaryButton,
 } from "@/components";
+import { apiErrorMessage } from "@/utils/apiError";
 
 const LoginScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
@@ -32,8 +33,8 @@ const LoginScreen: React.FC = () => {
       setError(null);
 
       await login(email.value, password.value);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Login failed");
+    } catch (err) {
+      setError(apiErrorMessage(err, "Login failed"));
     } finally {
       setLoading(false);
     }

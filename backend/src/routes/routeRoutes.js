@@ -1,6 +1,3 @@
-// backend/src/routes/routes.js
-// UPDATED: Added favorites endpoints with Swagger documentation
-
 import express from "express";
 import mongoose from "mongoose";
 import {
@@ -165,6 +162,8 @@ router.get("/favorites/list", protect, getFavoriteRoutes);
  *       403:
  *         description: Forbidden
  */
+router.get("/", protect, getUserRoutes);
+// Old path: the id was always ignored (it's the logged-in user's routes). Kept until older app versions are gone.
 router.get("/user/:userId", protect, getUserRoutes);
 
 /**

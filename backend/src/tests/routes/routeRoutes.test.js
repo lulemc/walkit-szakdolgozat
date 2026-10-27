@@ -12,7 +12,13 @@ vi.mock("../../middleware/authMiddleware.js", () => ({
   requireSelf: vi.fn((req, res, next) => next()),
 }));
 vi.mock("../../services/routeService.js", () => ({
-  default: { generateRoute: vi.fn(), getUserRoutes: vi.fn(), getRoute: vi.fn(), deleteRoute: vi.fn() },
+  default: {
+    generateRoute: vi.fn(),
+    listRoutes: vi.fn(),
+    listFavoriteRoutes: vi.fn(),
+    getRoute: vi.fn(),
+    deleteRoute: vi.fn(),
+  },
 }));
 // Keep the real exports (GroupWalk reuses the route schemas), replace the queries
 vi.mock("../../models/Route.js", async (importOriginal) => ({
@@ -51,7 +57,7 @@ describe("route ids", () => {
   });
 
   it("doesn't treat the favourites list as a route id", async () => {
-    Route.find.mockReturnValue({ sort: vi.fn().mockResolvedValue([]) });
+    routeService.listFavoriteRoutes.mockResolvedValue([]);
 
     const response = await inject(app, { url: "/api/routes/favorites/list" });
 

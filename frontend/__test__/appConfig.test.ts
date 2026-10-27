@@ -78,4 +78,11 @@ describe('app config', () => {
 
     expect(layout).toContain('@/services/walkLocationTask');
   });
+
+  it('is called WalkIt, with walkit:// links', () => {
+    expect(appJson.expo.name).toBe('WalkIt');
+    expect(appJson.expo.scheme).toBe('walkit');
+    // The slug links the project to EAS (extra.eas.projectId), so it stays
+    expect(appJson.expo.slug).toBe('frontend');
+  });
 });

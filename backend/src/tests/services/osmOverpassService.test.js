@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import axios from "axios";
-import osmOverpassService from "../../services/osmOverpassService.js";
+import osmOverpassService, {
+  FEATURE_CACHE_TTL_MS,
+  clearFeatureCache,
+} from "../../services/osmOverpassService.js";
+import { HttpError } from "../../utils/httpError.js";
 
 /* ---------------- mocks ---------------- */
 
@@ -55,6 +59,10 @@ const mockElevationResponse = {
 describe("OSMOverpassService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearFeatureCache();
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(console, "warn").mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -99,13 +107,12 @@ describe("OSMOverpassService", () => {
       expect(parks[0].distance).toBeGreaterThan(0);
     });
 
-    it("returns empty array on error", async () => {
+    it("passes errors on, so a failed lookup isn't mistaken for no parks", async () => {
       axios.post.mockRejectedValue(new Error("Network error"));
 
       const center = { latitude: 47.4979, longitude: 19.0402 };
-      const parks = await osmOverpassService.queryParks(center, 2000);
 
-      expect(parks).toEqual([]);
+      await expect(osmOverpassService.queryParks(center, 2000)).rejects.toThrow("Network error");
     });
   });
 
@@ -363,72 +370,86 @@ describe("OSMOverpassService", () => {
       expect(axios.post).toHaveBeenCalled();
     });
 
-    it("returns empty arrays on error", async () => {
+    const center = { latitude: 47.4979, longitude: 19.0402 };
+    const parksAndQuiet = { parks: true, quietStreets: true };
+
+    it("uses what loaded when only some lookups fail", async () => {
+      axios.post.mockResolvedValueOnce(mockOSMResponse).mockRejectedValueOnce(new Error("timeout"));
+
+      const features = await osmOverpassService.getAllPreferenceFeatures(center, 2000, parksAndQuiet);
+
+      expect(features.parks.length).toBe(2);
+      expect(features.quietStreets).toEqual([]);
+    });
+
+    it("says so when every lookup fails, instead of scoring against nothing", async () => {
       axios.post.mockRejectedValue(new Error("API error"));
 
-      const center = { latitude: 47.4979, longitude: 19.0402 };
-      const features = await osmOverpassService.getAllPreferenceFeatures(
-        center,
-        2000,
+      const error = await osmOverpassService.getAllPreferenceFeatures(center, 2000, parksAndQuiet).catch((e) => e);
+
+      expect(error).toBeInstanceOf(HttpError);
+      expect(error.status).toBe(503);
+      expect(error.message).toBe(
+        "Couldn't check the map for your preferences right now. Try again, or turn the preferences off.",
       );
-
-      expect(features.parks).toEqual([]);
-      expect(features.waterfront).toEqual([]);
-      expect(features.beaches).toEqual([]);
     });
-  });
 
-  describe("findNearestFeatures", () => {
-    it("sorts features by distance and returns limited results", () => {
-      const features = [
-        { name: "Far", distance: 1000 },
-        { name: "Close", distance: 100 },
-        { name: "Medium", distance: 500 },
-      ];
+    describe("cache", () => {
+      afterEach(() => {
+        vi.useRealTimers();
+      });
 
-      const nearest = osmOverpassService.findNearestFeatures(features, 2);
+      it("answers the same area and preferences from the cache for an hour", async () => {
+        vi.useFakeTimers({ toFake: ["Date"], now: new Date("2030-01-01T10:00:00.000Z") });
+        axios.post.mockResolvedValue(mockOSMResponse);
 
-      expect(nearest).toHaveLength(2);
-      expect(nearest[0].name).toBe("Close");
-      expect(nearest[1].name).toBe("Medium");
-    });
-  });
+        const first = await osmOverpassService.getAllPreferenceFeatures(center, 2000, parksAndQuiet);
+        const callsForOneLookup = axios.post.mock.calls.length;
+        // About 10 m away: the same area
+        const nearby = { latitude: 47.49795, longitude: 19.04015 };
+        const second = await osmOverpassService.getAllPreferenceFeatures(nearby, 2000, parksAndQuiet);
 
-  describe("filterByDistanceRange", () => {
-    it("filters features within distance range", () => {
-      const features = [
-        { name: "A", distance: 100 },
-        { name: "B", distance: 500 },
-        { name: "C", distance: 1000 },
-        { name: "D", distance: 2000 },
-      ];
+        expect(second).toEqual(first);
+        expect(axios.post).toHaveBeenCalledTimes(callsForOneLookup);
 
-      const filtered = osmOverpassService.filterByDistanceRange(
-        features,
-        200,
-        1500,
-      );
+        vi.setSystemTime(new Date(Date.now() + FEATURE_CACHE_TTL_MS + 1));
+        await osmOverpassService.getAllPreferenceFeatures(center, 2000, parksAndQuiet);
+        expect(axios.post).toHaveBeenCalledTimes(callsForOneLookup * 2);
+      });
 
-      expect(filtered).toHaveLength(2);
-      expect(filtered[0].name).toBe("B");
-      expect(filtered[1].name).toBe("C");
-    });
-  });
+      it("looks up again for other preferences in the same area", async () => {
+        axios.post.mockResolvedValue(mockOSMResponse);
+        await osmOverpassService.getAllPreferenceFeatures(center, 2000, parksAndQuiet);
+        axios.post.mockClear();
 
-  describe("filterByElevation", () => {
-    it("filters features by minimum elevation", () => {
-      const features = [
-        { name: "Low Hill", elevation: 50 },
-        { name: "Medium Hill", elevation: 150 },
-        { name: "High Peak", elevation: 500 },
-        { name: "No Data", elevation: null },
-      ];
+        await osmOverpassService.getAllPreferenceFeatures(center, 2000, { parks: true });
 
-      const filtered = osmOverpassService.filterByElevation(features, 100);
+        // Just the parks lookup
+        expect(axios.post).toHaveBeenCalledTimes(1);
+      });
 
-      expect(filtered).toHaveLength(2);
-      expect(filtered[0].name).toBe("Medium Hill");
-      expect(filtered[1].name).toBe("High Peak");
+      it.each([
+        ["to the north", { latitude: 47.5079, longitude: 19.0402 }],
+        ["to the east", { latitude: 47.4979, longitude: 19.0502 }],
+      ])("looks up again for an area about 1 km %s", async (_direction, elsewhere) => {
+        axios.post.mockResolvedValue(mockOSMResponse);
+        await osmOverpassService.getAllPreferenceFeatures(center, 2000, parksAndQuiet);
+        axios.post.mockClear();
+
+        await osmOverpassService.getAllPreferenceFeatures(elsewhere, 2000, parksAndQuiet);
+
+        expect(axios.post).toHaveBeenCalledTimes(2);
+      });
+
+      it("doesn't keep results when part of the lookup failed", async () => {
+        axios.post.mockResolvedValueOnce(mockOSMResponse).mockRejectedValueOnce(new Error("timeout"));
+        await osmOverpassService.getAllPreferenceFeatures(center, 2000, parksAndQuiet);
+        axios.post.mockResolvedValue(mockOSMResponse);
+
+        const retried = await osmOverpassService.getAllPreferenceFeatures(center, 2000, parksAndQuiet);
+
+        expect(retried.quietStreets.length).toBe(2);
+      });
     });
   });
 });

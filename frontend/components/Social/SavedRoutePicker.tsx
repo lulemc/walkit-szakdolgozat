@@ -3,11 +3,11 @@ import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { List, useTheme } from "react-native-paper";
 import { CustomText, PrimaryButton } from "@/components";
 import { useSavedRoutes } from "@/hooks/useSavedRoutes";
-import type { Route } from "@/services/routeService";
+import type { RouteSummary } from "@/services/routeService";
 import { routeDetails, routeTitle } from "./savedRouteText";
 
 interface SavedRoutePickerProps {
-  onSelect: (route: Route) => void;
+  onSelect: (route: RouteSummary) => void;
   onBack: () => void;
 }
 
@@ -16,7 +16,7 @@ export const SavedRoutePicker: React.FC<SavedRoutePickerProps> = ({ onSelect, on
   const theme = useTheme();
   const { favourites, recent, status, reload: retry } = useSavedRoutes();
 
-  const renderRoute = (route: Route) => (
+  const renderRoute = (route: RouteSummary) => (
     <List.Item
       key={route._id}
       title={routeTitle(route)}

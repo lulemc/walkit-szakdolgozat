@@ -55,6 +55,6 @@ describe("walk routes", () => {
     const response = await inject(app, { url: "/api/walks/w1" });
 
     expect(response.status).toBe(500);
-    expect(response.body).toEqual({ success: false, message: "Failed to load walk" });
+    expect(response.body).toEqual({ success: false, message: "Something went wrong. Please try again." });
   });
 });
