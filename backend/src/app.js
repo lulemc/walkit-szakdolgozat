@@ -7,6 +7,7 @@ import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./config/swagger.js";
 import { apiLimiter } from "./middleware/rateLimit.js";
 import { errorHandler, notFound } from "./middleware/errorHandler.js";
+import { getHealth } from "./controllers/healthController.js";
 
 import userRoutes from "./routes/userRoutes.js";
 import authRoutes from "./routes/auth.js";
@@ -53,6 +54,9 @@ app.use(express.json());
 if (process.env.NODE_ENV !== "production") {
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 }
+
+// Health checks come often from the host, so they're outside the rate limit
+app.get("/api/health", getHealth);
 
 // API routes
 app.use("/api", apiLimiter());

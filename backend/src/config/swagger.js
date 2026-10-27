@@ -495,6 +495,24 @@ const swaggerSpec = swaggerJSDoc({
       },
     },
     paths: {
+      "/api/health": {
+        get: {
+          summary: "Health check for hosting (not rate limited)",
+          tags: ["Health"],
+          responses: {
+            200: ok("The API can serve requests", {
+              type: "object",
+              properties: {
+                status: { type: "string", example: "ok" },
+                database: { type: "string", example: "connected" },
+                version: { type: "string", example: "1.0.0" },
+                uptimeSec: { type: "integer" },
+              },
+            }),
+            503: fail("The database is not connected"),
+          },
+        },
+      },
       "/api/auth/register": {
         post: {
           summary: "Register a new user",

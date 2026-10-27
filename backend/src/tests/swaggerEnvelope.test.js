@@ -67,3 +67,12 @@ describe("Swagger spec: route lists", () => {
     expect(route).toHaveProperty("draftExpiresAt");
   });
 });
+
+describe("Swagger spec: health", () => {
+  it("documents the health check without login", () => {
+    const operation = swaggerSpec.paths["/api/health"]?.get;
+
+    expect(operation).toBeDefined();
+    expect(operation.security).toBeUndefined();
+  });
+});

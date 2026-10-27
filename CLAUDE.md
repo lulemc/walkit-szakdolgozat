@@ -76,6 +76,7 @@ WalkIt is a React Native walking planner application that generates walking rout
 cd backend
 npm i                     # Install dependencies
 npm run dev              # Start development server with nodemon (port 4000)
+npm start                # Start without nodemon (production; waits for MongoDB, stops cleanly on SIGTERM)
 npm run lint             # Run ESLint
 npm test                 # Run tests in watch mode (Vitest)
 npm run test:run         # Run tests once
@@ -83,6 +84,19 @@ npm run test:coverage    # Run tests with coverage
 ```
 
 Backend runs on `localhost:4000` with Swagger documentation at `/api-docs`
+
+### Docker (API + MongoDB)
+```bash
+docker compose up --build   # from the repo root; needs backend/.env (JWT_SECRET, ORS_API_KEY)
+```
+`GET /api/health` answers 200 when the API and database are up, 503 when the database is down (not rate limited).
+
+### Deployment (Render + MongoDB Atlas)
+1. Create a free MongoDB Atlas cluster, allow access from anywhere (0.0.0.0/0) or Render's IPs, and copy the `mongodb+srv://` connection string
+2. In Render: New > Blueprint > this repo; `render.yaml` creates the `walkit-api` web service (Docker, Frankfurt, health check `/api/health`, generated `JWT_SECRET`)
+3. Enter `MONGO_URI` and `ORS_API_KEY` when Render asks (`CORS_ORIGINS` only for the web app)
+4. Point the app at it: `EXPO_PUBLIC_API_URL=https://<service>.onrender.com/api` in `frontend/.env`, or as an EAS environment variable for builds
+- The free plan sleeps after ~15 minutes without requests; the first request then takes up to a minute
 
 ### Frontend
 ```bash

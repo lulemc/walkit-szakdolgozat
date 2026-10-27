@@ -1,51 +1,81 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import mongoose from "mongoose";
 
-/* -------------------- MOCKS -------------------- */
+vi.mock("dotenv", () => ({ default: { config: vi.fn() } }));
+vi.mock("../config/db.js", () => ({ connectDB: vi.fn() }));
+vi.mock("../app.js", () => ({ default: { listen: vi.fn() } }));
 
-// mock dotenv
-vi.mock("dotenv", () => ({
-  default: {
-    config: vi.fn(),
-  },
-}));
+const { connectDB } = await import("../config/db.js");
+const app = (await import("../app.js")).default;
+const { SHUTDOWN_TIMEOUT_MS, shutdown, startServer } = await import("../server.js");
 
-// mock db connection
-vi.mock("../config/db.js", () => ({
-  connectDB: vi.fn(),
-}));
+const fakeServer = () => ({ close: vi.fn((done) => done()) });
 
-// mock express app
-vi.mock("../app.js", () => ({
-  default: {
-    listen: vi.fn(),
-  },
-}));
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.spyOn(console, "info").mockImplementation(() => {});
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  vi.spyOn(process, "exit").mockImplementation(() => {});
+  vi.spyOn(process, "once").mockImplementation(() => process);
+  vi.spyOn(mongoose, "disconnect").mockResolvedValue(undefined);
+  process.env.PORT = "5000";
+});
 
-/* -------------------- TEST -------------------- */
+describe("startServer", () => {
+  it("connects to the database before accepting requests", async () => {
+    const order = [];
+    connectDB.mockImplementation(async () => order.push("db"));
+    app.listen.mockImplementation((_port, _host, ready) => {
+      order.push("listen");
+      ready();
+      return fakeServer();
+    });
 
-describe("Server startup", () => {
-  beforeEach(() => {
-    vi.resetModules();
-    process.env.PORT = "5000";
+    await startServer();
+
+    expect(order).toEqual(["db", "listen"]);
+    expect(app.listen).toHaveBeenCalledWith("5000", "0.0.0.0", expect.any(Function));
   });
 
-  it("initializes environment, connects DB and starts server", async () => {
-    const { startServer } = await import("../server.js");
+  it("stops with an error when the database can't be reached", async () => {
+    connectDB.mockRejectedValue(new Error("ECONNREFUSED"));
 
-    startServer();
+    await startServer();
 
-    const dotenv = await import("dotenv");
-    const { connectDB } = await import("../config/db.js");
-    const app = (await import("../app.js")).default;
+    expect(app.listen).not.toHaveBeenCalled();
+    expect(process.exit).toHaveBeenCalledWith(1);
+  });
 
-    expect(dotenv.default.config).toHaveBeenCalled();
-    expect(connectDB).toHaveBeenCalled();
+  it("shuts down cleanly on SIGTERM and SIGINT", async () => {
+    connectDB.mockResolvedValue(undefined);
+    app.listen.mockReturnValue(fakeServer());
 
-    // Update this expectation to match the actual call
-    expect(app.listen).toHaveBeenCalledWith(
-      "5000",
-      "0.0.0.0",
-      expect.any(Function),
-    );
+    await startServer();
+
+    const signals = process.once.mock.calls.map(([signal]) => signal);
+    expect(signals).toEqual(expect.arrayContaining(["SIGTERM", "SIGINT"]));
+  });
+});
+
+describe("shutdown", () => {
+  it("stops taking requests, finishes the open ones, closes the database, then exits", async () => {
+    const server = fakeServer();
+
+    await shutdown(server, "SIGTERM");
+
+    expect(server.close).toHaveBeenCalled();
+    expect(mongoose.disconnect).toHaveBeenCalled();
+    expect(process.exit).toHaveBeenCalledWith(0);
+  });
+
+  it(`gives up after ${SHUTDOWN_TIMEOUT_MS / 1000} s if requests don't finish`, async () => {
+    vi.useFakeTimers();
+    const server = { close: vi.fn() };
+
+    shutdown(server, "SIGTERM");
+    vi.advanceTimersByTime(SHUTDOWN_TIMEOUT_MS);
+
+    expect(process.exit).toHaveBeenCalledWith(1);
+    vi.useRealTimers();
   });
 });
