@@ -2,6 +2,7 @@ import React from 'react';
 import { RefreshControl } from 'react-native';
 import { act, fireEvent } from '@testing-library/react-native';
 import { renderWithTheme } from '@/components/Statistics/__test__/renderWithTheme';
+import i18n from '@/i18n';
 import { groupWalkService } from '@/services/groupWalkService';
 import { GroupWalksSection } from '../GroupWalksSection';
 import { makeWalkSummary } from './groupWalkFixtures';
@@ -119,5 +120,28 @@ describe('GroupWalksSection', () => {
     const { getByText } = await renderSection({ header: <Text>Header</Text> });
 
     expect(getByText('Header')).toBeTruthy();
+  });
+});
+
+describe('GroupWalksSection in Hungarian', () => {
+  beforeEach(() => i18n.changeLanguage('hu'));
+  // Switching back re-renders the screen still on show
+  afterEach(async () => {
+    await act(async () => {
+      await i18n.changeLanguage('en');
+    });
+  });
+
+  it('shows the sections, the walks and their dates in Hungarian', async () => {
+    const { getByText, getByLabelText } = await renderSection();
+
+    expect(getByText('Meghívások')).toBeTruthy();
+    expect(getByText('Közelgő')).toBeTruthy();
+    expect(getByText('Korábbi')).toBeTruthy();
+    expect(getByText('Új közös séta')).toBeTruthy();
+    // Hungarian date order and 24-hour time
+    expect(getByLabelText(/^Sunday stroll, 2030\. jan\. 2\.,.* · 10:30, Szervező: Olga.*Meghívva/)).toBeTruthy();
+    expect(getByLabelText(/^Riverside loop.*Te szervezed.*2 jön · 1 meghívva.*Jön/)).toBeTruthy();
+    expect(getByLabelText(/^Called off.*Lemondva/)).toBeTruthy();
   });
 });

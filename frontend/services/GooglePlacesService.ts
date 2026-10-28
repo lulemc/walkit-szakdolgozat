@@ -1,4 +1,5 @@
 import axios from 'axios';
+import i18n from '@/i18n';
 
 // You'll need to get a Google Places API key from Google Cloud Console
 // https://console.cloud.google.com/apis/credentials
@@ -54,7 +55,8 @@ class GooglePlacesService {
     const params: Record<string, string | number | undefined> = {
       input: query,
       key: GOOGLE_PLACES_API_KEY,
-      language: 'en',
+      // Suggestions in the app's language
+      language: i18n.language,
       ...(sessionToken && { sessiontoken: sessionToken }),
     };
 
@@ -142,7 +144,7 @@ class GooglePlacesService {
 
       const name = streetNumber && street 
         ? `${streetNumber} ${street}`
-        : result.address_components[0]?.long_name || 'Selected Location';
+        : result.address_components[0]?.long_name || i18n.t('planner:places.selected');
 
       return {
         coordinates,
@@ -153,7 +155,7 @@ class GooglePlacesService {
       // Return a basic location if geocoding fails
       return {
         coordinates,
-        name: 'Selected Location',
+        name: i18n.t('planner:places.selected'),
         address: `${coordinates.latitude.toFixed(4)}, ${coordinates.longitude.toFixed(4)}`,
       };
     }

@@ -3,6 +3,7 @@ import { View, StyleSheet, Modal, TouchableOpacity } from "react-native";
 import { CustomText } from "./CustomText";
 import { PrimaryButton } from "./Button";
 import { useTheme } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 
 interface ConfirmationModalProps {
   visible: boolean;
@@ -20,10 +21,11 @@ export default function ConfirmationModal({
   onConfirm,
   title,
   message,
-  confirmText = "Confirm",
-  cancelText = "Cancel",
+  confirmText,
+  cancelText,
 }: ConfirmationModalProps) {
   const theme = useTheme();
+  const { t } = useTranslation();
 
   return (
     <Modal
@@ -61,7 +63,7 @@ export default function ConfirmationModal({
                 onPress={onClose}
                 style={styles.button}
               >
-                {cancelText}
+                {cancelText ?? t("actions.cancel")}
               </PrimaryButton>
 
               <PrimaryButton
@@ -69,7 +71,7 @@ export default function ConfirmationModal({
                 onPress={onConfirm}
                 style={styles.button}
               >
-                {confirmText}
+                {confirmText ?? t("actions.confirm")}
               </PrimaryButton>
             </View>
           </View>

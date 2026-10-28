@@ -1,3 +1,5 @@
+import i18n from '@/i18n';
+
 /**
  * Formats minutes into a human-readable time string
  * @param minutes - Total minutes to format
@@ -5,17 +7,17 @@
  */
 export const formatDuration = (minutes: number): string => {
   if (minutes < 60) {
-    return `${Math.round(minutes)} min`;
+    return i18n.t('planner:units.minutes', { minutes: Math.round(minutes) });
   }
 
   const hours = Math.floor(minutes / 60);
   const remainingMinutes = Math.round(minutes % 60);
 
   if (remainingMinutes === 0) {
-    return `${hours} h`;
+    return i18n.t('planner:units.hours', { hours });
   }
 
-  return `${hours} h ${remainingMinutes} min`;
+  return i18n.t('planner:units.hoursMinutes', { hours, minutes: remainingMinutes });
 };
 
 /**

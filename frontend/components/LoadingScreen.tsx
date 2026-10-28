@@ -1,17 +1,19 @@
 import React from "react";
 import { ActivityIndicator, Image, StyleSheet, View } from "react-native";
 import { useTheme } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { CustomText } from "./CustomText";
 
 /** Shown while the app reads the login state, after the native splash screen */
 export const LoadingScreen: React.FC = () => {
   const theme = useTheme();
+  const { t } = useTranslation();
 
   return (
     <View
       style={[styles.container, { backgroundColor: theme.colors.background }]}
       accessible
-      accessibilityLabel="Loading WalkIt"
+      accessibilityLabel={t("loadingApp")}
       accessibilityRole="progressbar"
     >
       <Image source={require("@/assets/images/icon.png")} style={styles.icon} />

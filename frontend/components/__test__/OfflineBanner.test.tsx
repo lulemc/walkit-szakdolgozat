@@ -3,6 +3,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { act } from '@testing-library/react-native';
 import { renderWithTheme } from '@/components/Statistics/__test__/renderWithTheme';
 import { OfflineBanner } from '../OfflineBanner';
+import i18n from '@/i18n';
 
 jest.mock('@react-native-community/netinfo', () => ({
   __esModule: true,
@@ -54,5 +55,23 @@ describe('OfflineBanner', () => {
     unmount();
 
     expect(unsubscribe).toHaveBeenCalled();
+  });
+});
+
+describe('OfflineBanner in Hungarian', () => {
+  beforeEach(() => i18n.changeLanguage('hu'));
+  // Inside act: the change re-renders what is still on screen
+  afterEach(async () => {
+    await act(async () => {
+      await i18n.changeLanguage('en');
+    });
+  });
+
+  it('says it in Hungarian', () => {
+    const { getByText } = renderWithTheme(<OfflineBanner />);
+
+    act(() => report({ isConnected: false, isInternetReachable: false }));
+
+    expect(getByText(/^Nincs internetkapcsolat\./)).toBeTruthy();
   });
 });

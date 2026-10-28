@@ -1,6 +1,7 @@
 import React from "react";
 import { StyleSheet } from "react-native";
 import MapView, { Marker, Polyline } from "react-native-maps";
+import { useTranslation } from "react-i18next";
 import { regionForCoordinates } from "@/components/Social/mapRegion";
 import type { Coordinates } from "@/services/routeService";
 import { colors } from "@/theme/colors";
@@ -13,6 +14,7 @@ interface WalkPathMapProps {
 
 /** A still map of the path that was walked */
 export const WalkPathMap: React.FC<WalkPathMapProps> = ({ segments }) => {
+  const { t } = useTranslation("history");
   const points = segments.flat();
   if (points.length === 0) return null;
 
@@ -25,7 +27,7 @@ export const WalkPathMap: React.FC<WalkPathMapProps> = ({ segments }) => {
       zoomEnabled={false}
       rotateEnabled={false}
       pitchEnabled={false}
-      accessibilityLabel="Map of the walk"
+      accessibilityLabel={t("walk.map")}
     >
       {segments
         .filter((segment) => segment.length > 1)
@@ -38,8 +40,8 @@ export const WalkPathMap: React.FC<WalkPathMapProps> = ({ segments }) => {
             lineCap="round"
           />
         ))}
-      <Marker coordinate={points[0]} title="Start" pinColor="green" />
-      <Marker coordinate={points[points.length - 1]} title="Finish" pinColor="red" />
+      <Marker coordinate={points[0]} title={t("walk.start")} pinColor="green" />
+      <Marker coordinate={points[points.length - 1]} title={t("walk.finish")} pinColor="red" />
     </MapView>
   );
 };

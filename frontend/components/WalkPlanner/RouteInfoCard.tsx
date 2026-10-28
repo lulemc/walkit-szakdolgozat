@@ -2,7 +2,8 @@ import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { Card, useTheme } from "react-native-paper";
 import { CustomText } from "@/components/CustomText";
 import { PrimaryButton } from "@/components/Button";
-import { Route, routeService } from "@/services/routeService";
+import { useTranslation } from "react-i18next";
+import { Route, RoutePreferences, routeService } from "@/services/routeService";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "@/theme/colors";
 
@@ -14,6 +15,18 @@ interface RouteInfoCardProps {
   onPlanGroupWalk?: (route: Route) => void;
 }
 
+// The order the active preferences are listed in
+const CHIP_ORDER: (keyof RoutePreferences)[] = [
+  "parks",
+  "waterfront",
+  "scenic",
+  "uphill",
+  "mountain",
+  "quietStreets",
+  "beach",
+  "avoidHighways",
+];
+
 const RouteInfoCard: React.FC<RouteInfoCardProps> = ({
   route,
   onClose,
@@ -21,6 +34,7 @@ const RouteInfoCard: React.FC<RouteInfoCardProps> = ({
   onPlanGroupWalk,
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation("planner");
   const muted = { color: theme.colors.onSurfaceVariant };
   const chipColors = { backgroundColor: theme.colors.surfaceVariant };
   const divider = { backgroundColor: theme.colors.outlineVariant };
@@ -45,7 +59,7 @@ const RouteInfoCard: React.FC<RouteInfoCardProps> = ({
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <CustomText variant="titleMedium" style={styles.title}>
-              📊 Route Summary
+              {t("routeInfo.title")}
             </CustomText>
             <View
               style={[
@@ -62,7 +76,7 @@ const RouteInfoCard: React.FC<RouteInfoCardProps> = ({
           <TouchableOpacity
             onPress={onClose}
             accessibilityRole="button"
-            accessibilityLabel="Close route summary"
+            accessibilityLabel={t("routeInfo.close")}
             style={styles.closeButton}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             activeOpacity={0.6}
@@ -75,7 +89,7 @@ const RouteInfoCard: React.FC<RouteInfoCardProps> = ({
           <View style={styles.statItem}>
             <CustomText style={styles.statIcon}>📏</CustomText>
             <CustomText variant="bodySmall" style={[styles.statLabel, muted]}>
-              Distance
+              {t("routeInfo.distance")}
             </CustomText>
             <CustomText variant="titleMedium" style={styles.statValue}>
               {distance}
@@ -85,7 +99,7 @@ const RouteInfoCard: React.FC<RouteInfoCardProps> = ({
           <View style={styles.statItem}>
             <CustomText style={styles.statIcon}>⏱️</CustomText>
             <CustomText variant="bodySmall" style={[styles.statLabel, muted]}>
-              Duration
+              {t("routeInfo.duration")}
             </CustomText>
             <CustomText variant="titleMedium" style={styles.statValue}>
               {duration}
@@ -95,7 +109,7 @@ const RouteInfoCard: React.FC<RouteInfoCardProps> = ({
           <View style={styles.statItem}>
             <CustomText style={styles.statIcon}>⚡</CustomText>
             <CustomText variant="bodySmall" style={[styles.statLabel, muted]}>
-              Pace
+              {t("routeInfo.pace")}
             </CustomText>
             <CustomText variant="titleMedium" style={styles.statValue}>
               {pace}
@@ -107,13 +121,13 @@ const RouteInfoCard: React.FC<RouteInfoCardProps> = ({
           <View style={styles.elevationSection}>
             <View style={[styles.divider, divider]} />
             <CustomText variant="bodyMedium" style={styles.elevationTitle}>
-              ⛰️ Elevation
+              {t("routeInfo.elevation")}
             </CustomText>
             <View style={styles.elevationGrid}>
               <View style={styles.elevationItem}>
                 <CustomText style={styles.elevationIcon}>↗️</CustomText>
                 <CustomText variant="bodySmall" style={[styles.elevationLabel, muted]}>
-                  Gain
+                  {t("routeInfo.gain")}
                 </CustomText>
                 <CustomText variant="titleSmall" style={styles.elevationValue}>
                   {elevationGain}
@@ -122,7 +136,7 @@ const RouteInfoCard: React.FC<RouteInfoCardProps> = ({
               <View style={styles.elevationItem}>
                 <CustomText style={styles.elevationIcon}>↘️</CustomText>
                 <CustomText variant="bodySmall" style={[styles.elevationLabel, muted]}>
-                  Loss
+                  {t("routeInfo.loss")}
                 </CustomText>
                 <CustomText variant="titleSmall" style={styles.elevationValue}>
                   {elevationLoss}
@@ -137,53 +151,14 @@ const RouteInfoCard: React.FC<RouteInfoCardProps> = ({
             <View style={[styles.divider, divider]} />
             <View style={styles.preferencesSection}>
               <CustomText variant="bodySmall" style={[styles.preferencesLabel, muted]}>
-                Active Preferences:
+                {t("routeInfo.activePreferences")}
               </CustomText>
               <View style={styles.preferenceChips}>
-                {route.preferences.parks && (
-                  <View style={[styles.chip, chipColors]}>
-                    <CustomText style={[styles.chipText, muted]}>🌳 Parks</CustomText>
+                {CHIP_ORDER.filter((key) => route.preferences[key]).map((key) => (
+                  <View key={key} style={[styles.chip, chipColors]}>
+                    <CustomText style={[styles.chipText, muted]}>{t(`routeInfo.chips.${key}`)}</CustomText>
                   </View>
-                )}
-                {route.preferences.waterfront && (
-                  <View style={[styles.chip, chipColors]}>
-                    <CustomText style={[styles.chipText, muted]}>
-                      💧 Waterfront
-                    </CustomText>
-                  </View>
-                )}
-                {route.preferences.scenic && (
-                  <View style={[styles.chip, chipColors]}>
-                    <CustomText style={[styles.chipText, muted]}>🏛️ Scenic</CustomText>
-                  </View>
-                )}
-                {route.preferences.uphill && (
-                  <View style={[styles.chip, chipColors]}>
-                    <CustomText style={[styles.chipText, muted]}>⛰️ Uphill</CustomText>
-                  </View>
-                )}
-                {route.preferences.mountain && (
-                  <View style={[styles.chip, chipColors]}>
-                    <CustomText style={[styles.chipText, muted]}>🏔️ Mountain</CustomText>
-                  </View>
-                )}
-                {route.preferences.quietStreets && (
-                  <View style={[styles.chip, chipColors]}>
-                    <CustomText style={[styles.chipText, muted]}>🤫 Quiet</CustomText>
-                  </View>
-                )}
-                {route.preferences.beach && (
-                  <View style={[styles.chip, chipColors]}>
-                    <CustomText style={[styles.chipText, muted]}>🏖️ Beach</CustomText>
-                  </View>
-                )}
-                {route.preferences.avoidHighways && (
-                  <View style={[styles.chip, chipColors]}>
-                    <CustomText style={[styles.chipText, muted]}>
-                      🚫 No Highways
-                    </CustomText>
-                  </View>
-                )}
+                ))}
               </View>
             </View>
           </>
@@ -196,7 +171,7 @@ const RouteInfoCard: React.FC<RouteInfoCardProps> = ({
           style={styles.startButton}
           icon="walk"
         >
-          Start Walk
+          {t("routeInfo.startWalk")}
         </PrimaryButton>
         {onPlanGroupWalk && (
           <PrimaryButton
@@ -205,7 +180,7 @@ const RouteInfoCard: React.FC<RouteInfoCardProps> = ({
             style={styles.groupWalkButton}
             icon="people"
           >
-            Plan group walk
+            {t("routeInfo.planGroupWalk")}
           </PrimaryButton>
         )}
       </Card.Content>

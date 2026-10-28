@@ -1,3 +1,5 @@
+import i18n from "@/i18n";
+
 /**
  * Format distance from meters to km with 1 decimal
  */
@@ -34,11 +36,11 @@ export const calculateProgress = (current: number, goal: number): number => {
  * Get motivational message based on calories
  */
 export const getCalorieMessage = (calories: number): string => {
-  if (calories === 0) return "Let's get moving! 💪";
-  if (calories < 100) return "Good start! 🔥";
-  if (calories < 300) return "Great work! ⚡";
-  if (calories < 500) return "Awesome! 🎉";
-  return "Amazing! 🚀";
+  if (calories === 0) return i18n.t("statistics:calorieMessage.none");
+  if (calories < 100) return i18n.t("statistics:calorieMessage.start");
+  if (calories < 300) return i18n.t("statistics:calorieMessage.great");
+  if (calories < 500) return i18n.t("statistics:calorieMessage.awesome");
+  return i18n.t("statistics:calorieMessage.amazing");
 };
 
 /**
@@ -61,27 +63,22 @@ export const formatTrend = (trendPercentage: number): string => {
 };
 
 /**
- * Get day of week abbreviation
+ * Get day of week abbreviation in the app's language ("Mon")
  */
-export const getDayAbbreviation = (date: Date): string => {
-  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  return days[date.getDay()];
-};
+export const getDayAbbreviation = (date: Date): string =>
+  date.toLocaleDateString(i18n.language, { weekday: "short" });
 
 /**
- * Get short month name
+ * Get short month name in the app's language ("Dec")
  */
-export const getMonthName = (date: Date): string => {
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  return months[date.getMonth()];
-};
+export const getMonthName = (date: Date): string =>
+  date.toLocaleDateString(i18n.language, { month: "short" });
 
 /**
- * Format date as "Mon, Dec 25"
+ * Format date in the app's language, e.g. "Mon, Dec 25"
  */
-export const formatDate = (date: Date): string => {
-  return `${getDayAbbreviation(date)}, ${getMonthName(date)} ${date.getDate()}`;
-};
+export const formatDate = (date: Date): string =>
+  date.toLocaleDateString(i18n.language, { weekday: "short", month: "short", day: "numeric" });
 
 /**
  * Format last updated time
@@ -91,11 +88,11 @@ export const formatLastUpdated = (date: Date): string => {
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
   
-  if (diffMins < 1) return 'just now';
-  if (diffMins < 60) return `${diffMins} min ago`;
+  if (diffMins < 1) return i18n.t("statistics:lastUpdated.justNow");
+  if (diffMins < 60) return i18n.t("statistics:lastUpdated.minutesAgo", { minutes: diffMins });
   
   const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffHours < 24) return i18n.t("statistics:lastUpdated.hoursAgo", { hours: diffHours });
   
   return formatDate(date);
 };

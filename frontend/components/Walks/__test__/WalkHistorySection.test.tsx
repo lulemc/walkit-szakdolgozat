@@ -1,6 +1,7 @@
 import React from 'react';
 import { RefreshControl } from 'react-native';
 import { act, fireEvent } from '@testing-library/react-native';
+import i18n from '@/i18n';
 import { renderWithTheme } from '@/components/Statistics/__test__/renderWithTheme';
 import { useWalkHistory } from '@/hooks/useWalkHistory';
 import { useWalkStats } from '@/hooks/useWalkStats';
@@ -109,5 +110,35 @@ describe('WalkHistorySection', () => {
     await act(async () => UNSAFE_getByType(RefreshControl).props.onRefresh());
 
     expect(history.refresh).toHaveBeenCalled();
+  });
+});
+
+describe('WalkHistorySection in Hungarian', () => {
+  beforeEach(() => i18n.changeLanguage('hu'));
+  // Switching back re-renders the screen still on show
+  afterEach(async () => {
+    await act(async () => {
+      await i18n.changeLanguage('en');
+    });
+  });
+
+  it('shows the totals, the list and the group walk chip in Hungarian', () => {
+    (useWalkHistory as jest.Mock).mockReturnValue({ ...history, hasMore: true });
+    const { getByText, getAllByText, getByLabelText } = renderSection();
+
+    expect(getByLabelText(/^Ezen a héten: 2 séta, /)).toBeTruthy();
+    expect(getByText('Legutóbbi séták')).toBeTruthy();
+    // The walk without a name, and the group walk chip
+    expect(getByText('Séta')).toBeTruthy();
+    expect(getAllByText('Közös séta').length).toBeGreaterThan(0);
+    expect(getByText('Továbbiak betöltése')).toBeTruthy();
+  });
+
+  it('offers a retry in Hungarian', () => {
+    (useWalkHistory as jest.Mock).mockReturnValue({ ...history, walks: [], status: 'error' });
+    const { getByText } = renderSection();
+
+    expect(getByText('Nem sikerült betölteni a sétáidat')).toBeTruthy();
+    expect(getByText('Újra')).toBeTruthy();
   });
 });

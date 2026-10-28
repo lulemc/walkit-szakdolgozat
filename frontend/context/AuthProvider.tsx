@@ -6,6 +6,7 @@ import { setUnauthorizedHandler } from "@/services/api";
 import { useSnackbar } from "@/context/SnackbarProvider";
 import { userStorage } from "@/utils/userStorage";
 import { User } from "@/types/User";
+import i18n from "@/i18n";
 
 interface AuthContextType {
   token: string | null;
@@ -88,7 +89,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // A 401 means the token expired or was revoked (e.g. after a password change elsewhere)
   const handleUnauthorized = async () => {
     if (tokenRef.current) {
-      showMessage("Your session has expired. Please log in again.", { type: "error" });
+      showMessage(i18n.t("auth:sessionExpired"), { type: "error" });
     }
     await logout();
   };

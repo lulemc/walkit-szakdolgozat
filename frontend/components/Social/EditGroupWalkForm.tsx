@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useTheme } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { CustomText, PrimaryButton } from "@/components";
 import type { GroupWalkDetail, UpdateGroupWalkRequest } from "@/types/social";
 import { WalkTextFields } from "./WalkTextFields";
@@ -22,6 +23,7 @@ export const EditGroupWalkForm: React.FC<EditGroupWalkFormProps> = ({
   onCancel,
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation(["social", "common"]);
   const [title, setTitle] = useState(walk.title ?? "");
   const [note, setNote] = useState(walk.note ?? "");
   const [scheduledAt, setScheduledAt] = useState(() => new Date(walk.scheduledAt));
@@ -41,7 +43,7 @@ export const EditGroupWalkForm: React.FC<EditGroupWalkFormProps> = ({
 
   return (
     <View style={styles.container}>
-      <CustomText variant="headlineSmall">Edit group walk</CustomText>
+      <CustomText variant="headlineSmall">{t("form.editTitle")}</CustomText>
       <WalkTextFields title={title} note={note} onTitleChange={setTitle} onNoteChange={setNote} />
       <WalkTimeFields value={scheduledAt} onChange={setScheduledAt} />
       {error ? (
@@ -50,10 +52,10 @@ export const EditGroupWalkForm: React.FC<EditGroupWalkFormProps> = ({
         </CustomText>
       ) : null}
       <PrimaryButton icon="save-outline" onPress={handleSave} loading={busy} disabled={busy}>
-        Save
+        {t("common:actions.save")}
       </PrimaryButton>
       <PrimaryButton mode="outlined" onPress={onCancel} disabled={busy}>
-        Cancel
+        {t("common:actions.cancel")}
       </PrimaryButton>
     </View>
   );

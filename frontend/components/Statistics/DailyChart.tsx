@@ -2,6 +2,7 @@ import React from "react";
 import { View } from "react-native";
 import { BarChart } from "react-native-gifted-charts";
 import { useTheme } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import type { HourlySteps } from "@/services/health/types";
 import { colors } from "@/theme/colors";
 import { formatCompactNumber } from "@/utils/healthFormatters";
@@ -18,6 +19,7 @@ const LABELLED_HOURS = [0, 6, 12, 18];
 
 export const DailyChart: React.FC<DailyChartProps> = ({ data, width }) => {
   const theme = useTheme();
+  const { t } = useTranslation("statistics");
   const layout = fitBars(width, data.length);
   const currentHour = new Date().getHours();
   const axisText = { color: theme.colors.onSurfaceVariant, fontSize: 10 };
@@ -53,7 +55,7 @@ export const DailyChart: React.FC<DailyChartProps> = ({ data, width }) => {
         isAnimated
       />
       <AxisLabels
-        labels={LABELLED_HOURS.map((hour) => ({ x: barCenter(layout, hour), text: `${hour}h` }))}
+        labels={LABELLED_HOURS.map((hour) => ({ x: barCenter(layout, hour), text: t("charts.hour", { hour }) }))}
       />
     </View>
   );

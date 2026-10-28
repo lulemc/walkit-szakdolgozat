@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { useTheme } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { CustomText, CustomTextInput, PrimaryButton } from "@/components";
 import ConfirmationModal from "@/components/ConformationModal";
 import { GroupWalkMap } from "@/components/Social/GroupWalkMap";
@@ -32,6 +33,7 @@ export const SavedRouteDetail: React.FC<SavedRouteDetailProps> = ({
   onDelete,
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation(["history", "common"]);
   const full = useFullRoute(route._id);
   const [newName, setNewName] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -56,27 +58,27 @@ export const SavedRouteDetail: React.FC<SavedRouteDetailProps> = ({
         </CustomText>
         {route.walkCount > 0 ? (
           <CustomText variant="bodySmall" style={muted}>
-            {route.walkCount === 1 ? "Walked once" : `Walked ${route.walkCount} times`}
+            {t("routes.walked", { count: route.walkCount })}
           </CustomText>
         ) : null}
       </View>
 
       {route.status === "draft" ? (
         <CustomText variant="bodySmall" style={muted}>
-          Generated routes are removed after 7 days unless you favourite, rename or walk it.
+          {t("routes.draftNotice")}
         </CustomText>
       ) : null}
 
       {full.status === "loading" ? (
-        <ActivityIndicator color={theme.colors.primary} accessibilityLabel="Loading the route" />
+        <ActivityIndicator color={theme.colors.primary} accessibilityLabel={t("routes.loadingRoute")} />
       ) : null}
       {full.status === "error" ? (
         <View style={styles.row}>
           <CustomText variant="bodyMedium" style={styles.flex}>
-            {"Couldn't load the route."}
+            {t("routes.routeLoadFailed")}
           </CustomText>
           <PrimaryButton mode="outlined" onPress={full.retry}>
-            Try again
+            {t("common:actions.retry")}
           </PrimaryButton>
         </View>
       ) : null}
@@ -91,8 +93,8 @@ export const SavedRouteDetail: React.FC<SavedRouteDetailProps> = ({
       {newName !== null ? (
         <View style={styles.rename}>
           <CustomTextInput
-            label="Route name"
-            accessibilityLabel="Route name"
+            label={t("routes.name")}
+            accessibilityLabel={t("routes.name")}
             value={newName}
             onChangeText={setNewName}
             maxLength={100}
@@ -104,12 +106,12 @@ export const SavedRouteDetail: React.FC<SavedRouteDetailProps> = ({
               loading={renaming}
               disabled={renaming || !newName.trim()}
               style={styles.flex}
-              accessibilityLabel="Save"
+              accessibilityLabel={t("common:actions.save")}
             >
-              Save
+              {t("common:actions.save")}
             </PrimaryButton>
             <PrimaryButton mode="outlined" onPress={() => setNewName(null)} style={styles.flex}>
-              Cancel
+              {t("common:actions.cancel")}
             </PrimaryButton>
           </View>
         </View>
@@ -119,9 +121,9 @@ export const SavedRouteDetail: React.FC<SavedRouteDetailProps> = ({
             icon="walk"
             onPress={() => full.route && onWalk(full.route)}
             disabled={!full.route}
-            accessibilityLabel="Walk this route"
+            accessibilityLabel={t("routes.walk")}
           >
-            Walk this route
+            {t("routes.walk")}
           </PrimaryButton>
           {onPlanGroupWalk ? (
             <PrimaryButton
@@ -129,7 +131,7 @@ export const SavedRouteDetail: React.FC<SavedRouteDetailProps> = ({
               icon="people"
               onPress={() => onPlanGroupWalk(full.route ?? route)}
             >
-              Plan group walk
+              {t("routes.planGroupWalk")}
             </PrimaryButton>
           ) : null}
           <View style={styles.row}>
@@ -139,7 +141,7 @@ export const SavedRouteDetail: React.FC<SavedRouteDetailProps> = ({
               onPress={() => onToggleFavorite(route)}
               style={styles.flex}
             >
-              {route.isFavorite ? "Remove from favourites" : "Add to favourites"}
+              {route.isFavorite ? t("routes.removeFavourite") : t("routes.addFavourite")}
             </PrimaryButton>
             <PrimaryButton
               mode="outlined"
@@ -147,7 +149,7 @@ export const SavedRouteDetail: React.FC<SavedRouteDetailProps> = ({
               onPress={() => setNewName(route.name ?? "")}
               style={styles.flex}
             >
-              Rename
+              {t("routes.rename")}
             </PrimaryButton>
           </View>
           <PrimaryButton
@@ -156,7 +158,7 @@ export const SavedRouteDetail: React.FC<SavedRouteDetailProps> = ({
             textColor={theme.colors.error}
             onPress={() => setConfirmingDelete(true)}
           >
-            Delete route
+            {t("routes.delete")}
           </PrimaryButton>
         </>
       )}
@@ -168,10 +170,10 @@ export const SavedRouteDetail: React.FC<SavedRouteDetailProps> = ({
           setConfirmingDelete(false);
           onDelete();
         }}
-        title="Delete this route?"
-        message={`Delete ${title}? Walks you saved on it stay in your history.`}
-        confirmText="Delete"
-        cancelText="Keep"
+        title={t("routes.deleteTitle")}
+        message={t("routes.deleteMessage", { name: title })}
+        confirmText={t("common:actions.delete")}
+        cancelText={t("routes.keep")}
       />
     </View>
   );

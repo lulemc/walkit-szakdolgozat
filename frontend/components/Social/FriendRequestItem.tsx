@@ -1,5 +1,6 @@
 import React from "react";
 import { Button } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import type { FriendRequest } from "@/types/social";
 import { SocialUserRow } from "./SocialUserRow";
 
@@ -19,38 +20,39 @@ export const FriendRequestItem: React.FC<FriendRequestItemProps> = ({
   onDecline,
   onCancel,
 }) => {
+  const { t } = useTranslation(["social", "common"]);
   const { name } = request.user;
 
   if (direction === "outgoing") {
     return (
-      <SocialUserRow name={name} subtitle="Request sent">
+      <SocialUserRow name={name} subtitle={t("friends.requestSent")}>
         <Button
           compact
-          accessibilityLabel={`Cancel friend request to ${name}`}
+          accessibilityLabel={t("friends.cancelRequestLabel", { name })}
           onPress={() => onCancel?.(request._id)}
         >
-          Cancel
+          {t("common:actions.cancel")}
         </Button>
       </SocialUserRow>
     );
   }
 
   return (
-    <SocialUserRow name={name} subtitle="Wants to be your friend">
+    <SocialUserRow name={name} subtitle={t("friends.wantsToBeFriend")}>
       <Button
         compact
         mode="contained"
-        accessibilityLabel={`Accept friend request from ${name}`}
+        accessibilityLabel={t("friends.acceptRequestLabel", { name })}
         onPress={() => onAccept?.(request._id)}
       >
-        Accept
+        {t("actions.accept")}
       </Button>
       <Button
         compact
-        accessibilityLabel={`Decline friend request from ${name}`}
+        accessibilityLabel={t("friends.declineRequestLabel", { name })}
         onPress={() => onDecline?.(request._id)}
       >
-        Decline
+        {t("actions.decline")}
       </Button>
     </SocialUserRow>
   );

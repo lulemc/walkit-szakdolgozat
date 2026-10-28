@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { BackHandler, StyleSheet } from "react-native";
+import { useTranslation } from "react-i18next";
 import { CustomText, PrimaryButton, ScreenContainer } from "@/components";
 import { SavedRouteDetail } from "@/components/Routes/SavedRouteDetail";
 import { SavedRouteList } from "@/components/Routes/SavedRouteList";
@@ -15,6 +16,7 @@ interface MyRoutesScreenProps {
 
 /** My saved routes: see one on the map, walk it again, rename, favourite or delete it */
 export default function MyRoutesScreen({ onBack, onWalk, onPlanGroupWalk }: MyRoutesScreenProps) {
+  const { t } = useTranslation(["history", "common"]);
   const saved = useSavedRoutes();
   const [openRouteId, setOpenRouteId] = useState<string | null>(null);
   // From the lists, so it shows the latest name and favourite state
@@ -42,7 +44,7 @@ export default function MyRoutesScreen({ onBack, onWalk, onPlanGroupWalk }: MyRo
         onPress={openRoute ? () => setOpenRouteId(null) : onBack}
         style={styles.back}
       >
-        Back
+        {t("common:actions.back")}
       </PrimaryButton>
 
       {openRoute ? (
@@ -58,7 +60,7 @@ export default function MyRoutesScreen({ onBack, onWalk, onPlanGroupWalk }: MyRo
         />
       ) : (
         <>
-          <CustomText variant="headlineSmall">My routes</CustomText>
+          <CustomText variant="headlineSmall">{t("routes.title")}</CustomText>
           <SavedRouteList
             favourites={saved.favourites}
             recent={saved.recent}

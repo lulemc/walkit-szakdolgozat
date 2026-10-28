@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PlaceSuggestion } from '@/types/walkPlanner';
 import { newSessionToken } from '@/utils/sessionToken';
+import i18n from '@/i18n';
 
 export const PLACE_SEARCH_DEBOUNCE_MS = 300;
 export const MIN_PLACE_QUERY_LENGTH = 3;
-const UNAVAILABLE = 'Search is unavailable right now. You can still pick a point on the map.';
 
 type SearchPlaces = (query: string, sessionToken: string) => Promise<PlaceSuggestion[]>;
 
@@ -60,7 +60,7 @@ export const usePlaceSearch = (search: SearchPlaces) => {
           () => {
             if (stale) return;
             setSuggestions([]);
-            setError(UNAVAILABLE);
+            setError(i18n.t('planner:search.unavailable'));
           },
         )
         .finally(() => {

@@ -10,6 +10,9 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "@/services/walkLocationTask";
 import { SnackbarProvider } from "@/context/SnackbarProvider";
 import { ThemePreferenceProvider } from "@/context/ThemePreferenceProvider";
+import { LanguagePreferenceProvider } from "@/context/LanguagePreferenceProvider";
+// Sets up the translations before the first screen renders
+import "@/i18n";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { OfflineBanner } from "@/components/OfflineBanner";
@@ -58,9 +61,11 @@ function ThemedApp() {
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemePreferenceProvider>
-        <ThemedApp />
-      </ThemePreferenceProvider>
+      <LanguagePreferenceProvider>
+        <ThemePreferenceProvider>
+          <ThemedApp />
+        </ThemePreferenceProvider>
+      </LanguagePreferenceProvider>
     </GestureHandlerRootView>
   );
 }

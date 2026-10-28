@@ -1,5 +1,6 @@
 import React from "react";
 import { View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { CustomTextInput } from "@/components";
 
 // Same limits as the backend
@@ -19,24 +20,27 @@ export const WalkTextFields: React.FC<WalkTextFieldsProps> = ({
   note,
   onTitleChange,
   onNoteChange,
-}) => (
-  <View>
-    <CustomTextInput
-      label="Title (optional)"
-      accessibilityLabel="Title (optional)"
-      value={title}
-      onChangeText={onTitleChange}
-      maxLength={TITLE_MAX_LENGTH}
-      autoCapitalize="sentences"
-    />
-    <CustomTextInput
-      label="Note (optional)"
-      accessibilityLabel="Note (optional)"
-      value={note}
-      onChangeText={onNoteChange}
-      maxLength={NOTE_MAX_LENGTH}
-      autoCapitalize="sentences"
-      multiline
-    />
-  </View>
-);
+}) => {
+  const { t } = useTranslation("social");
+  return (
+    <View>
+      <CustomTextInput
+        label={t("form.title")}
+        accessibilityLabel={t("form.title")}
+        value={title}
+        onChangeText={onTitleChange}
+        maxLength={TITLE_MAX_LENGTH}
+        autoCapitalize="sentences"
+      />
+      <CustomTextInput
+        label={t("form.note")}
+        accessibilityLabel={t("form.note")}
+        value={note}
+        onChangeText={onNoteChange}
+        maxLength={NOTE_MAX_LENGTH}
+        autoCapitalize="sentences"
+        multiline
+      />
+    </View>
+  );
+};

@@ -1,3 +1,4 @@
+import i18n from "@/i18n";
 import { generateMockHealth } from "@/utils/mockHealthData";
 import { startOfDay } from "../normalize";
 import type { HealthProvider } from "../types";
@@ -5,7 +6,10 @@ import type { HealthProvider } from "../types";
 /** Deterministic demo data, so the Statistics screen works in Expo Go and on the web */
 export const mockProvider: HealthProvider = {
   platform: "mock",
-  displayName: "Demo data",
+  // A getter, so the name follows the app language
+  get displayName() {
+    return i18n.t("statistics:provider.demo");
+  },
 
   getAvailability: async () => "available",
 

@@ -1,5 +1,6 @@
 import React from "react";
 import { Button } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import type { Friend } from "@/types/social";
 import { SocialUserRow } from "./SocialUserRow";
 
@@ -8,17 +9,20 @@ interface FriendListItemProps {
   onUnfriend: (friend: Friend) => void;
 }
 
-export const FriendListItem: React.FC<FriendListItemProps> = ({ friend, onUnfriend }) => (
-  <SocialUserRow
-    name={friend.user.name}
-    subtitle={`Friends since ${new Date(friend.since).toLocaleDateString()}`}
-  >
-    <Button
-      compact
-      accessibilityLabel={`Remove ${friend.user.name} from friends`}
-      onPress={() => onUnfriend(friend)}
+export const FriendListItem: React.FC<FriendListItemProps> = ({ friend, onUnfriend }) => {
+  const { t, i18n } = useTranslation("social");
+  return (
+    <SocialUserRow
+      name={friend.user.name}
+      subtitle={t("friends.since", { date: new Date(friend.since).toLocaleDateString(i18n.language) })}
     >
-      Unfriend
-    </Button>
-  </SocialUserRow>
-);
+      <Button
+        compact
+        accessibilityLabel={t("friends.unfriendLabel", { name: friend.user.name })}
+        onPress={() => onUnfriend(friend)}
+      >
+        {t("friends.unfriend")}
+      </Button>
+    </SocialUserRow>
+  );
+};

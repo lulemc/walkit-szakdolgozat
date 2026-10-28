@@ -1,6 +1,7 @@
 import React from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { List, useTheme } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { CustomText, PrimaryButton } from "@/components";
 import { routeDetails, routeTitle } from "@/components/Social/savedRouteText";
 import type { SavedRoutesStatus } from "@/hooks/useSavedRoutes";
@@ -23,6 +24,7 @@ export const SavedRouteList: React.FC<SavedRouteListProps> = ({
   onRetry,
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation(["history", "common"]);
 
   const renderRoute = (route: RouteSummary) => (
     <List.Item
@@ -32,21 +34,21 @@ export const SavedRouteList: React.FC<SavedRouteListProps> = ({
       left={(props) => <List.Icon {...props} icon={route.isFavorite ? "heart" : "map-outline"} />}
       right={(props) => <List.Icon {...props} icon="chevron-forward" />}
       onPress={() => onOpen(route)}
-      accessibilityLabel={`Open ${routeTitle(route)}`}
+      accessibilityLabel={t("routes.open", { name: routeTitle(route) })}
       accessibilityRole="button"
     />
   );
 
   if (status === "loading") {
-    return <ActivityIndicator color={theme.colors.primary} accessibilityLabel="Loading routes" />;
+    return <ActivityIndicator color={theme.colors.primary} accessibilityLabel={t("routes.loading")} />;
   }
 
   if (status === "error") {
     return (
       <View style={styles.center}>
-        <CustomText variant="titleMedium">{"Couldn't load your routes"}</CustomText>
+        <CustomText variant="titleMedium">{t("routes.loadFailed")}</CustomText>
         <PrimaryButton mode="outlined" onPress={onRetry}>
-          Try again
+          {t("common:actions.retry")}
         </PrimaryButton>
       </View>
     );
@@ -55,7 +57,7 @@ export const SavedRouteList: React.FC<SavedRouteListProps> = ({
   if (favourites.length + recent.length === 0) {
     return (
       <CustomText variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-        No saved routes yet. Every route you generate on the planner is saved here.
+        {t("routes.empty")}
       </CustomText>
     );
   }
@@ -63,9 +65,9 @@ export const SavedRouteList: React.FC<SavedRouteListProps> = ({
   return (
     <View>
       {favourites.length > 0 ? (
-        <List.Section title="Favourites">{favourites.map(renderRoute)}</List.Section>
+        <List.Section title={t("routes.favourites")}>{favourites.map(renderRoute)}</List.Section>
       ) : null}
-      {recent.length > 0 ? <List.Section title="Recent">{recent.map(renderRoute)}</List.Section> : null}
+      {recent.length > 0 ? <List.Section title={t("routes.recent")}>{recent.map(renderRoute)}</List.Section> : null}
     </View>
   );
 };

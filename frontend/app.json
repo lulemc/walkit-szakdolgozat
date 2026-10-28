@@ -48,6 +48,15 @@
     "plugins": [
       "expo-router",
       [
+        "expo-localization",
+        {
+          "supportedLocales": {
+            "ios": ["en", "hu"],
+            "android": ["en", "hu"]
+          }
+        }
+      ],
+      [
         "expo-location",
         {
           "locationWhenInUsePermission": "WalkIt uses your location to plan routes and track your walk.",

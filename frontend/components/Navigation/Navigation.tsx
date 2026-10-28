@@ -10,34 +10,32 @@ import {
 import { SocialNavigationProvider } from "@/screens/social/socialNavigation";
 import { ReactNode, useCallback, useMemo, useState } from "react";
 import { BottomNavigation, useTheme } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { BaseRoute } from "react-native-paper/lib/typescript/components/BottomNavigation/BottomNavigation";
 
 interface NavigationProps {
   children: ReactNode;
 }
 
-const routesArray: BaseRoute[] = [
+// Titles are translated when the bar renders (the language can change while the app runs)
+const routesArray: (BaseRoute & { key: "home" | "statistics" | "social" | "settings" })[] = [
   {
     key: "home",
-    title: "Home",
     focusedIcon: "home",
     unfocusedIcon: "home-outline",
   },
   {
     key: "statistics",
-    title: "Statistics",
     focusedIcon: "pie-chart",
     unfocusedIcon: "pie-chart-outline",
   },
   {
     key: "social",
-    title: "Social",
     focusedIcon: "people",
     unfocusedIcon: "people-outline",
   },
   {
     key: "settings",
-    title: "Settings",
     focusedIcon: "settings",
     unfocusedIcon: "settings-outline",
   },
@@ -53,17 +51,18 @@ const renderScene = BottomNavigation.SceneMap({
 const NavigationBar: React.FC = () => {
   const [index, setIndex] = useState(0);
   const theme = useTheme();
+  const { t } = useTranslation();
   const { total, refresh } = useSocialSummary();
 
   // The Social tab's badge counts pending friend requests and walk invitations
   const routes = useMemo(
     () =>
-      routesArray.map((route) =>
-        route.key === "social"
-          ? { ...route, badge: total > 0 ? total : false }
-          : route,
-      ),
-    [total],
+      routesArray.map((route) => ({
+        ...route,
+        title: t(`tabs.${route.key}`),
+        ...(route.key === "social" && { badge: total > 0 ? total : false }),
+      })),
+    [total, t],
   );
 
   const handleIndexChange = useCallback(

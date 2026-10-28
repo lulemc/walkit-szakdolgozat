@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { RefreshControl, StyleSheet, View } from "react-native";
 import { SegmentedButtons, useTheme } from "react-native-paper";
+import { TFunction } from "i18next";
+import { useTranslation } from "react-i18next";
 import { CustomText, ScreenContainer } from "@/components";
 import { useHealthData } from "@/hooks/useHealthData";
 import { useWalkStats } from "@/hooks/useWalkStats";
@@ -27,19 +29,19 @@ import {
 
 type StatsView = "day" | "week" | "month";
 
-const VIEW_BUTTONS = [
-  { value: "day", label: "Day" },
-  { value: "week", label: "Week" },
-  { value: "month", label: "Month" },
-];
+const VIEWS = ["day", "week", "month"] as const;
 
-const summaryLine = (summary: HealthSummary | null) =>
+const summaryLine = (summary: HealthSummary | null, t: TFunction<"statistics">) =>
   summary
-    ? `${formatSteps(summary.totalSteps)} steps · ${formatDistance(summary.totalDistance)}`
+    ? t("charts.summary", {
+        steps: formatSteps(summary.totalSteps),
+        distance: formatDistance(summary.totalDistance),
+      })
     : undefined;
 
 export default function StatisticsScreen() {
   const theme = useTheme();
+  const { t } = useTranslation("statistics");
   const [view, setView] = useState<StatsView>("day");
   const {
     status,
@@ -101,7 +103,7 @@ export default function StatisticsScreen() {
 
       {error ? (
         <CustomText custom="error" variant="bodySmall" style={styles.notice}>
-          {"Couldn't refresh. Showing your last data."}
+          {t("refreshFailed")}
         </CustomText>
       ) : null}
 
@@ -110,32 +112,32 @@ export default function StatisticsScreen() {
       <View style={styles.metrics}>
         <MetricCard
           icon="walk"
-          label="Distance"
+          label={t("metrics.distance")}
           value={formatDistance(today.distance)}
           trend={trends.distance}
         />
         <MetricCard
           icon="flame"
-          label="Calories"
+          label={t("metrics.calories")}
           value={formatCalories(today.calories)}
           trend={trends.calories}
         />
       </View>
 
-      {walkStats ? <WalkTotalsCard title="WalkIt walks this week" stats={walkStats} /> : null}
+      {walkStats ? <WalkTotalsCard title={t("walkTotals")} stats={walkStats} /> : null}
 
       <SegmentedButtons
         value={view}
         onValueChange={(value) => setView(value as StatsView)}
-        buttons={VIEW_BUTTONS}
+        buttons={VIEWS.map((value) => ({ value, label: t(`views.${value}`) }))}
       />
 
       {view === "day" && (
         <ChartCard
-          title="Today by hour"
-          subtitle={`${formatSteps(today.steps)} steps so far`}
+          title={t("charts.day.title")}
+          subtitle={t("charts.day.subtitle", { steps: formatSteps(today.steps) })}
           isEmpty={!hourly.some((hour) => hour.steps > 0)}
-          emptyMessage="No steps recorded yet today. Your hourly activity will show up here once you start moving."
+          emptyMessage={t("charts.day.empty")}
         >
           {(width) => <DailyChart data={hourly} width={width} />}
         </ChartCard>
@@ -143,10 +145,10 @@ export default function StatisticsScreen() {
 
       {view === "week" && (
         <ChartCard
-          title="Last 7 days"
-          subtitle={summaryLine(weekSummary)}
+          title={t("charts.week.title")}
+          subtitle={summaryLine(weekSummary, t)}
           isEmpty={!hasAnyActivity(week)}
-          emptyMessage="No activity in the last 7 days. Your daily steps will appear here."
+          emptyMessage={t("charts.week.empty")}
           footer={
             weekSummary ? (
               <InsightsRow summary={weekSummary} streak={streak} bestDayLabel={getDayAbbreviation} />
@@ -159,10 +161,10 @@ export default function StatisticsScreen() {
 
       {view === "month" && (
         <ChartCard
-          title="Last 30 days"
-          subtitle={summaryLine(monthSummary)}
+          title={t("charts.month.title")}
+          subtitle={summaryLine(monthSummary, t)}
           isEmpty={!hasAnyActivity(month)}
-          emptyMessage="No activity in the last 30 days. Your daily steps will appear here."
+          emptyMessage={t("charts.month.empty")}
           footer={
             monthSummary ? (
               <InsightsRow summary={monthSummary} streak={streak} bestDayLabel={formatDate} />

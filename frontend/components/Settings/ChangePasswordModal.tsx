@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   View,
   StyleSheet,
@@ -11,7 +12,7 @@ import { CustomTextInput } from "../Inputs/CustomTextInput";
 import { PrimaryButton } from "../Button";
 import UserService from "@/services/userService";
 import { storage } from "@/utils/storage";
-import { MIN_PASSWORD_LENGTH, PASSWORD_TOO_SHORT_MESSAGE } from "@/utils/passwordRules";
+import { MIN_PASSWORD_LENGTH, passwordTooShortMessage } from "@/utils/passwordRules";
 import { useTheme } from "react-native-paper";
 import { apiErrorMessage } from "@/utils/apiError";
 import { useSnackbar } from "@/context/SnackbarProvider";
@@ -36,6 +37,7 @@ export default function ChangePasswordModal({
   // The server's answer when the change fails; shown in the dialog (a snackbar would be behind it)
   const [submitError, setSubmitError] = useState<string | null>(null);
   const { showMessage } = useSnackbar();
+  const { t } = useTranslation(["settings", "common"]);
 
   const [errors, setErrors] = useState({
     currentPassword: "",
@@ -46,16 +48,16 @@ export default function ChangePasswordModal({
 
   const validatePassword = (password: string): string => {
     if (password.length < MIN_PASSWORD_LENGTH) {
-      return PASSWORD_TOO_SHORT_MESSAGE;
+      return passwordTooShortMessage();
     }
     if (!/[A-Z]/.test(password)) {
-      return "Password must contain at least one uppercase letter";
+      return t("password.needsUppercase");
     }
     if (!/[a-z]/.test(password)) {
-      return "Password must contain at least one lowercase letter";
+      return t("password.needsLowercase");
     }
     if (!/[0-9]/.test(password)) {
-      return "Password must contain at least one number";
+      return t("password.needsNumber");
     }
     return "";
   };
@@ -76,12 +78,12 @@ export default function ChangePasswordModal({
     };
 
     if (!currentPassword) {
-      newErrors.currentPassword = "Current password is required";
+      newErrors.currentPassword = t("password.currentRequired");
       hasErrors = true;
     }
 
     if (!newPassword) {
-      newErrors.newPassword = "New password is required";
+      newErrors.newPassword = t("password.newRequired");
       hasErrors = true;
     } else {
       const passwordError = validatePassword(newPassword);
@@ -92,17 +94,16 @@ export default function ChangePasswordModal({
     }
 
     if (!confirmPassword) {
-      newErrors.confirmPassword = "Please confirm your new password";
+      newErrors.confirmPassword = t("password.confirmRequired");
       hasErrors = true;
     } else if (newPassword !== confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
+      newErrors.confirmPassword = t("password.mismatch");
       hasErrors = true;
     }
 
     // Only compared when both are filled in, so empty fields say "required"
     if (currentPassword && currentPassword === newPassword) {
-      newErrors.newPassword =
-        "New password must be different from current password";
+      newErrors.newPassword = t("password.sameAsCurrent");
       hasErrors = true;
     }
 
@@ -126,16 +127,13 @@ export default function ChangePasswordModal({
       setIsLoading(false);
       handleClose();
 
-      showMessage("Your password has been changed.");
+      showMessage(t("password.changed"));
 
       onPasswordChanged?.();
     } catch (error) {
       setIsLoading(false);
       setSubmitError(
-        apiErrorMessage(
-          error,
-          "Failed to change password. Please check your current password and try again.",
-        ),
+        apiErrorMessage(error, t("password.failed")),
       );
     }
   };
@@ -176,17 +174,16 @@ export default function ChangePasswordModal({
             ]}
           >
             <CustomText variant="titleMedium" style={styles.title}>
-              Change Password
+              {t("password.title")}
             </CustomText>
 
             <CustomText variant="bodySmall" style={styles.description}>
-              Please enter your current password and choose a new secure
-              password.
+              {t("password.description")}
             </CustomText>
 
             <View style={styles.inputContainer}>
               <CustomTextInput
-                label="Current Password"
+                label={t("password.current")}
                 value={currentPassword}
                 onChangeText={setCurrentPassword}
                 secureTextEntry
@@ -203,7 +200,7 @@ export default function ChangePasswordModal({
 
             <View style={styles.inputContainer}>
               <CustomTextInput
-                label="New Password"
+                label={t("password.new")}
                 value={newPassword}
                 onChangeText={setNewPassword}
                 secureTextEntry
@@ -220,7 +217,7 @@ export default function ChangePasswordModal({
 
             <View style={styles.inputContainer}>
               <CustomTextInput
-                label="Confirm New Password"
+                label={t("password.confirm")}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 secureTextEntry
@@ -237,19 +234,19 @@ export default function ChangePasswordModal({
 
             <View style={styles.passwordRequirements}>
               <CustomText variant="bodySmall" style={styles.requirementsTitle}>
-                Password requirements:
+                {t("password.requirements")}
               </CustomText>
               <CustomText variant="bodySmall" style={styles.requirement}>
-                • At least 8 characters
+                {t("password.minLength", { min: MIN_PASSWORD_LENGTH })}
               </CustomText>
               <CustomText variant="bodySmall" style={styles.requirement}>
-                • One uppercase letter
+                {t("password.uppercase")}
               </CustomText>
               <CustomText variant="bodySmall" style={styles.requirement}>
-                • One lowercase letter
+                {t("password.lowercase")}
               </CustomText>
               <CustomText variant="bodySmall" style={styles.requirement}>
-                • One number
+                {t("password.number")}
               </CustomText>
             </View>
 
@@ -266,7 +263,7 @@ export default function ChangePasswordModal({
                 disabled={isLoading}
                 style={styles.button}
               >
-                Cancel
+                {t("common:actions.cancel")}
               </PrimaryButton>
 
               <PrimaryButton
@@ -278,7 +275,7 @@ export default function ChangePasswordModal({
                 {isLoading ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  "Change Password"
+                  t("password.submit")
                 )}
               </PrimaryButton>
             </View>

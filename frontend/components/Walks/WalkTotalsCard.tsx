@@ -1,6 +1,7 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
 import { Card, useTheme } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { CustomText } from "../CustomText";
 import type { WalkStats } from "@/types/walk";
 import { formatElapsed, formatWalkDistance } from "@/utils/walkMetrics";
@@ -10,13 +11,12 @@ interface WalkTotalsCardProps {
   stats: WalkStats;
 }
 
-const walksLabel = (count: number) => `${count} ${count === 1 ? "walk" : "walks"}`;
-
 /** How many WalkIt walks, how far and how long, e.g. this week */
 export const WalkTotalsCard: React.FC<WalkTotalsCardProps> = ({ title, stats }) => {
   const theme = useTheme();
+  const { t } = useTranslation("history");
   const values = [
-    walksLabel(stats.walkCount),
+    t("totals.walks", { count: stats.walkCount }),
     formatWalkDistance(stats.totalDistanceM),
     formatElapsed(stats.totalDurationSec),
   ];

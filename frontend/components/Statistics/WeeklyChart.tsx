@@ -1,6 +1,7 @@
 import React from "react";
 import { BarChart } from "react-native-gifted-charts";
 import { useTheme } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import type { HealthData } from "@/services/health/types";
 import { colors } from "@/theme/colors";
 import { formatCompactNumber, getDayAbbreviation } from "@/utils/healthFormatters";
@@ -16,6 +17,7 @@ const CHART_HEIGHT = 200;
 
 export const WeeklyChart: React.FC<WeeklyChartProps> = ({ data, goal, width }) => {
   const theme = useTheme();
+  const { t } = useTranslation("statistics");
   const layout = fitBars(width, data.length, 0.55);
   const axisText = { color: theme.colors.onSurfaceVariant, fontSize: 10 };
 
@@ -64,7 +66,7 @@ export const WeeklyChart: React.FC<WeeklyChartProps> = ({ data, goal, width }) =
         dashWidth: 4,
         dashGap: 4,
         thickness: 1,
-        labelText: "Goal",
+        labelText: t("charts.goal"),
         labelTextStyle: axisText,
       }}
       isAnimated

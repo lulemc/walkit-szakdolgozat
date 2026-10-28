@@ -1,7 +1,8 @@
 import React from 'react';
-import { fireEvent, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, waitFor } from '@testing-library/react-native';
 import { renderWithTheme } from '@/components/Statistics/__test__/renderWithTheme';
 import LoginScreen from '@/app/(auth)/login';
+import i18n from '@/i18n';
 
 const mockLogin = jest.fn();
 const mockReplace = jest.fn();
@@ -52,5 +53,37 @@ describe('LoginScreen', () => {
     fireEvent.press(screen.getByText('Register'));
 
     expect(mockReplace).toHaveBeenCalledWith('/registration');
+  });
+});
+
+describe('LoginScreen in Hungarian', () => {
+  beforeEach(() => i18n.changeLanguage('hu'));
+  // Inside act: the change re-renders what is still on screen
+  afterEach(async () => {
+    await act(async () => {
+      await i18n.changeLanguage('en');
+    });
+  });
+
+  it('shows the form and its errors in Hungarian', async () => {
+    const screen = renderWithTheme(<LoginScreen />);
+
+    expect(screen.getByText('Még nincs fiókod?')).toBeTruthy();
+    fireEvent.changeText(screen.getByLabelText('E-mail'), 'ann@example.com');
+    fireEvent.press(screen.getByRole('button', { name: 'Bejelentkezés' }));
+
+    expect(await screen.findByText('Minden mezőt ki kell tölteni')).toBeTruthy();
+    expect(mockLogin).not.toHaveBeenCalled();
+  });
+
+  it("keeps the app's own fallback in Hungarian when the server can't be reached", async () => {
+    mockLogin.mockRejectedValue({ request: {} });
+    const screen = renderWithTheme(<LoginScreen />);
+
+    fireEvent.changeText(screen.getByLabelText('E-mail'), 'ann@example.com');
+    fireEvent.changeText(screen.getByLabelText('Jelszó'), 'secret123');
+    fireEvent.press(screen.getByRole('button', { name: 'Bejelentkezés' }));
+
+    expect(await screen.findByText(/^A WalkIt nem érhető el\./)).toBeTruthy();
   });
 });

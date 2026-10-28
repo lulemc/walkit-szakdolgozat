@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { View, StyleSheet } from "react-native";
 import { useTheme } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import Slider from "@react-native-community/slider";
 import { CustomText } from "@/components/CustomText";
 import { CustomTextInput } from "@/components/Inputs/CustomTextInput";
@@ -20,6 +21,7 @@ export default function DistanceSelector({
   max = 30,
 }: DistanceSelectorProps) {
   const theme = useTheme();
+  const { t } = useTranslation("planner");
   const [inputValue, setInputValue] = useState(value.toString());
 
   const handleSliderChange = (newValue: number) => {
@@ -40,8 +42,8 @@ export default function DistanceSelector({
     <View style={styles.container}>
       <View style={styles.inputContainer}>
         <CustomTextInput
-          label="Distance (km)"
-          accessibilityLabel="Distance (km)"
+          label={t("distance.label")}
+          accessibilityLabel={t("distance.label")}
           value={inputValue}
           onChangeText={handleInputChange}
           keyboardType="number-pad"

@@ -1,6 +1,7 @@
 import React from "react";
 import { StyleSheet } from "react-native";
 import MapView, { Marker, Polyline } from "react-native-maps";
+import { useTranslation } from "react-i18next";
 import type { Coordinates } from "@/services/routeService";
 import { colors } from "@/theme/colors";
 import { mapProvider } from "@/utils/mapProvider";
@@ -12,6 +13,7 @@ interface GroupWalkMapProps {
 
 /** A still map of a group walk's route; it doesn't move, so the page can scroll over it */
 export const GroupWalkMap: React.FC<GroupWalkMapProps> = ({ coordinates }) => {
+  const { t } = useTranslation("social");
   if (coordinates.length === 0) return null;
   const start = coordinates[0];
   const end = coordinates[coordinates.length - 1];
@@ -28,7 +30,7 @@ export const GroupWalkMap: React.FC<GroupWalkMapProps> = ({ coordinates }) => {
       zoomEnabled={false}
       rotateEnabled={false}
       pitchEnabled={false}
-      accessibilityLabel="Map of the route"
+      accessibilityLabel={t("map.label")}
     >
       <Polyline
         coordinates={coordinates}
@@ -36,8 +38,8 @@ export const GroupWalkMap: React.FC<GroupWalkMapProps> = ({ coordinates }) => {
         strokeWidth={4}
         lineCap="round"
       />
-      <Marker coordinate={start} title="Start" pinColor="green" />
-      {finishesElsewhere ? <Marker coordinate={end} title="Finish" pinColor="red" /> : null}
+      <Marker coordinate={start} title={t("map.start")} pinColor="green" />
+      {finishesElsewhere ? <Marker coordinate={end} title={t("map.finish")} pinColor="red" /> : null}
     </MapView>
   );
 };

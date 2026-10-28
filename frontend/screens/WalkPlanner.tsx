@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { View, StyleSheet, ActivityIndicator } from "react-native";
 import { useTheme } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { CustomText } from "@/components/CustomText";
 import { PrimaryButton } from "@/components/Button";
 import { useWalkPlanner } from "@/hooks/useWalkPlanner";
@@ -27,6 +28,7 @@ export default function WalkPlannerScreen({
   onOpenMyRoutes,
 }: WalkPlannerScreenProps) {
   const theme = useTheme();
+  const { t } = useTranslation("planner");
 
   const {
     mapRef,
@@ -107,7 +109,7 @@ export default function WalkPlannerScreen({
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
         <CustomText style={styles.loadingText}>
-          Getting your location...
+          {t("loadingLocation")}
         </CustomText>
       </View>
     );
@@ -152,18 +154,18 @@ export default function WalkPlannerScreen({
       >
         <View style={styles.titleRow}>
           <CustomText variant="titleLarge" style={styles.title}>
-            Plan Your Walk
+            {t("title")}
           </CustomText>
           {onOpenMyRoutes ? (
             <PrimaryButton mode="text" icon="bookmark-outline" onPress={onOpenMyRoutes}>
-              My routes
+              {t("myRoutes")}
             </PrimaryButton>
           ) : null}
         </View>
 
         <View style={styles.section}>
           <CustomText variant="titleMedium" style={styles.sectionTitle}>
-            📍 Location
+            {t("sections.location")}
           </CustomText>
           <LocationSelector
             currentLocation={currentLocation}
@@ -181,14 +183,14 @@ export default function WalkPlannerScreen({
 
         <View style={styles.section}>
           <CustomText variant="titleMedium" style={styles.sectionTitle}>
-            🔄 Route Type
+            {t("sections.routeType")}
           </CustomText>
           <RouteTypeSelector value={routeType} onChange={setRouteType} />
         </View>
 
         <View style={styles.section}>
           <CustomText variant="titleMedium" style={styles.sectionTitle}>
-            📏 Distance
+            {t("sections.distance")}
           </CustomText>
           <DistanceSelector
             value={selectedDistance}
@@ -198,7 +200,7 @@ export default function WalkPlannerScreen({
 
         <View style={styles.section}>
           <CustomText variant="titleMedium" style={styles.sectionTitle}>
-            ⚙️ Preferences
+            {t("sections.preferences")}
           </CustomText>
           <PreferencesSelector
             preferences={preferences}
@@ -215,10 +217,10 @@ export default function WalkPlannerScreen({
             style={styles.button}
           >
             {isGeneratingRoute
-              ? "Generating Route..."
+              ? t("generating")
               : generatedRoute
-                ? "Regenerate Route"
-                : "Generate Route"}
+                ? t("regenerate")
+                : t("generate")}
           </PrimaryButton>
 
           {generatedRoute && !isGeneratingRoute && (
@@ -228,7 +230,7 @@ export default function WalkPlannerScreen({
               style={styles.button}
               textColor={theme.colors.error}
             >
-              Clear Route
+              {t("clearRoute")}
             </PrimaryButton>
           )}
         </View>

@@ -25,6 +25,9 @@
     "setupFiles": [
       "<rootDir>/jest.setup.fonts.ts"
     ],
+    "setupFilesAfterEnv": [
+      "<rootDir>/jest.setup.i18n.ts"
+    ],
     "collectCoverageFrom": [
       "{app,components,context,hooks,screens,services,utils}/**/*.{ts,tsx}",
       "!**/__test__/**"
@@ -65,6 +68,7 @@
     "expo-image": "~57.0.5",
     "expo-linear-gradient": "~57.0.2",
     "expo-linking": "~57.0.12",
+    "expo-localization": "~57.0.2",
     "expo-location": "~57.0.20",
     "expo-router": "~57.0.25",
     "expo-secure-store": "~57.0.4",
@@ -74,8 +78,10 @@
     "expo-system-ui": "~57.0.4",
     "expo-task-manager": "~57.0.21",
     "expo-web-browser": "~57.0.3",
+    "i18next": "^26.5.11",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
+    "react-i18next": "^17.1.9",
     "react-native": "^0.86.3",
     "react-native-css-interop": "^0.2.7",
     "react-native-date-picker": "^5.0.13",

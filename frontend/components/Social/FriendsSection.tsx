@@ -1,6 +1,7 @@
 import React, { ReactNode, useState } from "react";
 import { ActivityIndicator, RefreshControl, StyleSheet, View } from "react-native";
 import { TextInput, useTheme } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { CustomText, CustomTextInput, PrimaryButton, ScreenContainer } from "@/components";
 import ConfirmationModal from "@/components/ConformationModal";
 import { useFriends } from "@/hooks/useFriends";
@@ -18,6 +19,7 @@ interface FriendsSectionProps {
 /** Search people, handle friend requests and see or remove friends */
 export const FriendsSection: React.FC<FriendsSectionProps> = ({ header }) => {
   const theme = useTheme();
+  const { t } = useTranslation(["social", "common"]);
   const friends = useFriends();
   const search = useUserSearch();
   const [friendToRemove, setFriendToRemove] = useState<Friend | null>(null);
@@ -66,8 +68,8 @@ export const FriendsSection: React.FC<FriendsSectionProps> = ({ header }) => {
 
       <View>
         <CustomTextInput
-          label="Search by name or email"
-          accessibilityLabel="Search by name or email"
+          label={t("friends.search")}
+          accessibilityLabel={t("friends.search")}
           value={search.query}
           onChangeText={search.setQuery}
           autoCorrect={false}
@@ -96,14 +98,14 @@ export const FriendsSection: React.FC<FriendsSectionProps> = ({ header }) => {
       ) : null}
 
       {friends.status === "loading" ? (
-        <ActivityIndicator color={theme.colors.primary} accessibilityLabel="Loading friends" />
+        <ActivityIndicator color={theme.colors.primary} accessibilityLabel={t("friends.loading")} />
       ) : null}
 
       {friends.status === "error" ? (
         <View style={styles.errorBox}>
-          <CustomText variant="titleMedium">{"Couldn't load your friends"}</CustomText>
+          <CustomText variant="titleMedium">{t("friends.loadError")}</CustomText>
           <PrimaryButton mode="outlined" onPress={friends.refresh}>
-            Try again
+            {t("common:actions.retry")}
           </PrimaryButton>
         </View>
       ) : null}
@@ -111,10 +113,10 @@ export const FriendsSection: React.FC<FriendsSectionProps> = ({ header }) => {
       {friends.status === "ready" ? (
         <>
           <View>
-            <CustomText variant="titleMedium">Requests</CustomText>
+            <CustomText variant="titleMedium">{t("friends.requests")}</CustomText>
             {incoming.length + outgoing.length === 0 ? (
               <CustomText variant="bodyMedium" style={mutedText}>
-                No pending requests.
+                {t("friends.noRequests")}
               </CustomText>
             ) : null}
             {incoming.map((request) => (
@@ -137,10 +139,10 @@ export const FriendsSection: React.FC<FriendsSectionProps> = ({ header }) => {
           </View>
 
           <View>
-            <CustomText variant="titleMedium">Friends</CustomText>
+            <CustomText variant="titleMedium">{t("friends.title")}</CustomText>
             {friends.friends.length === 0 ? (
               <CustomText variant="bodyMedium" style={mutedText}>
-                No friends yet. Search above to add someone.
+                {t("friends.empty")}
               </CustomText>
             ) : null}
             {friends.friends.map((friend) => (
@@ -154,10 +156,10 @@ export const FriendsSection: React.FC<FriendsSectionProps> = ({ header }) => {
         visible={friendToRemove !== null}
         onClose={() => setFriendToRemove(null)}
         onConfirm={confirmRemove}
-        title="Remove friend"
-        message={`Remove ${friendToRemove?.user.name ?? ""} from your friends?`}
-        confirmText="Remove"
-        cancelText="Keep"
+        title={t("friends.removeTitle")}
+        message={t("friends.removeMessage", { name: friendToRemove?.user.name ?? "" })}
+        confirmText={t("actions.remove")}
+        cancelText={t("actions.keep")}
       />
     </ScreenContainer>
   );

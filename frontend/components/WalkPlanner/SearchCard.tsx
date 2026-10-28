@@ -1,6 +1,7 @@
 import React from "react";
 import { View, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { useTheme } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { CustomText } from "@/components/CustomText";
 import { CustomTextInput } from "@/components/Inputs/CustomTextInput";
 import type { PlaceSuggestion } from "@/types/walkPlanner";
@@ -29,16 +30,17 @@ export default function SearchCard({
   error,
 }: SearchCardProps) {
   const theme = useTheme();
+  const { t } = useTranslation(["planner", "common"]);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.surface }]}>
       <View style={styles.inputContainer}>
         <CustomTextInput
-          label="Search for a place"
-          accessibilityLabel="Search for a place"
+          label={t("search.label")}
+          accessibilityLabel={t("search.label")}
           value={value}
           onChangeText={onChangeText}
-          placeholder="Enter address, place name..."
+          placeholder={t("search.placeholder")}
           autoFocus
           style={styles.input}
         />
@@ -47,7 +49,7 @@ export default function SearchCard({
             style={styles.clearButton}
             onPress={onClear}
             accessibilityRole="button"
-            accessibilityLabel="Clear search"
+            accessibilityLabel={t("search.clear")}
           >
             <CustomText
               variant="bodyLarge"
@@ -61,7 +63,7 @@ export default function SearchCard({
 
       {isSearching && (
         <CustomText variant="bodySmall" style={styles.searchingText}>
-          Searching...
+          {t("search.searching")}
         </CustomText>
       )}
 
@@ -85,7 +87,7 @@ export default function SearchCard({
 
       <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
         <CustomText variant="bodySmall" style={{ color: theme.colors.error }}>
-          Cancel
+          {t("common:actions.cancel")}
         </CustomText>
       </TouchableOpacity>
     </View>

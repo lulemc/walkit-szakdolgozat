@@ -1,10 +1,11 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
 import { Card, Chip, useTheme } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { CustomText } from "../CustomText";
 import type { GroupWalkSummary } from "@/types/social";
 import { formatWalkTime } from "@/utils/groupWalkTime";
-import { countsLabel, PARTICIPANT_STATUS_LABELS } from "./groupWalkLabels";
+import { countsLabel, participantStatusLabel } from "./groupWalkLabels";
 import { routeTitle } from "./savedRouteText";
 
 interface GroupWalkCardProps {
@@ -17,18 +18,19 @@ interface GroupWalkCardProps {
 /** One group walk in a list: name, local time, organiser, who's coming and my status */
 export const GroupWalkCard: React.FC<GroupWalkCardProps> = ({ walk, currentUserId, onPress }) => {
   const theme = useTheme();
+  const { t } = useTranslation("social");
   const name = walk.title || routeTitle(walk.route);
   const time = formatWalkTime(walk.scheduledAt);
   const organiser =
     currentUserId && walk.organiser._id === currentUserId
-      ? "You're organising"
-      : `Organised by ${walk.organiser.name}`;
+      ? t("walks.organising")
+      : t("walks.organisedBy", { name: walk.organiser.name });
   const counts = countsLabel(walk.counts);
   const badge =
     walk.status === "cancelled"
-      ? "Cancelled"
+      ? t("walks.cancelled")
       : walk.myStatus
-        ? PARTICIPANT_STATUS_LABELS[walk.myStatus]
+        ? participantStatusLabel(walk.myStatus)
         : null;
   const mutedText = { color: theme.colors.onSurfaceVariant };
 

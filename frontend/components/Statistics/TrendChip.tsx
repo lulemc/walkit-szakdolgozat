@@ -1,6 +1,7 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
 import { Icon, useTheme } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { CustomText } from "../CustomText";
 import { colors } from "@/theme/colors";
 
@@ -9,15 +10,19 @@ interface TrendChipProps {
   label?: string;
 }
 
-export const TrendChip: React.FC<TrendChipProps> = ({ value, label = "vs yesterday" }) => {
+export const TrendChip: React.FC<TrendChipProps> = ({ value, label }) => {
   const theme = useTheme();
+  const { t } = useTranslation("statistics");
 
   if (value === null) return null;
 
   const icon = value > 0 ? "trending-up" : value < 0 ? "trending-down" : "remove";
   const iconColor =
     value > 0 ? colors.darkGreen : value < 0 ? colors.error : theme.colors.onSurfaceVariant;
-  const text = `${value > 0 ? "+" : ""}${value}% ${label}`;
+  const text = t("trend.text", {
+    change: `${value > 0 ? "+" : ""}${value}`,
+    label: label ?? t("trend.vsYesterday"),
+  });
 
   return (
     <View

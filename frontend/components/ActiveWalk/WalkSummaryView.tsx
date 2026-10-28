@@ -1,6 +1,7 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
 import { Card, useTheme } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { CustomText, PrimaryButton, ScreenContainer } from "@/components";
 import { formatElapsed, formatPace, formatWalkDistance } from "@/utils/walkMetrics";
 
@@ -30,16 +31,17 @@ export const WalkSummaryView: React.FC<WalkSummaryViewProps> = ({
   onFavorite,
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation("walk");
   const stats = [
-    { label: "Distance", value: formatWalkDistance(distanceM) },
-    { label: "Time", value: formatElapsed(elapsedSec) },
-    { label: "Pace", value: formatPace(elapsedSec, distanceM), unit: "min/km" },
+    { label: t("stats.distance"), value: formatWalkDistance(distanceM) },
+    { label: t("stats.time"), value: formatElapsed(elapsedSec) },
+    { label: t("stats.pace"), value: formatPace(elapsedSec, distanceM), unit: t("stats.paceUnit") },
   ];
 
   return (
     <ScreenContainer scrollable style={styles.screen} contentContainerStyle={styles.content}>
       <CustomText variant="headlineMedium" style={styles.title}>
-        Walk complete! 🎉
+        {t("summary.title")}
       </CustomText>
 
       <Card mode="outlined">
@@ -70,7 +72,7 @@ export const WalkSummaryView: React.FC<WalkSummaryViewProps> = ({
           loading={favorite === "saving"}
           disabled={favorite !== "available"}
         >
-          {favorite === "saved" ? "In your favourites" : "Add route to favourites"}
+          {favorite === "saved" ? t("summary.inFavourites") : t("summary.addToFavourites")}
         </PrimaryButton>
       ) : null}
 
@@ -81,10 +83,10 @@ export const WalkSummaryView: React.FC<WalkSummaryViewProps> = ({
       ) : null}
 
       <PrimaryButton icon="save-outline" onPress={onSave} loading={saving} disabled={saving}>
-        Save walk
+        {t("summary.save")}
       </PrimaryButton>
       <PrimaryButton mode="text" onPress={onDiscard} disabled={saving} textColor={theme.colors.error}>
-        Discard
+        {t("summary.discard")}
       </PrimaryButton>
     </ScreenContainer>
   );

@@ -1,6 +1,7 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
 import { useTheme } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { CustomText } from "@/components/CustomText";
 import ActionButton from "../ActionButton";
 import type { Location } from "@/types/walkPlanner";
@@ -25,6 +26,7 @@ export default function LocationCard({
   onClear,
 }: LocationCardProps) {
   const theme = useTheme();
+  const { t } = useTranslation("planner");
 
   return (
     <View
@@ -35,7 +37,7 @@ export default function LocationCard({
     >
       <View style={styles.info}>
         <CustomText variant="bodyMedium" style={styles.name}>
-          {location?.name || "Not set"}
+          {location?.name || t("location.notSet")}
         </CustomText>
 
         {location?.address && (
@@ -46,7 +48,7 @@ export default function LocationCard({
 
         {isCurrentLocation && (
           <CustomText variant="bodySmall" style={styles.badge}>
-            📍 Current Location
+            {t("location.currentBadge")}
           </CustomText>
         )}
 
@@ -55,7 +57,7 @@ export default function LocationCard({
             variant="bodySmall"
             style={[styles.hint, { color: theme.colors.error }]}
           >
-            Search or pick on map to set location
+            {t("location.hint")}
           </CustomText>
         )}
       </View>
@@ -64,15 +66,15 @@ export default function LocationCard({
         <View style={styles.actions}>
           {onUseCurrentLocation && (
             <ActionButton
-              label="Current"
+              label={t("location.current")}
               onPress={onUseCurrentLocation}
               active={isCurrentLocation}
             />
           )}
-          <ActionButton label="🔍 Search" onPress={onEnableSearch} />
-          <ActionButton label="🗺️ Map" onPress={onEnableMapSelection} />
+          <ActionButton label={t("location.search")} onPress={onEnableSearch} />
+          <ActionButton label={t("location.map")} onPress={onEnableMapSelection} />
           {onClear && location && (
-            <ActionButton label="Clear" onPress={onClear} variant="error" />
+            <ActionButton label={t("location.clear")} onPress={onClear} variant="error" />
           )}
         </View>
       )}

@@ -1,5 +1,6 @@
 import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { useTheme } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { CustomText } from "@/components/CustomText";
 
 interface MapSelectionIndicatorProps {
@@ -12,6 +13,7 @@ export default function MapSelectionIndicator({
   onCancel,
 }: MapSelectionIndicatorProps) {
   const theme = useTheme();
+  const { t } = useTranslation(["planner", "common"]);
 
   return (
     <View
@@ -21,20 +23,19 @@ export default function MapSelectionIndicator({
       ]}
     >
       <CustomText variant="bodyMedium" style={styles.text}>
-        👆 Tap on map to set {type === "start" ? "start" : "destination"}{" "}
-        location
+        {type === "start" ? t("mapPick.start") : t("mapPick.destination")}
       </CustomText>
       <TouchableOpacity
         onPress={onCancel}
         accessibilityRole="button"
-        accessibilityLabel="Cancel picking on the map"
+        accessibilityLabel={t("mapPick.cancelLabel")}
         style={[
           styles.cancelButton,
           { backgroundColor: theme.colors.errorContainer },
         ]}
       >
         <CustomText variant="bodySmall" style={{ color: theme.colors.error }}>
-          Cancel
+          {t("common:actions.cancel")}
         </CustomText>
       </TouchableOpacity>
     </View>

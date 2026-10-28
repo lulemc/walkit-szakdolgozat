@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Animated, Easing, StyleSheet, View } from "react-native";
 import { useTheme } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { ScreenContainer } from "../ScreenContainer";
 
 const PULSE_MS = 700;
 
 export const LoadingState: React.FC = () => {
   const theme = useTheme();
+  const { t } = useTranslation("statistics");
   const [opacity] = useState(() => new Animated.Value(1));
 
   useEffect(() => {
@@ -30,7 +32,7 @@ export const LoadingState: React.FC = () => {
       <Animated.View
         style={{ opacity }}
         testID="statistics-loading"
-        accessibilityLabel="Loading statistics"
+        accessibilityLabel={t("loading")}
         accessibilityRole="progressbar"
       >
         <View style={[block, styles.title]} />

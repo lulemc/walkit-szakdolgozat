@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Card, useTheme } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { CustomText, PrimaryButton } from "@/components";
 import { groupWalkService } from "@/services/groupWalkService";
 import type { RouteSummary } from "@/services/routeService";
@@ -36,6 +37,7 @@ export const CreateGroupWalkForm: React.FC<CreateGroupWalkFormProps> = ({
   onChangeRoute,
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation(["social", "common"]);
   const [title, setTitle] = useState("");
   const [note, setNote] = useState("");
   const [scheduledAt, setScheduledAt] = useState(defaultStartTime);
@@ -47,7 +49,7 @@ export const CreateGroupWalkForm: React.FC<CreateGroupWalkFormProps> = ({
     const problems: string[] = [];
     const timeError = futureTimeError(scheduledAt);
     if (timeError) problems.push(timeError);
-    if (inviteeIds.length === 0) problems.push("Invite at least one friend.");
+    if (inviteeIds.length === 0) problems.push(t("form.inviteAtLeastOne"));
     return problems;
   };
 
@@ -78,7 +80,7 @@ export const CreateGroupWalkForm: React.FC<CreateGroupWalkFormProps> = ({
 
   return (
     <View style={styles.container}>
-      <CustomText variant="headlineSmall">Plan a group walk</CustomText>
+      <CustomText variant="headlineSmall">{t("form.createTitle")}</CustomText>
 
       <Card mode="outlined">
         <Card.Title
@@ -89,7 +91,7 @@ export const CreateGroupWalkForm: React.FC<CreateGroupWalkFormProps> = ({
         {onChangeRoute ? (
           <Card.Actions>
             <PrimaryButton mode="text" onPress={onChangeRoute}>
-              Change route
+              {t("form.changeRoute")}
             </PrimaryButton>
           </Card.Actions>
         ) : null}
@@ -105,7 +107,7 @@ export const CreateGroupWalkForm: React.FC<CreateGroupWalkFormProps> = ({
       <WalkTimeFields value={scheduledAt} onChange={setScheduledAt} />
 
       <View>
-        <CustomText variant="titleMedium">Invite friends</CustomText>
+        <CustomText variant="titleMedium">{t("form.inviteFriends")}</CustomText>
         <FriendMultiSelect selectedIds={inviteeIds} onChange={setInviteeIds} />
       </View>
 
@@ -120,12 +122,12 @@ export const CreateGroupWalkForm: React.FC<CreateGroupWalkFormProps> = ({
         onPress={handleSubmit}
         loading={submitting}
         disabled={submitting}
-        accessibilityLabel="Create group walk"
+        accessibilityLabel={t("form.create")}
       >
-        Create group walk
+        {t("form.create")}
       </PrimaryButton>
       <PrimaryButton mode="outlined" onPress={onCancel} disabled={submitting}>
-        Cancel
+        {t("common:actions.cancel")}
       </PrimaryButton>
     </View>
   );

@@ -1,6 +1,7 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
 import { Card, Chip, useTheme } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { CustomText } from "../CustomText";
 import type { WalkSummary } from "@/types/walk";
 import { formatWalkTime } from "@/utils/groupWalkTime";
@@ -14,7 +15,8 @@ interface WalkHistoryItemProps {
 /** One walk in the history: name, local start time, distance and time */
 export const WalkHistoryItem: React.FC<WalkHistoryItemProps> = ({ walk, onPress }) => {
   const theme = useTheme();
-  const name = walk.name || "Walk";
+  const { t } = useTranslation("history");
+  const name = walk.name || t("walk.defaultName");
   const time = formatWalkTime(walk.startedAt);
   const numbers = `${formatWalkDistance(walk.distanceM)} · ${formatElapsed(walk.durationSec)}`;
   const label = [
@@ -22,7 +24,7 @@ export const WalkHistoryItem: React.FC<WalkHistoryItemProps> = ({ walk, onPress 
     time,
     formatWalkDistance(walk.distanceM),
     formatElapsed(walk.durationSec),
-    walk.groupWalkId ? "Group walk" : null,
+    walk.groupWalkId ? t("walk.groupWalk") : null,
   ]
     .filter(Boolean)
     .join(", ");
@@ -42,7 +44,7 @@ export const WalkHistoryItem: React.FC<WalkHistoryItemProps> = ({ walk, onPress 
           </CustomText>
           <CustomText variant="bodyMedium">{numbers}</CustomText>
         </View>
-        {walk.groupWalkId ? <Chip compact>Group walk</Chip> : null}
+        {walk.groupWalkId ? <Chip compact>{t("walk.groupWalk")}</Chip> : null}
       </Card.Content>
     </Card>
   );

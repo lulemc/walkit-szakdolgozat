@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, BackHandler, StyleSheet, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { CustomText } from "@/components/CustomText";
 import { PrimaryButton } from "@/components/Button";
 import { ActiveWalkMap } from "@/components/ActiveWalk/ActiveWalkMap";
@@ -34,6 +35,7 @@ export default function ActiveWalkScreen({
   onEndWalk,
   groupWalkId,
 }: ActiveWalkScreenProps) {
+  const { t } = useTranslation(["walk", "common"]);
   const mockGps = isMockGpsEnabled();
   const canFavorite = !groupWalkId && !walkRoute.isFavorite;
 
@@ -90,11 +92,11 @@ export default function ActiveWalkScreen({
   };
 
   const confirmDiscard = useCallback(() => {
-    Alert.alert("Discard this walk?", "It won't be saved.", [
-      { text: "Keep", style: "cancel" },
-      { text: "Discard", style: "destructive", onPress: onEndWalk },
+    Alert.alert(t("discardDialog.title"), t("discardDialog.message"), [
+      { text: t("discardDialog.keep"), style: "cancel" },
+      { text: t("discardDialog.discard"), style: "destructive", onPress: onEndWalk },
     ]);
-  }, [onEndWalk]);
+  }, [onEndWalk, t]);
 
   // Android back asks first: during the walk whether to end it, afterwards whether to discard it
   const hasFinished = finished !== null;
@@ -103,15 +105,15 @@ export default function ActiveWalkScreen({
       if (hasFinished) {
         confirmDiscard();
       } else {
-        Alert.alert("End this walk?", "You can save it on the next screen.", [
-          { text: "Keep walking", style: "cancel" },
-          { text: "End walk", onPress: () => finishRef.current() },
+        Alert.alert(t("endDialog.title"), t("endDialog.message"), [
+          { text: t("endDialog.keepWalking"), style: "cancel" },
+          { text: t("endDialog.end"), onPress: () => finishRef.current() },
         ]);
       }
       return true;
     });
     return () => subscription.remove();
-  }, [hasFinished, confirmDiscard]);
+  }, [hasFinished, confirmDiscard, t]);
 
   if (finished) {
     return (
@@ -133,20 +135,20 @@ export default function ActiveWalkScreen({
       <View style={styles.centered}>
         <CustomText variant="titleMedium" style={styles.centeredText}>
           {tracking.status === "permission-denied"
-            ? "Location permission is needed to track your walk."
-            : "Couldn't start tracking your location."}
+            ? t("permissionDenied")
+            : t("trackingFailed")}
         </CustomText>
         <PrimaryButton mode="outlined" icon="arrow-back" onPress={onEndWalk}>
-          Back
+          {t("common:actions.back")}
         </PrimaryButton>
       </View>
     );
   }
 
   const notice = mockGps
-    ? "🎮 Simulated GPS (testing)"
+    ? t("simulatedGps")
     : tracking.status === "tracking" && !tracking.backgroundTracking
-      ? "Keep the screen on: tracking stops while it's locked."
+      ? t("keepScreenOn")
       : undefined;
 
   return (
@@ -171,7 +173,7 @@ export default function ActiveWalkScreen({
           onPress={tracking.isPaused ? tracking.resume : tracking.pause}
           style={[styles.button, styles.pauseButton]}
         >
-          {tracking.isPaused ? "Resume" : "Pause"}
+          {tracking.isPaused ? t("resume") : t("pause")}
         </PrimaryButton>
 
         <PrimaryButton
@@ -179,7 +181,7 @@ export default function ActiveWalkScreen({
           onPress={() => finishRef.current()}
           style={styles.button}
         >
-          Finish Walk
+          {t("finish")}
         </PrimaryButton>
       </View>
     </View>

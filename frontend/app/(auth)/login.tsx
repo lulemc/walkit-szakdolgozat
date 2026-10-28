@@ -3,6 +3,7 @@ import { StyleSheet } from "react-native";
 import { HelperText } from "react-native-paper";
 import { useTextInput } from "@/hooks/form/useTextInput";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/context/AuthProvider";
 import {
   CustomText,
@@ -17,6 +18,7 @@ const LoginScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+  const { t } = useTranslation("auth");
 
   const router = useRouter();
   const email = useTextInput();
@@ -24,7 +26,7 @@ const LoginScreen: React.FC = () => {
 
   const onSubmit = async () => {
     if (!email.value || !password.value) {
-      setError("All fields are required");
+      setError(t("allFieldsRequired"));
       return;
     }
 
@@ -34,7 +36,7 @@ const LoginScreen: React.FC = () => {
 
       await login(email.value, password.value);
     } catch (err) {
-      setError(apiErrorMessage(err, "Login failed"));
+      setError(apiErrorMessage(err, t("login.failed")));
     } finally {
       setLoading(false);
     }
@@ -43,11 +45,11 @@ const LoginScreen: React.FC = () => {
   return (
     <ScreenContainer style={styles.container}>
       <CustomText variant="headlineMedium" style={styles.title}>
-        Login
+        {t("login.title")}
       </CustomText>
 
       <CustomTextInput
-        label="Email"
+        label={t("fields.email")}
         value={email.value}
         onChangeText={email.onChangeText}
         keyboardType="email-address"
@@ -55,7 +57,7 @@ const LoginScreen: React.FC = () => {
       />
 
       <CustomTextInput
-        label="Password"
+        label={t("fields.password")}
         value={password.value}
         onChangeText={password.onChangeText}
         secureTextEntry
@@ -70,11 +72,11 @@ const LoginScreen: React.FC = () => {
         disabled={loading}
         style={styles.button}
       >
-        Sign In
+        {t("login.submit")}
       </PrimaryButton>
 
       <RowLayout>
-        <CustomText>Don’t have an account?</CustomText>
+        <CustomText>{t("login.noAccount")}</CustomText>
         <PrimaryButton
           mode="text"
           onPress={() => {
@@ -82,7 +84,7 @@ const LoginScreen: React.FC = () => {
           }}
         >
           <CustomText variant="bodyMedium" custom="link">
-            Register
+            {t("login.register")}
           </CustomText>
         </PrimaryButton>
       </RowLayout>

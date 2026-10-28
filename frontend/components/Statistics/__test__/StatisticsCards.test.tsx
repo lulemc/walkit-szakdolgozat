@@ -1,6 +1,7 @@
 import React from "react";
 import { Text } from "react-native";
-import { fireEvent } from "@testing-library/react-native";
+import { act, fireEvent } from "@testing-library/react-native";
+import i18n from "@/i18n";
 import { renderWithTheme } from "./renderWithTheme";
 import { TrendChip } from "../TrendChip";
 import { TodayCard } from "../TodayCard";
@@ -8,6 +9,7 @@ import { InsightsRow } from "../InsightsRow";
 import { ChartCard } from "../ChartCard";
 import { StatisticsHeader } from "../StatisticsHeader";
 import type { HealthSummary } from "@/utils/healthStats";
+import { formatDate, getDayAbbreviation } from "@/utils/healthFormatters";
 
 describe("TrendChip", () => {
   it("shows a positive trend with a plus sign", () => {
@@ -106,5 +108,39 @@ describe("StatisticsHeader", () => {
       <StatisticsHeader lastUpdated={null} providerName="Health Connect" />,
     );
     expect(getByText("Your activity from Health Connect")).toBeTruthy();
+  });
+});
+
+describe("Statistics cards in Hungarian", () => {
+  beforeEach(() => i18n.changeLanguage("hu"));
+  // Switching back re-renders the screen still on show
+  afterEach(async () => {
+    await act(async () => {
+      await i18n.changeLanguage("en");
+    });
+  });
+
+  it("shows today, the trend and the header in Hungarian", () => {
+    const { getByText, getByLabelText } = renderWithTheme(
+      <>
+        <StatisticsHeader lastUpdated={null} providerName="Apple Health" />
+        <TodayCard steps={5000} goal={10000} trend={12} />
+      </>,
+    );
+
+    expect(getByText("Statisztika")).toBeTruthy();
+    expect(getByText("Aktivitásod forrása: Apple Health")).toBeTruthy();
+    expect(getByText("Ma")).toBeTruthy();
+    expect(getByText("+12% a tegnaphoz képest")).toBeTruthy();
+    expect(getByText("A napi cél 50%-a")).toBeTruthy();
+    expect(getByLabelText(/^Ma .+ lépés$/)).toBeTruthy();
+  });
+
+  it("formats dates in Hungarian", () => {
+    // A Thursday
+    const date = new Date(2025, 11, 25);
+
+    expect(getDayAbbreviation(date)).toBe("Cs");
+    expect(formatDate(date)).toMatch(/^dec\. 25\./);
   });
 });

@@ -64,6 +64,13 @@ WalkIt is a React Native walking planner application that generates walking rout
 - `hooks/useWalkTracking.ts` tracks position, path (one segment per stretch between pauses), distance and time; paused time and movement don't count
 - With background location permission it records with the screen locked through the task in `services/walkLocationTask.ts` (defined at start-up in `app/_layout.tsx`); otherwise, and in Expo Go, it falls back to foreground tracking
 
+**Translations (English / Hungarian)**:
+- `i18n/index.ts` sets up i18next (`react-i18next`); the language is the phone's (`expo-localization`) unless chosen in Settings (`context/LanguagePreferenceProvider.tsx`, stored in AsyncStorage)
+- Texts live in `i18n/locales/{en,hu}/<namespace>.ts` (common, auth, settings, planner, walk, statistics, history, social). Keys are typed: an unknown key or a Hungarian file missing a key is a tsc error, and `i18n/__test__/i18n.test.ts` checks the `{{placeholders}}` match
+- Components use `useTranslation("<ns>")`; non-React code calls `i18n.t("<ns>:key")` when it runs (not at module load). Add every new user-visible text in both languages
+- Jest always runs in English (`jest.setup.i18n.ts`); Hungarian tests switch with `i18n.changeLanguage("hu")` and switch back inside `act()`
+- Server error messages are shown as the backend sends them (English)
+
 **Maps & Location**:
 - `react-native-maps` for map display
 - `expo-location` for location services

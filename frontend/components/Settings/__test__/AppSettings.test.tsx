@@ -2,6 +2,7 @@ import React from 'react';
 import { fireEvent } from '@testing-library/react-native';
 import { renderWithTheme } from '@/components/Statistics/__test__/renderWithTheme';
 import { ThemePreferenceContext } from '@/context/ThemePreferenceProvider';
+import { LanguagePreferenceContext } from '@/context/LanguagePreferenceProvider';
 import AppSettings from '../AppSettings';
 
 describe('AppSettings', () => {
@@ -19,5 +20,19 @@ describe('AppSettings', () => {
     fireEvent.press(getByRole('button', { name: 'Dark' }));
 
     expect(setPreference).toHaveBeenCalledWith('dark');
+  });
+
+  it('lets me choose the language, with each language named in itself', () => {
+    const setPreference = jest.fn();
+    const { getByRole } = renderWithTheme(
+      <LanguagePreferenceContext.Provider value={{ preference: 'system', setPreference }}>
+        <AppSettings />
+      </LanguagePreferenceContext.Provider>,
+    );
+
+    expect(getByRole('button', { name: 'Phone language' }).props.accessibilityState).toMatchObject({ checked: true });
+    fireEvent.press(getByRole('button', { name: 'Magyar' }));
+
+    expect(setPreference).toHaveBeenCalledWith('hu');
   });
 });

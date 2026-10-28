@@ -1,6 +1,7 @@
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import type { Coordinates } from '@/services/routeService';
+import i18n from '@/i18n';
 
 /**
  * Background location for an active walk. The OS delivers locations to a
@@ -34,10 +35,13 @@ export const WALK_LOCATION_OPTIONS: Location.LocationTaskOptions = {
   activityType: Location.ActivityType.Fitness,
   pausesUpdatesAutomatically: false,
   showsBackgroundLocationIndicator: true,
-  // Android: a notification while tracking, required for background location
-  foregroundService: {
-    notificationTitle: 'Tracking your walk',
-    notificationBody: 'WalkIt records your route while the screen is off.',
+  // Android: a notification while tracking, required for background location.
+  // A getter, so it is in the language the app has when a walk starts
+  get foregroundService() {
+    return {
+      notificationTitle: i18n.t('walk:notification.title'),
+      notificationBody: i18n.t('walk:notification.body'),
+    };
   },
 };
 
@@ -45,7 +49,8 @@ export const WALK_LOCATION_OPTIONS: Location.LocationTaskOptions = {
 export const startWalkLocationUpdates = async (listener: Listener): Promise<() => Promise<void>> => {
   listeners.add(listener);
   try {
-    await Location.startLocationUpdatesAsync(WALK_LOCATION_TASK, WALK_LOCATION_OPTIONS);
+    // Spread, so the notification texts are read now (a plain object for the native side)
+    await Location.startLocationUpdatesAsync(WALK_LOCATION_TASK, { ...WALK_LOCATION_OPTIONS });
   } catch (error) {
     listeners.delete(listener);
     throw error;

@@ -1,4 +1,8 @@
+import i18n from "@/i18n";
+
 /** Same minimum as the backend (backend/src/utils/validation.js) */
 export const MIN_PASSWORD_LENGTH = 8;
 
-export const PASSWORD_TOO_SHORT_MESSAGE = `Password must be at least ${MIN_PASSWORD_LENGTH} characters long`;
+/** In the app's current language, so it is built when shown */
+export const passwordTooShortMessage = (): string =>
+  i18n.t("auth:password.tooShort", { min: MIN_PASSWORD_LENGTH });

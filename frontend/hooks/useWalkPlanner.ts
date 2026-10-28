@@ -11,6 +11,7 @@ import type {
 } from '@/services/GooglePlacesService';
 import { apiErrorMessage } from '@/utils/apiError';
 import { useSnackbar } from '@/context/SnackbarProvider';
+import i18n from '@/i18n';
 
 type RouteType = 'circular' | 'point-to-point';
 type MapSelectionMode = 'none' | 'start' | 'destination';
@@ -58,10 +59,7 @@ export const useWalkPlanner = () => {
         const { status } = await Location.requestForegroundPermissionsAsync();
 
         if (status !== 'granted') {
-          showMessage(
-            'Location permission is needed to use your position. You can still pick a start point on the map.',
-            { type: 'error' }
-          );
+          showMessage(i18n.t('planner:messages.locationPermission'), { type: 'error' });
           setLoading(false);
           return;
         }
@@ -83,7 +81,7 @@ export const useWalkPlanner = () => {
         } catch {
           setStartLocation({
             coordinates: coords,
-            name: 'Current Location',
+            name: i18n.t('planner:places.current'),
             address: `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`,
           });
         }
@@ -94,7 +92,7 @@ export const useWalkPlanner = () => {
           longitudeDelta: 0.05,
         });
       } catch {
-        showMessage('Could not get your current location', { type: 'error' });
+        showMessage(i18n.t('planner:messages.locationFailed'), { type: 'error' });
       } finally {
         setLoading(false);
       }
@@ -122,7 +120,7 @@ export const useWalkPlanner = () => {
     } catch {
       setStartLocation({
         coordinates: currentLocation,
-        name: 'Current Location',
+        name: i18n.t('planner:places.current'),
         address: `${currentLocation.latitude.toFixed(4)}, ${currentLocation.longitude.toFixed(4)}`,
       });
     }
@@ -148,15 +146,23 @@ export const useWalkPlanner = () => {
 
       if (mapSelectionMode === 'start') {
         setStartLocation(locationWithAddress);
-        showMessage(`Start set: ${locationWithAddress.name || 'the selected point'}`);
+        showMessage(
+          locationWithAddress.name
+            ? i18n.t('planner:messages.startSet', { name: locationWithAddress.name })
+            : i18n.t('planner:messages.startSetUnnamed')
+        );
       } else if (mapSelectionMode === 'destination') {
         setDestinationLocation(locationWithAddress);
-        showMessage(`Destination set: ${locationWithAddress.name || 'the selected point'}`);
+        showMessage(
+          locationWithAddress.name
+            ? i18n.t('planner:messages.destinationSet', { name: locationWithAddress.name })
+            : i18n.t('planner:messages.destinationSetUnnamed')
+        );
       }
     } catch {
       const fallbackLocation: LocationType = {
         coordinates: coordinate,
-        name: 'Selected Location',
+        name: i18n.t('planner:places.selected'),
         address: `${coordinate.latitude.toFixed(4)}, ${coordinate.longitude.toFixed(4)}`,
       };
 
@@ -198,19 +204,19 @@ export const useWalkPlanner = () => {
         setDestinationLocation(location);
       }
     } catch {
-      showMessage('Could not load place details', { type: 'error' });
+      showMessage(i18n.t('planner:messages.placeDetailsFailed'), { type: 'error' });
     }
   };
 
 // Generate route function
   const generateRoute = async (): Promise<void> => {
     if (!startLocation) {
-      showMessage('Please select a start location', { type: 'error' });
+      showMessage(i18n.t('planner:messages.selectStart'), { type: 'error' });
       return;
     }
 
     if (routeType === 'point-to-point' && !destinationLocation) {
-      showMessage('Please select a destination for a point-to-point route', { type: 'error' });
+      showMessage(i18n.t('planner:messages.selectDestination'), { type: 'error' });
       return;
     }
 
@@ -239,7 +245,7 @@ export const useWalkPlanner = () => {
       setGeneratedRoute(route);
     } catch (error) {
       // The server explains what went wrong (e.g. the routing service is busy)
-      const errorMessage = apiErrorMessage(error, 'Failed to generate route');
+      const errorMessage = apiErrorMessage(error, i18n.t('planner:messages.generateFailed'));
       setRouteError(errorMessage);
       showMessage(errorMessage, { type: 'error' });
     } finally {

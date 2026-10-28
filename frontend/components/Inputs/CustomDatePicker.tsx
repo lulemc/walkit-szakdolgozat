@@ -4,6 +4,7 @@ import { Button } from "react-native-paper";
 import { CustomText } from "../CustomText";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { colors } from "@/theme/colors";
+import i18n from "@/i18n";
 
 interface CustomDatePickerProps {
   value: Date;
@@ -31,8 +32,8 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   const [open, setOpen] = useState(false);
   const formatted =
     mode === "date"
-      ? value.toLocaleDateString()
-      : value.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      ? value.toLocaleDateString(i18n.language)
+      : value.toLocaleTimeString(i18n.language, { hour: "2-digit", minute: "2-digit" });
 
   const handleValueChange = (_event: unknown, date: Date) => {
     if (isAndroid) setOpen(false);

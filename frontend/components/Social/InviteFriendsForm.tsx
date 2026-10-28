@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useTheme } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { CustomText, PrimaryButton } from "@/components";
 import type { GroupWalkDetail } from "@/types/social";
 import { FriendMultiSelect } from "./FriendMultiSelect";
@@ -21,6 +22,7 @@ export const InviteFriendsForm: React.FC<InviteFriendsFormProps> = ({
   onCancel,
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation(["social", "common"]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const alreadyIn = walk.participants
@@ -29,7 +31,7 @@ export const InviteFriendsForm: React.FC<InviteFriendsFormProps> = ({
 
   const handleInvite = async () => {
     if (selectedIds.length === 0) {
-      setError("Pick at least one friend.");
+      setError(t("invite.pickOne"));
       return;
     }
     setError(null);
@@ -38,7 +40,7 @@ export const InviteFriendsForm: React.FC<InviteFriendsFormProps> = ({
 
   return (
     <View style={styles.container}>
-      <CustomText variant="headlineSmall">Invite friends</CustomText>
+      <CustomText variant="headlineSmall">{t("invite.title")}</CustomText>
       <FriendMultiSelect selectedIds={selectedIds} onChange={setSelectedIds} excludeIds={alreadyIn} />
       {error ? (
         <CustomText variant="bodySmall" style={{ color: theme.colors.error }}>
@@ -46,10 +48,10 @@ export const InviteFriendsForm: React.FC<InviteFriendsFormProps> = ({
         </CustomText>
       ) : null}
       <PrimaryButton icon="send" onPress={handleInvite} loading={busy} disabled={busy}>
-        Send invitations
+        {t("invite.send")}
       </PrimaryButton>
       <PrimaryButton mode="outlined" onPress={onCancel} disabled={busy}>
-        Cancel
+        {t("common:actions.cancel")}
       </PrimaryButton>
     </View>
   );

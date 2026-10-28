@@ -5,11 +5,13 @@ import ProfileSettings from "@/components/Settings/ProfileSettings";
 import { useAuth } from "@/context/AuthProvider";
 import { User } from "@/types/User";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Divider } from "react-native-paper";
 import { userStorage } from "@/utils/userStorage";
 
 export default function Settings() {
   const { logout } = useAuth();
+  const { t } = useTranslation("settings");
   const [user, setUser] = useState<User | null>(null);
 
   const onLogout = async () => {
@@ -41,7 +43,7 @@ export default function Settings() {
       )}
       <Divider />
       <AppSettings />
-      <PrimaryButton onPress={() => onLogout()}>Log out</PrimaryButton>
+      <PrimaryButton onPress={() => onLogout()}>{t("logout")}</PrimaryButton>
     </ScreenContainer>
   );
 }

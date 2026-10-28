@@ -1,6 +1,7 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
 import { Card, Icon, ProgressBar, useTheme } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { CustomText } from "../CustomText";
 import { TrendChip } from "./TrendChip";
 import { colors } from "@/theme/colors";
@@ -14,6 +15,7 @@ interface TodayCardProps {
 
 export const TodayCard: React.FC<TodayCardProps> = ({ steps, goal, trend }) => {
   const theme = useTheme();
+  const { t } = useTranslation("statistics");
   const percent = calculateProgress(steps, goal);
   const goalReached = steps >= goal;
 
@@ -23,7 +25,7 @@ export const TodayCard: React.FC<TodayCardProps> = ({ steps, goal, trend }) => {
         <View style={styles.headerRow}>
           <View style={styles.labelRow}>
             <Icon source="footsteps" size={20} color={theme.colors.primary} />
-            <CustomText variant="titleMedium">Today</CustomText>
+            <CustomText variant="titleMedium">{t("today.title")}</CustomText>
           </View>
           <TrendChip value={trend} />
         </View>
@@ -32,12 +34,12 @@ export const TodayCard: React.FC<TodayCardProps> = ({ steps, goal, trend }) => {
           <CustomText
             variant="displaySmall"
             style={styles.steps}
-            accessibilityLabel={`${formatSteps(steps)} steps today`}
+            accessibilityLabel={t("today.stepsLabel", { steps: formatSteps(steps) })}
           >
             {formatSteps(steps)}
           </CustomText>
           <CustomText variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-            steps · goal {formatSteps(goal)}
+            {t("today.stepsGoal", { goal: formatSteps(goal) })}
           </CustomText>
         </View>
 
@@ -47,7 +49,9 @@ export const TodayCard: React.FC<TodayCardProps> = ({ steps, goal, trend }) => {
           style={[styles.progress, { backgroundColor: theme.colors.surfaceVariant }]}
         />
         <CustomText variant="labelLarge">
-          {goalReached ? "Daily goal reached 🎉" : `${Math.round(percent)}% of your daily goal`}
+          {goalReached
+            ? t("today.goalReached")
+            : t("today.goalPercent", { percent: Math.round(percent) })}
         </CustomText>
       </Card.Content>
     </Card>

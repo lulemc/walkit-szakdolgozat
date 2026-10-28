@@ -1,6 +1,7 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
 import { Card, useTheme } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { CustomText } from "@/components/CustomText";
 import {
   formatElapsed,
@@ -24,6 +25,7 @@ export const WalkStatsPanel: React.FC<WalkStatsPanelProps> = ({
   notice,
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation("walk");
   const muted = { color: theme.colors.onSurfaceVariant };
   const value = { color: theme.colors.onSurface };
 
@@ -33,9 +35,12 @@ export const WalkStatsPanel: React.FC<WalkStatsPanelProps> = ({
       {/* One sentence for screen readers instead of nine separate numbers and labels */}
       <View
         accessible
-        accessibilityLabel={`Walked ${formatWalkDistance(distanceM)} of ${formatWalkDistance(
-          plannedDistanceM,
-        )} in ${formatElapsed(elapsedSec)}, pace ${formatPace(elapsedSec, distanceM)} minutes per kilometre`}
+        accessibilityLabel={t("stats.summaryLabel", {
+          distance: formatWalkDistance(distanceM),
+          planned: formatWalkDistance(plannedDistanceM),
+          time: formatElapsed(elapsedSec),
+          pace: formatPace(elapsedSec, distanceM),
+        })}
       >
         {notice ? (
           <View style={[styles.notice, { backgroundColor: theme.colors.secondaryContainer }]}>
@@ -46,7 +51,7 @@ export const WalkStatsPanel: React.FC<WalkStatsPanelProps> = ({
         <View style={styles.grid}>
           <View style={styles.item}>
             <CustomText variant="bodySmall" style={[styles.label, muted]}>
-              Distance
+              {t("stats.distance")}
             </CustomText>
             <CustomText variant="titleLarge" style={[styles.value, value]}>
               {formatWalkDistance(distanceM)}
@@ -58,7 +63,7 @@ export const WalkStatsPanel: React.FC<WalkStatsPanelProps> = ({
 
           <View style={styles.item}>
             <CustomText variant="bodySmall" style={[styles.label, muted]}>
-              Time
+              {t("stats.time")}
             </CustomText>
             <CustomText variant="titleLarge" style={[styles.value, value]}>
               {formatElapsed(elapsedSec)}
@@ -67,13 +72,13 @@ export const WalkStatsPanel: React.FC<WalkStatsPanelProps> = ({
 
           <View style={styles.item}>
             <CustomText variant="bodySmall" style={[styles.label, muted]}>
-              Pace
+              {t("stats.pace")}
             </CustomText>
             <CustomText variant="titleLarge" style={[styles.value, value]}>
               {formatPace(elapsedSec, distanceM)}
             </CustomText>
             <CustomText variant="bodySmall" style={[styles.subtext, muted]}>
-              min/km
+              {t("stats.paceUnit")}
             </CustomText>
           </View>
         </View>

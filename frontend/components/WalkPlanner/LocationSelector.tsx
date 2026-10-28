@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { usePlaceSearch } from "@/hooks/usePlaceSearch";
 import { View, StyleSheet } from "react-native";
 import { CustomText } from "@/components/CustomText";
@@ -42,6 +43,7 @@ export default function LocationSelector({
   onSearchLocation,
   onSelectPlace,
 }: LocationSelectorProps) {
+  const { t } = useTranslation("planner");
   const [isSearchingStart, setIsSearchingStart] = useState(false);
   const [isSearchingDestination, setIsSearchingDestination] = useState(false);
   // Each box waits until typing pauses and ignores out-of-date answers
@@ -76,7 +78,7 @@ export default function LocationSelector({
     <View style={styles.container}>
       <View style={styles.locationGroup}>
         <CustomText variant="titleSmall" style={styles.label}>
-          📍 Start Location
+          {t("location.start")}
         </CustomText>
 
         {!isSearchingStart ? (
@@ -110,7 +112,7 @@ export default function LocationSelector({
       {routeType === "point-to-point" && (
         <View style={styles.locationGroup}>
           <CustomText variant="titleSmall" style={styles.label}>
-            🎯 Destination
+            {t("location.destination")}
           </CustomText>
 
           {!isSearchingDestination ? (

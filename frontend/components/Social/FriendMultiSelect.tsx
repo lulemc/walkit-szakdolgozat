@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { Checkbox, useTheme } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { CustomText, PrimaryButton } from "@/components";
 import { friendService } from "@/services/friendService";
 import type { Friend } from "@/types/social";
@@ -21,6 +22,7 @@ export const FriendMultiSelect: React.FC<FriendMultiSelectProps> = ({
   excludeIds = [],
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation(["social", "common"]);
   const [friends, setFriends] = useState<Friend[]>([]);
   const [status, setStatus] = useState<LoadStatus>("loading");
 
@@ -55,15 +57,15 @@ export const FriendMultiSelect: React.FC<FriendMultiSelectProps> = ({
     );
 
   if (status === "loading") {
-    return <ActivityIndicator color={theme.colors.primary} accessibilityLabel="Loading friends" />;
+    return <ActivityIndicator color={theme.colors.primary} accessibilityLabel={t("friends.loading")} />;
   }
 
   if (status === "error") {
     return (
       <View style={styles.center}>
-        <CustomText variant="titleMedium">{"Couldn't load your friends"}</CustomText>
+        <CustomText variant="titleMedium">{t("friends.loadError")}</CustomText>
         <PrimaryButton mode="outlined" onPress={retry}>
-          Try again
+          {t("common:actions.retry")}
         </PrimaryButton>
       </View>
     );
@@ -74,8 +76,8 @@ export const FriendMultiSelect: React.FC<FriendMultiSelectProps> = ({
     return (
       <CustomText variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
         {friends.length === 0
-          ? "Add friends in the Friends section to invite them."
-          : "All your friends are already invited."}
+          ? t("friendPicker.noFriends")
+          : t("friendPicker.allInvited")}
       </CustomText>
     );
   }
@@ -88,7 +90,7 @@ export const FriendMultiSelect: React.FC<FriendMultiSelectProps> = ({
           <Checkbox.Item
             key={friendshipId}
             label={user.name}
-            accessibilityLabel={`Invite ${user.name}`}
+            accessibilityLabel={t("friendPicker.inviteLabel", { name: user.name })}
             status={selectedIds.includes(userId) ? "checked" : "unchecked"}
             onPress={() => toggle(userId)}
             position="leading"

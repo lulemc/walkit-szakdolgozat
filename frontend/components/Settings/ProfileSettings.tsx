@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet, ActivityIndicator } from "react-native";
 import { CustomText } from "../CustomText";
 import { CustomTextInput } from "../Inputs/CustomTextInput";
@@ -13,6 +14,7 @@ import ConfirmationModal from "../ConformationModal";
 import ChangePasswordModal from "./ChangePasswordModal";
 import { apiErrorMessage } from "@/utils/apiError";
 import { useSnackbar } from "@/context/SnackbarProvider";
+import type SettingsTexts from "@/i18n/locales/en/settings";
 
 interface ProfileSettingsProps extends User {
   onProfileUpdate?: (updatedUser: User) => void;
@@ -23,6 +25,16 @@ export default function ProfileSettings({
   ...user
 }: ProfileSettingsProps) {
   const { showMessage } = useSnackbar();
+  const { t } = useTranslation(["settings", "common"]);
+  // The option lists keep the stored values; their labels follow the app language
+  const translatedSexOptions = sexOptions.map((option) => ({
+    ...option,
+    label: t(`sexOptions.${option.value as keyof (typeof SettingsTexts)["sexOptions"]}`),
+  }));
+  const translatedActivityLevels = activityLevelOptions.map((option) => ({
+    ...option,
+    label: t(`activityLevels.${option.value as keyof (typeof SettingsTexts)["activityLevels"]}`),
+  }));
   const [userName, setUserName] = useState(user.name || "");
   const [dateOfBirth, setDateOfBirth] = useState<Date>(
     user.dateOfBirth ? new Date(user.dateOfBirth) : new Date(),
@@ -60,9 +72,9 @@ export default function ProfileSettings({
       // So the settings screen shows the new profile without reloading
       onProfileUpdate?.(updatedUser);
 
-      showMessage("Profile saved");
+      showMessage(t("profile.saved"));
     } catch (error) {
-      showMessage(apiErrorMessage(error, "Failed to update profile"), { type: "error" });
+      showMessage(apiErrorMessage(error, t("profile.saveFailed")), { type: "error" });
     } finally {
       setIsLoading(false);
     }
@@ -79,24 +91,21 @@ export default function ProfileSettings({
 
   return (
     <View style={styles.container}>
-      <CustomText variant="titleMedium">Profile Settings</CustomText>
-      <CustomText variant="bodySmall">
-        Here you can update your profile settings such as email, personal infos,
-        and password.
-      </CustomText>
+      <CustomText variant="titleMedium">{t("profile.title")}</CustomText>
+      <CustomText variant="bodySmall">{t("profile.description")}</CustomText>
 
       <View style={styles.inputContainer}>
         <CustomTextInput
           value={userName}
           onChangeText={setUserName}
-          label="Username"
+          label={t("profile.username")}
           editable={!isLoading}
         />
       </View>
 
       <View style={styles.inputContainer}>
         <CustomDatePicker
-          label="Date of birth"
+          label={t("profile.dateOfBirth")}
           value={dateOfBirth}
           onChange={setDateOfBirth}
           disabled={isLoading}
@@ -105,10 +114,10 @@ export default function ProfileSettings({
 
       <View style={styles.inputContainer}>
         <CustomRadioButton
-          options={sexOptions}
+          options={translatedSexOptions}
           value={sex}
           onValueChange={setSex}
-          label="Sex"
+          label={t("profile.sex")}
           disabled={isLoading}
         />
       </View>
@@ -118,7 +127,7 @@ export default function ProfileSettings({
           keyboardType="numeric"
           value={height}
           onChangeText={setHeight}
-          label="Height (cm)"
+          label={t("profile.height")}
           editable={!isLoading}
         />
       </View>
@@ -128,17 +137,17 @@ export default function ProfileSettings({
           keyboardType="numeric"
           value={weight}
           onChangeText={setWeight}
-          label="Weight (kg)"
+          label={t("profile.weight")}
           editable={!isLoading}
         />
       </View>
 
       <View style={styles.inputContainer}>
         <CustomRadioButton
-          options={activityLevelOptions}
+          options={translatedActivityLevels}
           value={activityLevel}
           onValueChange={setActivityLevel}
-          label="Activity Level"
+          label={t("profile.activityLevel")}
           disabled={isLoading}
         />
       </View>
@@ -149,22 +158,22 @@ export default function ProfileSettings({
           onPress={handleSaveProfile}
           disabled={isLoading}
         >
-          {isLoading ? <ActivityIndicator color="#fff" /> : "Save Profile"}
+          {isLoading ? <ActivityIndicator color="#fff" /> : t("profile.save")}
         </PrimaryButton>
       </View>
 
       <PrimaryButton mode="text" onPress={handlePasswordChangeClick}>
-        Change Password
+        {t("profile.changePassword")}
       </PrimaryButton>
 
       <ConfirmationModal
         visible={showPasswordConfirmation}
         onClose={() => setShowPasswordConfirmation(false)}
         onConfirm={handlePasswordConfirm}
-        title="Change Password"
-        message="Are you sure you want to change your password?"
-        confirmText="Yes, change password"
-        cancelText="Cancel"
+        title={t("profile.changePassword")}
+        message={t("profile.confirmChangeMessage")}
+        confirmText={t("profile.confirmChange")}
+        cancelText={t("common:actions.cancel")}
       />
 
       <ChangePasswordModal

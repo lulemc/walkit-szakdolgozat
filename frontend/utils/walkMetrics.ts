@@ -1,4 +1,5 @@
 import type { Coordinates } from '@/services/routeService';
+import i18n from '@/i18n';
 
 const EARTH_RADIUS_M = 6371e3;
 const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
@@ -30,7 +31,9 @@ export const formatElapsed = (seconds: number): string => {
   const hrs = Math.floor(seconds / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
   const secs = Math.floor(seconds % 60);
-  return hrs > 0 ? `${hrs}h ${mins}m ${secs}s` : `${mins}m ${secs}s`;
+  return hrs > 0
+    ? i18n.t('walk:elapsed.hoursMinutesSeconds', { hours: hrs, minutes: mins, seconds: secs })
+    : i18n.t('walk:elapsed.minutesSeconds', { minutes: mins, seconds: secs });
 };
 
 /** e.g. "850m" or "1.23km" */

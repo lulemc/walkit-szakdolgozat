@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { ActivityIndicator, RefreshControl, StyleSheet, View } from "react-native";
 import { Icon, useTheme } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { CustomText, PrimaryButton, ScreenContainer } from "@/components";
 import ConfirmationModal from "@/components/ConformationModal";
 import { useAuth } from "@/context/AuthProvider";
@@ -9,6 +10,7 @@ import type { Route } from "@/services/routeService";
 import type { GroupWalkDetail, GroupWalkParticipant, UpdateGroupWalkRequest } from "@/types/social";
 import { canStartWalk, groupWalkToRoute } from "@/utils/groupWalkRoute";
 import { formatWalkTime, isWalkOpen } from "@/utils/groupWalkTime";
+import i18n from "@/i18n";
 import { CommentsSection } from "./CommentsSection";
 import { EditGroupWalkForm } from "./EditGroupWalkForm";
 import { GroupWalkMap } from "./GroupWalkMap";
@@ -32,8 +34,8 @@ interface GroupWalkDetailViewProps {
 
 /** Why I can't comment on this walk, or null when I can */
 const commentsClosedReason = (walk: GroupWalkDetail): string | null => {
-  if (walk.status === "cancelled") return "Comments are closed because the walk was cancelled.";
-  if (walk.myStatus === "declined") return "You declined this walk, so you can't comment.";
+  if (walk.status === "cancelled") return i18n.t("social:detail.commentsClosedCancelled");
+  if (walk.myStatus === "declined") return i18n.t("social:detail.commentsClosedDeclined");
   return null;
 };
 
@@ -49,6 +51,7 @@ export const GroupWalkDetailView: React.FC<GroupWalkDetailViewProps> = ({
   onStartWalk,
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation(["social", "common"]);
   const { user } = useAuth();
   const groupWalk = useGroupWalk(walkId);
   const { walk } = groupWalk;
@@ -57,7 +60,7 @@ export const GroupWalkDetailView: React.FC<GroupWalkDetailViewProps> = ({
 
   const backButton = (
     <PrimaryButton mode="text" icon="arrow-back" onPress={onBack} style={styles.back}>
-      Back
+      {t("common:actions.back")}
     </PrimaryButton>
   );
 
@@ -67,13 +70,13 @@ export const GroupWalkDetailView: React.FC<GroupWalkDetailViewProps> = ({
         {backButton}
         {groupWalk.status === "error" ? (
           <View style={styles.center}>
-            <CustomText variant="titleMedium">{"Couldn't load this walk"}</CustomText>
+            <CustomText variant="titleMedium">{t("detail.loadError")}</CustomText>
             <PrimaryButton mode="outlined" onPress={groupWalk.refresh}>
-              Try again
+              {t("common:actions.retry")}
             </PrimaryButton>
           </View>
         ) : (
-          <ActivityIndicator color={theme.colors.primary} accessibilityLabel="Loading group walk" />
+          <ActivityIndicator color={theme.colors.primary} accessibilityLabel={t("detail.loading")} />
         )}
       </ScreenContainer>
     );
@@ -139,9 +142,9 @@ export const GroupWalkDetailView: React.FC<GroupWalkDetailViewProps> = ({
   // On the day itself the walk can still be started, so it isn't called over yet
   const banner =
     walk.status === "cancelled"
-      ? "This walk was cancelled."
+      ? t("detail.cancelledBanner")
       : !open && !canStart
-        ? "This walk has already taken place."
+        ? t("detail.pastBanner")
         : null;
   const mutedText = { color: theme.colors.onSurfaceVariant };
 
@@ -178,7 +181,7 @@ export const GroupWalkDetailView: React.FC<GroupWalkDetailViewProps> = ({
         <CustomText variant="headlineSmall">{name}</CustomText>
         <CustomText variant="titleMedium">{formatWalkTime(walk.scheduledAt)}</CustomText>
         <CustomText variant="bodyMedium" style={mutedText}>
-          {walk.isOrganiser ? "You're organising" : `Organised by ${walk.organiser.name}`}
+          {walk.isOrganiser ? t("walks.organising") : t("walks.organisedBy", { name: walk.organiser.name })}
         </CustomText>
       </View>
 
@@ -194,7 +197,7 @@ export const GroupWalkDetailView: React.FC<GroupWalkDetailViewProps> = ({
 
       {canStart ? (
         <PrimaryButton icon="walk" onPress={() => onStartWalk(groupWalkToRoute(walk))}>
-          Start walk
+          {t("detail.startWalk")}
         </PrimaryButton>
       ) : null}
 
@@ -211,10 +214,10 @@ export const GroupWalkDetailView: React.FC<GroupWalkDetailViewProps> = ({
       {canManage ? (
         <View style={styles.organiserActions}>
           <PrimaryButton mode="outlined" icon="create-outline" onPress={() => setMode("edit")} style={styles.flex}>
-            Edit
+            {t("common:actions.edit")}
           </PrimaryButton>
           <PrimaryButton mode="outlined" icon="person-add-outline" onPress={() => setMode("invite")} style={styles.flex}>
-            Invite friends
+            {t("detail.inviteFriends")}
           </PrimaryButton>
         </View>
       ) : null}
@@ -222,7 +225,7 @@ export const GroupWalkDetailView: React.FC<GroupWalkDetailViewProps> = ({
       {actionError}
 
       <View>
-        <CustomText variant="titleMedium">Who&apos;s coming</CustomText>
+        <CustomText variant="titleMedium">{t("detail.whosComing")}</CustomText>
         <ParticipantList
           participants={walk.participants}
           onRemove={
@@ -246,7 +249,7 @@ export const GroupWalkDetailView: React.FC<GroupWalkDetailViewProps> = ({
           onPress={() => setConfirmation({ kind: "cancel" })}
           disabled={groupWalk.busy}
         >
-          Cancel walk
+          {t("detail.cancelWalk")}
         </PrimaryButton>
       ) : null}
 
@@ -254,28 +257,30 @@ export const GroupWalkDetailView: React.FC<GroupWalkDetailViewProps> = ({
         visible={confirmation?.kind === "leave"}
         onClose={() => setConfirmation(null)}
         onConfirm={confirm}
-        title="Leave walk"
-        message={`Leave ${name}? ${walk.organiser.name} will see that you're not coming.`}
-        confirmText="Yes, leave"
-        cancelText="Stay"
+        title={t("detail.leaveTitle")}
+        message={t("detail.leaveMessage", { name, organiser: walk.organiser.name })}
+        confirmText={t("detail.leaveConfirm")}
+        cancelText={t("detail.stay")}
       />
       <ConfirmationModal
         visible={confirmation?.kind === "cancel"}
         onClose={() => setConfirmation(null)}
         onConfirm={confirm}
-        title="Cancel walk"
-        message={`Cancel ${name} for everyone? This can't be undone.`}
-        confirmText="Yes, cancel it"
-        cancelText="Keep walk"
+        title={t("detail.cancelWalk")}
+        message={t("detail.cancelMessage", { name })}
+        confirmText={t("detail.cancelConfirm")}
+        cancelText={t("detail.keepWalk")}
       />
       <ConfirmationModal
         visible={confirmation?.kind === "remove"}
         onClose={() => setConfirmation(null)}
         onConfirm={confirm}
-        title="Remove participant"
-        message={`Remove ${confirmation?.kind === "remove" ? confirmation.participant.user.name : ""} from the walk?`}
-        confirmText="Remove"
-        cancelText="Keep"
+        title={t("detail.removeTitle")}
+        message={t("detail.removeMessage", {
+          name: confirmation?.kind === "remove" ? confirmation.participant.user.name : "",
+        })}
+        confirmText={t("actions.remove")}
+        cancelText={t("actions.keep")}
       />
     </ScreenContainer>
   );

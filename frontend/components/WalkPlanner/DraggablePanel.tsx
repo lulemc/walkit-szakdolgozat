@@ -1,6 +1,7 @@
 import React from "react";
 import { View, StyleSheet, ScrollView } from "react-native";
 import { useTheme } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { GestureDetector } from "react-native-gesture-handler";
 import Animated from "react-native-reanimated";
 import { CustomText } from "@/components/CustomText";
@@ -24,6 +25,7 @@ export default function DraggablePanel({
   scrollEnabled,
 }: DraggablePanelProps) {
   const theme = useTheme();
+  const { t } = useTranslation("planner");
 
   return (
     <Animated.View
@@ -37,7 +39,7 @@ export default function DraggablePanel({
         <View style={styles.dragHandleContainer}>
           <View style={styles.dragHandle} />
           <CustomText variant="bodySmall" style={styles.dragHint}>
-            Drag to adjust
+            {t("dragHint")}
           </CustomText>
         </View>
       </GestureDetector>

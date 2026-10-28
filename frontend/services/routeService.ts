@@ -1,5 +1,6 @@
 import api from './api';
 import type { ApiResponse } from '@/types/api';
+import i18n from '@/i18n';
 
 export interface Coordinates {
   latitude: number;
@@ -153,11 +154,11 @@ class RouteService {
    */
   formatDuration(minutes: number): string {
     if (minutes < 60) {
-      return `${Math.round(minutes)} min`;
+      return i18n.t('planner:units.minutes', { minutes: Math.round(minutes) });
     }
     const hours = Math.floor(minutes / 60);
     const mins = Math.round(minutes % 60);
-    return `${hours}h ${mins}m`;
+    return i18n.t('planner:units.hoursMinutesShort', { hours, minutes: mins });
   }
 
   /**
@@ -165,7 +166,7 @@ class RouteService {
    */
   formatElevation(meters: number | null): string {
     if (meters === null) {
-      return 'N/A';
+      return i18n.t('planner:units.notAvailable');
     }
     return `${Math.round(meters)}m`;
   }
@@ -174,10 +175,10 @@ class RouteService {
    * Calculate pace (min/km)
    */
   calculatePace(distanceMeters: number, durationMinutes: number): string {
-    if (distanceMeters === 0) return 'N/A';
+    if (distanceMeters === 0) return i18n.t('planner:units.notAvailable');
     const distanceKm = distanceMeters / 1000;
     const pace = durationMinutes / distanceKm;
-    return `${pace.toFixed(1)} min/km`;
+    return i18n.t('planner:units.pace', { pace: pace.toFixed(1) });
   }
 }
 

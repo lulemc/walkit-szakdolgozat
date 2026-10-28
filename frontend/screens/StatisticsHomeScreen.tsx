@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { BackHandler, StyleSheet, View } from "react-native";
 import { SegmentedButtons, useTheme } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { SafeAreaInsetsContext, useSafeAreaInsets } from "react-native-safe-area-context";
 import { WalkDetailView } from "@/components/Walks/WalkDetailView";
 import { WalkHistorySection } from "@/components/Walks/WalkHistorySection";
@@ -9,9 +10,9 @@ import StatisticsScreen from "./StatisticsScreen";
 type StatisticsTab = "activity" | "walks";
 
 const TAB_BUTTONS = [
-  { value: "activity", label: "Activity", icon: "pulse" },
-  { value: "walks", label: "Walks", icon: "walk" },
-];
+  { value: "activity", labelKey: "tabs.activity", icon: "pulse" },
+  { value: "walks", labelKey: "tabs.walks", icon: "walk" },
+] as const;
 
 /**
  * The Statistics tab: health activity, and the walks saved in WalkIt (with
@@ -20,6 +21,7 @@ const TAB_BUTTONS = [
  */
 export default function StatisticsHomeScreen() {
   const theme = useTheme();
+  const { t } = useTranslation("statistics");
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<StatisticsTab>("activity");
   const [openWalkId, setOpenWalkId] = useState<string | null>(null);
@@ -49,7 +51,7 @@ export default function StatisticsHomeScreen() {
         <SegmentedButtons
           value={tab}
           onValueChange={(value) => setTab(value as StatisticsTab)}
-          buttons={TAB_BUTTONS}
+          buttons={TAB_BUTTONS.map(({ labelKey, ...button }) => ({ ...button, label: t(labelKey) }))}
         />
       </View>
       {/* The bar already keeps clear of the notch, so the views below don't need to */}

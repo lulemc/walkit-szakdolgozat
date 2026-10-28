@@ -1,6 +1,7 @@
 import React, { ReactNode } from "react";
 import { ActivityIndicator, RefreshControl, StyleSheet, View } from "react-native";
 import { useTheme } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { CustomText, PrimaryButton, ScreenContainer } from "@/components";
 import { useAuth } from "@/context/AuthProvider";
 import { useGroupWalks } from "@/hooks/useGroupWalks";
@@ -21,6 +22,7 @@ export const GroupWalksSection: React.FC<GroupWalksSectionProps> = ({
   onNewWalk,
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation(["social", "common"]);
   const { user } = useAuth();
   const walks = useGroupWalks();
   const mutedText = { color: theme.colors.onSurfaceVariant };
@@ -53,18 +55,18 @@ export const GroupWalksSection: React.FC<GroupWalksSectionProps> = ({
       {header}
 
       <PrimaryButton icon="add" onPress={onNewWalk}>
-        New group walk
+        {t("walks.newWalk")}
       </PrimaryButton>
 
       {walks.status === "loading" ? (
-        <ActivityIndicator color={theme.colors.primary} accessibilityLabel="Loading group walks" />
+        <ActivityIndicator color={theme.colors.primary} accessibilityLabel={t("walks.loading")} />
       ) : null}
 
       {walks.status === "error" ? (
         <View style={styles.errorBox}>
-          <CustomText variant="titleMedium">{"Couldn't load your group walks"}</CustomText>
+          <CustomText variant="titleMedium">{t("walks.loadError")}</CustomText>
           <PrimaryButton mode="outlined" onPress={walks.refresh}>
-            Try again
+            {t("common:actions.retry")}
           </PrimaryButton>
         </View>
       ) : null}
@@ -73,19 +75,19 @@ export const GroupWalksSection: React.FC<GroupWalksSectionProps> = ({
         <>
           {walks.invitations.length > 0 ? (
             <View style={styles.list}>
-              <CustomText variant="titleMedium">Invitations</CustomText>
+              <CustomText variant="titleMedium">{t("walks.invitations")}</CustomText>
               {renderList(walks.invitations, "")}
             </View>
           ) : null}
 
           <View style={styles.list}>
-            <CustomText variant="titleMedium">Upcoming</CustomText>
-            {renderList(walks.upcoming, "No upcoming walks. Plan one or accept an invitation.")}
+            <CustomText variant="titleMedium">{t("walks.upcoming")}</CustomText>
+            {renderList(walks.upcoming, t("walks.noUpcoming"))}
           </View>
 
           <View style={styles.list}>
-            <CustomText variant="titleMedium">Past</CustomText>
-            {renderList(walks.past, "No past walks yet.")}
+            <CustomText variant="titleMedium">{t("walks.past")}</CustomText>
+            {renderList(walks.past, t("walks.noPast"))}
           </View>
         </>
       ) : null}

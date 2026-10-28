@@ -1,5 +1,6 @@
 import React from "react";
-import { fireEvent } from "@testing-library/react-native";
+import { act, fireEvent } from "@testing-library/react-native";
+import i18n from "@/i18n";
 import { renderWithTheme } from "./renderWithTheme";
 import { LoadingState } from "../LoadingState";
 import { EmptyState } from "../EmptyState";
@@ -79,5 +80,40 @@ describe("ErrorState", () => {
     expect(getByText(/while reading Apple Health/)).toBeTruthy();
     fireEvent.press(getByText("Try again"));
     expect(handlers.onRetry).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("States in Hungarian", () => {
+  beforeEach(() => i18n.changeLanguage("hu"));
+  // Switching back re-renders the screen still on show
+  afterEach(async () => {
+    await act(async () => {
+      await i18n.changeLanguage("en");
+    });
+  });
+
+  it("shows the empty state in Hungarian", () => {
+    const { getByText } = renderWithTheme(
+      <EmptyState providerName="Health Connect" onRefresh={jest.fn()} refreshing={false} />,
+    );
+
+    expect(getByText("Még nincs aktivitás")).toBeTruthy();
+    expect(getByText(/^Az elmúlt 30 napból .*\(forrás: Health Connect\)\.$/)).toBeTruthy();
+    expect(getByText("Frissítés")).toBeTruthy();
+  });
+
+  it("shows the access and error states in Hungarian", () => {
+    const denied = renderWithTheme(
+      <ErrorState variant="denied" providerName="Apple Health" {...actions()} />,
+    );
+    expect(denied.getByText("Hozzáférés kell az egészségadatokhoz")).toBeTruthy();
+    expect(denied.getByText("Beállítások megnyitása")).toBeTruthy();
+    denied.unmount();
+
+    const failed = renderWithTheme(
+      <ErrorState variant="error" providerName="Apple Health" {...actions()} />,
+    );
+    expect(failed.getByText("Nem sikerült betölteni a statisztikádat")).toBeTruthy();
+    expect(failed.getByText("Újra")).toBeTruthy();
   });
 });

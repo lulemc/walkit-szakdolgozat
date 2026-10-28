@@ -1,10 +1,11 @@
 import React from 'react';
 import { Alert } from 'react-native';
-import { fireEvent, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, waitFor } from '@testing-library/react-native';
 import { renderWithTheme } from '@/components/Statistics/__test__/renderWithTheme';
 import UserService from '@/services/userService';
 import { storage } from '@/utils/storage';
 import ChangePasswordModal from '../ChangePasswordModal';
+import i18n from '@/i18n';
 
 jest.mock('@/services/userService', () => ({ __esModule: true, default: { changePassword: jest.fn() } }));
 jest.mock('@/utils/storage', () => ({ storage: { setToken: jest.fn() } }));
@@ -95,5 +96,29 @@ describe('ChangePasswordModal', () => {
     expect(await screen.findByText('Current password is incorrect')).toBeTruthy();
     expect(storage.setToken).not.toHaveBeenCalled();
     expect(alert).not.toHaveBeenCalled();
+  });
+});
+
+describe('ChangePasswordModal in Hungarian', () => {
+  beforeEach(() => i18n.changeLanguage('hu'));
+  // Inside act: the change re-renders what is still on screen
+  afterEach(async () => {
+    await act(async () => {
+      await i18n.changeLanguage('en');
+    });
+  });
+
+  it('shows the fields, rules and validation in Hungarian', async () => {
+    const screen = renderModal();
+
+    expect(screen.getByText('• Legalább 8 karakter')).toBeTruthy();
+    fireEvent.changeText(screen.getByLabelText('Jelenlegi jelszó'), 'OldPass123');
+    fireEvent.changeText(screen.getByLabelText('Új jelszó'), 'short');
+    fireEvent.changeText(screen.getByLabelText('Új jelszó megerősítése'), 'other');
+    fireEvent.press(screen.getByRole('button', { name: 'Jelszó módosítása' }));
+
+    expect(await screen.findByText('A jelszónak legalább 8 karakterből kell állnia')).toBeTruthy();
+    expect(screen.getByText('A jelszavak nem egyeznek')).toBeTruthy();
+    expect(changePassword).not.toHaveBeenCalled();
   });
 });

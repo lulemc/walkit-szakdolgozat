@@ -1,5 +1,6 @@
 import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { Switch, useTheme } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { CustomText } from "@/components/CustomText";
 import type { RoutePreferences } from "@/services/routeService";
 
@@ -10,60 +11,19 @@ interface PreferencesSelectorProps {
 
 interface PreferenceOption {
   key: keyof RoutePreferences;
-  label: string;
   icon: string;
-  description: string;
 }
 
+// Labels and descriptions are planner:preferences.<key>, translated when shown
 const PREFERENCE_OPTIONS: PreferenceOption[] = [
-  {
-    key: "parks",
-    label: "Parks",
-    icon: "🌳",
-    description: "Route through parks and green spaces",
-  },
-  {
-    key: "waterfront",
-    label: "Waterfront",
-    icon: "💧",
-    description: "Walk along rivers, lakes, or coastline",
-  },
-  {
-    key: "scenic",
-    label: "Scenic",
-    icon: "🏛️",
-    description: "Pass by landmarks and points of interest",
-  },
-  {
-    key: "quietStreets",
-    label: "Quiet Streets",
-    icon: "🤫",
-    description: "Prefer calm, low-traffic areas",
-  },
-  {
-    key: "beach",
-    label: "Beach",
-    icon: "🏖️",
-    description: "Walk along beaches and shorelines",
-  },
-  {
-    key: "uphill",
-    label: "Uphill",
-    icon: "⛰️",
-    description: "Include elevation gain for a workout",
-  },
-  {
-    key: "mountain",
-    label: "Mountain Trails",
-    icon: "🏔️",
-    description: "Hiking paths and mountain routes",
-  },
-  {
-    key: "avoidHighways",
-    label: "Avoid Highways",
-    icon: "🚫",
-    description: "Stay away from major roads",
-  },
+  { key: "parks", icon: "🌳" },
+  { key: "waterfront", icon: "💧" },
+  { key: "scenic", icon: "🏛️" },
+  { key: "quietStreets", icon: "🤫" },
+  { key: "beach", icon: "🏖️" },
+  { key: "uphill", icon: "⛰️" },
+  { key: "mountain", icon: "🏔️" },
+  { key: "avoidHighways", icon: "🚫" },
 ];
 
 const PreferencesSelector: React.FC<PreferencesSelectorProps> = ({
@@ -71,6 +31,8 @@ const PreferencesSelector: React.FC<PreferencesSelectorProps> = ({
   onChange,
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation("planner");
+  const activeCount = Object.values(preferences).filter(Boolean).length;
 
   const togglePreference = (key: keyof RoutePreferences) => {
     onChange({
@@ -81,67 +43,67 @@ const PreferencesSelector: React.FC<PreferencesSelectorProps> = ({
 
   return (
     <View style={styles.container}>
-      {PREFERENCE_OPTIONS.map((option) => (
-        <TouchableOpacity
-          key={option.key}
-          testID={`preference-${option.key}`}
-          style={[
-            styles.preferenceItem,
-            { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant },
-            preferences[option.key] && {
-              backgroundColor: theme.colors.primaryContainer,
-              borderColor: theme.colors.primary,
-            },
-          ]}
-          onPress={() => togglePreference(option.key)}
-          activeOpacity={0.7}
-        >
-          <View style={styles.preferenceContent}>
-            <View style={styles.preferenceHeader}>
-              <CustomText style={styles.preferenceIcon}>
-                {option.icon}
-              </CustomText>
-              <View style={styles.preferenceText}>
-                <CustomText
-                  variant="bodyMedium"
-                  style={[
-                    styles.preferenceLabel,
-                    { color: theme.colors.onSurface },
-                    preferences[option.key] && [
-                      styles.preferenceLabelActive,
-                      { color: theme.colors.onPrimaryContainer },
-                    ],
-                  ]}
-                >
-                  {option.label}
+      {PREFERENCE_OPTIONS.map((option) => {
+        const label = t(`preferences.${option.key}.label`);
+        const description = t(`preferences.${option.key}.description`);
+        return (
+          <TouchableOpacity
+            key={option.key}
+            testID={`preference-${option.key}`}
+            style={[
+              styles.preferenceItem,
+              { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant },
+              preferences[option.key] && {
+                backgroundColor: theme.colors.primaryContainer,
+                borderColor: theme.colors.primary,
+              },
+            ]}
+            onPress={() => togglePreference(option.key)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.preferenceContent}>
+              <View style={styles.preferenceHeader}>
+                <CustomText style={styles.preferenceIcon}>
+                  {option.icon}
                 </CustomText>
-                <CustomText
-                  variant="bodySmall"
-                  style={[styles.preferenceDescription, { color: theme.colors.onSurfaceVariant }]}
-                >
-                  {option.description}
-                </CustomText>
+                <View style={styles.preferenceText}>
+                  <CustomText
+                    variant="bodyMedium"
+                    style={[
+                      styles.preferenceLabel,
+                      { color: theme.colors.onSurface },
+                      preferences[option.key] && [
+                        styles.preferenceLabelActive,
+                        { color: theme.colors.onPrimaryContainer },
+                      ],
+                    ]}
+                  >
+                    {label}
+                  </CustomText>
+                  <CustomText
+                    variant="bodySmall"
+                    style={[styles.preferenceDescription, { color: theme.colors.onSurfaceVariant }]}
+                  >
+                    {description}
+                  </CustomText>
+                </View>
               </View>
+              <Switch
+                accessibilityLabel={label}
+                accessibilityHint={description}
+                value={preferences[option.key]}
+                onValueChange={() => togglePreference(option.key)}
+                color={theme.colors.primary}
+              />
             </View>
-            <Switch
-              accessibilityLabel={option.label}
-              accessibilityHint={option.description}
-              value={preferences[option.key]}
-              onValueChange={() => togglePreference(option.key)}
-              color={theme.colors.primary}
-            />
-          </View>
-        </TouchableOpacity>
-      ))}
+          </TouchableOpacity>
+        );
+      })}
 
-      {Object.values(preferences).filter(Boolean).length > 0 && (
+      {activeCount > 0 && (
         <View style={[styles.activeCount, { backgroundColor: theme.colors.surfaceVariant }]}>
           <CustomText variant="bodySmall" style={[styles.activeCountText, { color: theme.colors.onSurfaceVariant }]}>
-            {Object.values(preferences).filter(Boolean).length} preference
-            {Object.values(preferences).filter(Boolean).length !== 1
-              ? "s"
-              : ""}{" "}
-            active
+            {t("activePreferences", { count: activeCount })}
           </CustomText>
         </View>
       )}

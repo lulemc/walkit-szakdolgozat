@@ -1,6 +1,8 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
 import { Icon, useTheme } from "react-native-paper";
+import { TFunction } from "i18next";
+import { useTranslation } from "react-i18next";
 import { CustomText } from "../CustomText";
 import { PrimaryButton } from "../Button";
 import { ScreenContainer } from "../ScreenContainer";
@@ -24,36 +26,39 @@ interface Copy {
   action?: string;
 }
 
-const getCopy = (variant: ErrorVariant, providerName: string): Copy => {
+const getCopy = (
+  variant: ErrorVariant,
+  providerName: string,
+  t: TFunction<["statistics", "common"]>,
+): Copy => {
+  const provider = { provider: providerName };
   switch (variant) {
     case "denied":
       return {
         icon: "lock-closed-outline",
-        title: "Health access needed",
-        message: `Allow WalkIt to read your steps, walking distance and active energy in ${providerName} so we can show your statistics.`,
-        action: "Open Settings",
+        title: t("errors.denied.title"),
+        message: t("errors.denied.message", provider),
+        action: t("errors.denied.action"),
       };
     case "notInstalled":
       return {
         icon: "download-outline",
-        title: "Health Connect is required",
-        message:
-          "WalkIt reads your activity through Health Connect. Install or update it from the Play Store, then come back and try again.",
-        action: "Get Health Connect",
+        title: t("errors.notInstalled.title"),
+        message: t("errors.notInstalled.message"),
+        action: t("errors.notInstalled.action"),
       };
     case "unavailable":
       return {
         icon: "phone-portrait-outline",
-        title: `${providerName} isn't available`,
-        message:
-          "Health data isn't available on this device or in this version of the app. Use the WalkIt app on iPhone (Apple Health) or Android (Health Connect).",
+        title: t("errors.unavailable.title", provider),
+        message: t("errors.unavailable.message"),
       };
     case "error":
       return {
         icon: "alert-circle-outline",
-        title: "Couldn't load your statistics",
-        message: `Something went wrong while reading ${providerName}. Please try again.`,
-        action: "Try again",
+        title: t("errors.error.title"),
+        message: t("errors.error.message", provider),
+        action: t("common:actions.retry"),
       };
   }
 };
@@ -68,7 +73,8 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
   retrying,
 }) => {
   const theme = useTheme();
-  const copy = getCopy(variant, providerName);
+  const { t } = useTranslation(["statistics", "common"]);
+  const copy = getCopy(variant, providerName, t);
   const handleAction =
     variant === "denied" ? onOpenSettings : variant === "notInstalled" ? onInstall : onRetry;
 

@@ -1,6 +1,7 @@
 import React from "react";
 import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { useTheme } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { CustomText } from "@/components/CustomText";
 
 type RouteType = "circular" | "point-to-point";
@@ -15,6 +16,7 @@ export default function RouteTypeSelector({
   onChange,
 }: RouteTypeSelectorProps) {
   const theme = useTheme();
+  const { t } = useTranslation("planner");
 
   return (
     <View style={styles.container}>
@@ -33,7 +35,7 @@ export default function RouteTypeSelector({
         onPress={() => onChange("circular")}
         accessibilityRole="radio"
         accessibilityState={{ checked: value === "circular" }}
-        accessibilityLabel="Circular Loop, returns to start"
+        accessibilityLabel={t("routeType.circularLabel")}
       >
         <View style={styles.routeIcon}>
           <CustomText variant="headlineSmall">🔄</CustomText>
@@ -51,7 +53,7 @@ export default function RouteTypeSelector({
               },
             ]}
           >
-            Circular Loop
+            {t("routeType.circular")}
           </CustomText>
           <CustomText
             variant="bodySmall"
@@ -60,7 +62,7 @@ export default function RouteTypeSelector({
               { opacity: value === "circular" ? 0.8 : 0.6 },
             ]}
           >
-            Returns to start
+            {t("routeType.circularDescription")}
           </CustomText>
         </View>
         {value === "circular" && (
@@ -85,7 +87,7 @@ export default function RouteTypeSelector({
         onPress={() => onChange("point-to-point")}
         accessibilityRole="radio"
         accessibilityState={{ checked: value === "point-to-point" }}
-        accessibilityLabel="Point-to-Point, different end point"
+        accessibilityLabel={t("routeType.pointToPointLabel")}
       >
         <View style={styles.routeIcon}>
           <CustomText variant="headlineSmall">➡️</CustomText>
@@ -103,7 +105,7 @@ export default function RouteTypeSelector({
               },
             ]}
           >
-            Point-to-Point
+            {t("routeType.pointToPoint")}
           </CustomText>
           <CustomText
             variant="bodySmall"
@@ -112,7 +114,7 @@ export default function RouteTypeSelector({
               { opacity: value === "point-to-point" ? 0.8 : 0.6 },
             ]}
           >
-            Different end point
+            {t("routeType.pointToPointDescription")}
           </CustomText>
         </View>
         {value === "point-to-point" && (

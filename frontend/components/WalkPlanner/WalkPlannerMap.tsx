@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import MapView, { MapPressEvent, Marker, Polyline } from "react-native-maps";
 import { StyleSheet } from "react-native";
+import { useTranslation } from "react-i18next";
 import { mapProvider } from "@/utils/mapProvider";
 import type { Coordinates, Location } from "@/services/GooglePlacesService";
 import type { Route } from "@/services/routeService";
@@ -31,6 +32,8 @@ const WalkPlannerMap: React.FC<WalkPlannerMapProps> = ({
   generatedRoute,
   onMapPress,
 }) => {
+  const { t } = useTranslation("planner");
+
   useEffect(() => {
     if (
       generatedRoute &&
@@ -68,13 +71,13 @@ const WalkPlannerMap: React.FC<WalkPlannerMapProps> = ({
       showsCompass
       showsScale
       onPress={onMapPress}
-      accessibilityLabel="Map with your start, destination and the generated route"
+      accessibilityLabel={t("map.label")}
     >
       {/* START MARKER */}
       {startLocation && (
         <Marker
           coordinate={startLocation.coordinates}
-          title={startLocation.name || "Start Location"}
+          title={startLocation.name || t("map.start")}
           description={startLocation.address}
           pinColor="green"
         />
@@ -84,7 +87,7 @@ const WalkPlannerMap: React.FC<WalkPlannerMapProps> = ({
       {routeType === "point-to-point" && destinationLocation && (
         <Marker
           coordinate={destinationLocation.coordinates}
-          title={destinationLocation.name || "Destination"}
+          title={destinationLocation.name || t("map.destination")}
           description={destinationLocation.address}
           pinColor="red"
         />

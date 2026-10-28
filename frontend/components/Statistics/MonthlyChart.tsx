@@ -2,6 +2,7 @@ import React from "react";
 import { View } from "react-native";
 import { LineChart } from "react-native-gifted-charts";
 import { useTheme } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import type { HealthData } from "@/services/health/types";
 import { formatCompactNumber } from "@/utils/healthFormatters";
 import { AxisLabels } from "./AxisLabels";
@@ -16,10 +17,9 @@ interface MonthlyChartProps {
 const CHART_HEIGHT = 180;
 const LABEL_EVERY_DAYS = 7;
 
-const formatDayMonth = (date: Date) => `${date.getDate()}/${date.getMonth() + 1}`;
-
 export const MonthlyChart: React.FC<MonthlyChartProps> = ({ data, goal, width }) => {
   const theme = useTheme();
+  const { t } = useTranslation("statistics");
   const layout = fitLine(width, data.length);
   const axisText = { color: theme.colors.onSurfaceVariant, fontSize: 10 };
 
@@ -70,7 +70,7 @@ export const MonthlyChart: React.FC<MonthlyChartProps> = ({ data, goal, width })
           dashWidth: 4,
           dashGap: 4,
           thickness: 1,
-          labelText: "Goal",
+          labelText: t("charts.goal"),
           labelTextStyle: axisText,
         }}
         isAnimated
@@ -78,7 +78,10 @@ export const MonthlyChart: React.FC<MonthlyChartProps> = ({ data, goal, width })
       <AxisLabels
         labels={labelIndexes.map((index) => ({
           x: pointX(layout, index),
-          text: formatDayMonth(data[index].date),
+          text: t("charts.dayMonth", {
+            day: data[index].date.getDate(),
+            month: data[index].date.getMonth() + 1,
+          }),
         }))}
       />
     </View>

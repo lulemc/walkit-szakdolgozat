@@ -1,10 +1,11 @@
 import React from 'react';
 import { Alert } from 'react-native';
-import { fireEvent, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, waitFor } from '@testing-library/react-native';
 import { renderWithTheme } from '@/components/Statistics/__test__/renderWithTheme';
 import UserService from '@/services/userService';
 import { userStorage } from '@/utils/userStorage';
 import ProfileSettings from '../ProfileSettings';
+import i18n from '@/i18n';
 import type { User } from '@/types/User';
 
 jest.mock('@/services/userService', () => ({ __esModule: true, default: { updateUserProfile: jest.fn(), changePassword: jest.fn() } }));
@@ -101,5 +102,25 @@ describe('ProfileSettings', () => {
     fireEvent.press(await findByText('Yes, change password'));
 
     expect(await findByLabelText('Current Password')).toBeTruthy();
+  });
+});
+
+describe('ProfileSettings in Hungarian', () => {
+  beforeEach(() => i18n.changeLanguage('hu'));
+  // Inside act: the change re-renders what is still on screen
+  afterEach(async () => {
+    await act(async () => {
+      await i18n.changeLanguage('en');
+    });
+  });
+
+  it('labels the form and its options in Hungarian', () => {
+    const { getByText, getByLabelText } = renderProfile();
+
+    expect(getByText('Profilbeállítások')).toBeTruthy();
+    expect(getByLabelText('Felhasználónév')).toBeTruthy();
+    expect(getByText('Nő')).toBeTruthy();
+    expect(getByText('Nagyon aktív')).toBeTruthy();
+    expect(getByText('Profil mentése')).toBeTruthy();
   });
 });
