@@ -43,7 +43,12 @@ export default function SearchCard({
           style={styles.input}
         />
         {value.length > 0 && (
-          <TouchableOpacity style={styles.clearButton} onPress={onClear}>
+          <TouchableOpacity
+            style={styles.clearButton}
+            onPress={onClear}
+            accessibilityRole="button"
+            accessibilityLabel="Clear search"
+          >
             <CustomText
               variant="bodyLarge"
               style={{ color: theme.colors.onSurfaceVariant }}

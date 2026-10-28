@@ -57,6 +57,8 @@ const RouteInfoCard: React.FC<RouteInfoCardProps> = ({
 
           <TouchableOpacity
             onPress={onClose}
+            accessibilityRole="button"
+            accessibilityLabel="Close route summary"
             style={styles.closeButton}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             activeOpacity={0.6}

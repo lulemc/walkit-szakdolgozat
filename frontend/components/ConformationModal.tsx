@@ -36,8 +36,11 @@ export default function ConfirmationModal({
         style={styles.overlay}
         activeOpacity={1}
         onPress={onClose}
+        // Tapping outside closes it; screen readers use Cancel (or back) instead,
+        // since an accessible backdrop would hide everything inside it
+        accessible={false}
       >
-        <TouchableOpacity activeOpacity={1} style={styles.modalContainer}>
+        <TouchableOpacity activeOpacity={1} style={styles.modalContainer} accessible={false}>
           <View
             style={[
               styles.modalContent,

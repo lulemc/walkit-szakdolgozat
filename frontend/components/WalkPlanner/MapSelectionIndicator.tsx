@@ -26,6 +26,8 @@ export default function MapSelectionIndicator({
       </CustomText>
       <TouchableOpacity
         onPress={onCancel}
+        accessibilityRole="button"
+        accessibilityLabel="Cancel picking on the map"
         style={[
           styles.cancelButton,
           { backgroundColor: theme.colors.errorContainer },

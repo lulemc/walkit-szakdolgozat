@@ -24,6 +24,7 @@ export const ActiveWalkMap: React.FC<ActiveWalkMapProps> = ({
   <MapView
     style={styles.map}
     initialRegion={{ ...plannedRoute[0], latitudeDelta: 0.01, longitudeDelta: 0.01 }}
+    accessibilityLabel="Map of your walk: the planned route and the path walked so far"
     showsUserLocation={!simulated}
     followsUserLocation={!simulated}
   >

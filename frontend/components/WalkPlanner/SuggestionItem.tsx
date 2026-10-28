@@ -22,6 +22,8 @@ export default function SuggestionItem({
         { borderBottomColor: theme.colors.outlineVariant },
       ]}
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={[suggestion.mainText, suggestion.secondaryText].filter(Boolean).join(", ")}
     >
       <CustomText variant="bodyMedium" style={styles.mainText}>
         {suggestion.mainText}

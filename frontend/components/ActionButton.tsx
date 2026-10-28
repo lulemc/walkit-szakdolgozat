@@ -34,6 +34,9 @@ export default function ActionButton({
     <TouchableOpacity
       style={[styles.button, { backgroundColor }]}
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: Boolean(active) }}
     >
       <CustomText
         variant="bodySmall"

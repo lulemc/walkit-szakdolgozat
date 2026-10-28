@@ -3,7 +3,11 @@ import { StyleSheet, View } from "react-native";
 import { Card } from "react-native-paper";
 import { CustomText } from "@/components/CustomText";
 import { colors } from "@/theme/colors";
-import { formatElapsed, formatPace, formatWalkDistance } from "@/utils/walkMetrics";
+import {
+  formatElapsed,
+  formatPace,
+  formatWalkDistance,
+} from "@/utils/walkMetrics";
 
 interface WalkStatsPanelProps {
   distanceM: number;
@@ -22,44 +26,52 @@ export const WalkStatsPanel: React.FC<WalkStatsPanelProps> = ({
 }) => (
   <Card style={styles.card}>
     <Card.Content>
-      {notice ? (
-        <View style={styles.notice}>
-          <CustomText style={styles.noticeText}>{notice}</CustomText>
-        </View>
-      ) : null}
+      {/* One sentence for screen readers instead of nine separate numbers and labels */}
+      <View
+        accessible
+        accessibilityLabel={`Walked ${formatWalkDistance(distanceM)} of ${formatWalkDistance(
+          plannedDistanceM,
+        )} in ${formatElapsed(elapsedSec)}, pace ${formatPace(elapsedSec, distanceM)} minutes per kilometre`}
+      >
+        {notice ? (
+          <View style={styles.notice}>
+            <CustomText style={styles.noticeText}>{notice}</CustomText>
+          </View>
+        ) : null}
 
-      <View style={styles.grid}>
-        <View style={styles.item}>
-          <CustomText variant="bodySmall" style={styles.label}>
-            Distance
-          </CustomText>
-          <CustomText variant="titleLarge" style={styles.value}>
-            {formatWalkDistance(distanceM)}
-          </CustomText>
-          <CustomText variant="bodySmall" style={styles.subtext}>
-            / {formatWalkDistance(plannedDistanceM)}
-          </CustomText>
-        </View>
+        <View style={styles.grid}>
+          <View style={styles.item}>
+            <CustomText variant="bodySmall" style={styles.label}>
+              Distance
+            </CustomText>
+            <CustomText variant="titleLarge" style={styles.value}>
+              {formatWalkDistance(distanceM)}
+            </CustomText>
+            <CustomText variant="bodySmall" style={styles.subtext}>
+              / {formatWalkDistance(plannedDistanceM)}
+            </CustomText>
+          </View>
 
-        <View style={styles.item}>
-          <CustomText variant="bodySmall" style={styles.label}>
-            Time
-          </CustomText>
-          <CustomText variant="titleLarge" style={styles.value}>
-            {formatElapsed(elapsedSec)}
-          </CustomText>
-        </View>
+          <View style={styles.item}>
+            <CustomText variant="bodySmall" style={styles.label}>
+              Time
+            </CustomText>
+            <CustomText variant="titleLarge" style={styles.value}>
+              {formatElapsed(elapsedSec)}
+            </CustomText>
+          </View>
 
-        <View style={styles.item}>
-          <CustomText variant="bodySmall" style={styles.label}>
-            Pace
-          </CustomText>
-          <CustomText variant="titleLarge" style={styles.value}>
-            {formatPace(elapsedSec, distanceM)}
-          </CustomText>
-          <CustomText variant="bodySmall" style={styles.subtext}>
-            min/km
-          </CustomText>
+          <View style={styles.item}>
+            <CustomText variant="bodySmall" style={styles.label}>
+              Pace
+            </CustomText>
+            <CustomText variant="titleLarge" style={styles.value}>
+              {formatPace(elapsedSec, distanceM)}
+            </CustomText>
+            <CustomText variant="bodySmall" style={styles.subtext}>
+              min/km
+            </CustomText>
+          </View>
         </View>
       </View>
     </Card.Content>

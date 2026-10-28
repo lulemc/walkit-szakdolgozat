@@ -68,6 +68,7 @@ const WalkPlannerMap: React.FC<WalkPlannerMapProps> = ({
       showsCompass
       showsScale
       onPress={onMapPress}
+      accessibilityLabel="Map with your start, destination and the generated route"
     >
       {/* START MARKER */}
       {startLocation && (
