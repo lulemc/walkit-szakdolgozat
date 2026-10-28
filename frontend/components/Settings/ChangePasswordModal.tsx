@@ -5,7 +5,6 @@ import {
   Modal,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
 } from "react-native";
 import { CustomText } from "../CustomText";
 import { CustomTextInput } from "../Inputs/CustomTextInput";
@@ -15,6 +14,7 @@ import { storage } from "@/utils/storage";
 import { MIN_PASSWORD_LENGTH, PASSWORD_TOO_SHORT_MESSAGE } from "@/utils/passwordRules";
 import { useTheme } from "react-native-paper";
 import { apiErrorMessage } from "@/utils/apiError";
+import { useSnackbar } from "@/context/SnackbarProvider";
 
 interface ChangePasswordModalProps {
   visible: boolean;
@@ -33,6 +33,9 @@ export default function ChangePasswordModal({
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  // The server's answer when the change fails; shown in the dialog (a snackbar would be behind it)
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const { showMessage } = useSnackbar();
 
   const [errors, setErrors] = useState({
     currentPassword: "",
@@ -58,6 +61,7 @@ export default function ChangePasswordModal({
   };
 
   const handleChangePassword = async () => {
+    setSubmitError(null);
     setErrors({
       currentPassword: "",
       newPassword: "",
@@ -122,13 +126,12 @@ export default function ChangePasswordModal({
       setIsLoading(false);
       handleClose();
 
-      Alert.alert("Success", "Your password has been changed successfully!");
+      showMessage("Your password has been changed.");
 
       onPasswordChanged?.();
     } catch (error) {
       setIsLoading(false);
-      Alert.alert(
-        "Error",
+      setSubmitError(
         apiErrorMessage(
           error,
           "Failed to change password. Please check your current password and try again.",
@@ -138,6 +141,7 @@ export default function ChangePasswordModal({
   };
 
   const handleClose = () => {
+    setSubmitError(null);
     setCurrentPassword("");
     setNewPassword("");
     setConfirmPassword("");
@@ -245,6 +249,12 @@ export default function ChangePasswordModal({
                 • One number
               </CustomText>
             </View>
+
+            {submitError ? (
+              <CustomText variant="bodySmall" style={styles.errorText} accessibilityRole="alert">
+                {submitError}
+              </CustomText>
+            ) : null}
 
             <View style={styles.buttonContainer}>
               <PrimaryButton

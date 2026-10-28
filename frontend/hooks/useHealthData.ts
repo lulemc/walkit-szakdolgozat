@@ -96,7 +96,6 @@ export const useHealthData = (): UseHealthDataReturn => {
       return;
     }
 
-    console.error("[useHealthData] Error:", err);
     setError(err as Error);
     // Keep showing the last good data when a refresh fails
     if (!hasData.current) {

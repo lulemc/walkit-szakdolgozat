@@ -11,6 +11,10 @@ jest.mock('@/utils/storage', () => ({ storage: { setToken: jest.fn() } }));
 
 const changePassword = UserService.changePassword as jest.Mock;
 const alert = jest.spyOn(Alert, 'alert');
+const mockShowMessage = jest.fn();
+jest.mock('@/context/SnackbarProvider', () => ({
+  useSnackbar: () => ({ showMessage: mockShowMessage }),
+}));
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -43,7 +47,7 @@ describe('ChangePasswordModal', () => {
     expect(changePassword).toHaveBeenCalledWith('u1', { currentPassword: 'OldPass123', newPassword: 'NewPass456' });
     expect(screen.props.onClose).toHaveBeenCalled();
     expect(screen.props.onPasswordChanged).toHaveBeenCalled();
-    expect(alert).toHaveBeenCalledWith('Success', 'Your password has been changed successfully!');
+    expect(mockShowMessage).toHaveBeenCalledWith('Your password has been changed.');
   });
 
   it.each([
@@ -87,7 +91,9 @@ describe('ChangePasswordModal', () => {
 
     fillIn(screen, { current: 'WrongPass1', next: 'NewPass456', confirm: 'NewPass456' });
 
-    await waitFor(() => expect(alert).toHaveBeenCalledWith('Error', 'Current password is incorrect'));
+    // Shown in the dialog: a snackbar would be hidden behind it
+    expect(await screen.findByText('Current password is incorrect')).toBeTruthy();
     expect(storage.setToken).not.toHaveBeenCalled();
+    expect(alert).not.toHaveBeenCalled();
   });
 });

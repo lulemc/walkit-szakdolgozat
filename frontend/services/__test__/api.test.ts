@@ -25,10 +25,17 @@ describe('API Module', () => {
   let api: any;
   let setUnauthorizedHandler: (fn: (() => void) | null) => void;
 
+  let createConfig: { timeout?: number } | undefined;
+
   beforeAll(() => {
     const apiModule = require('../api');
     api = apiModule.default;
     setUnauthorizedHandler = apiModule.setUnauthorizedHandler;
+    createConfig = (require('axios').create as jest.Mock).mock.calls[0]?.[0];
+  });
+
+  it('gives up on requests after 15 seconds instead of waiting forever', () => {
+    expect(createConfig?.timeout).toBe(15000);
   });
 
   beforeEach(() => {

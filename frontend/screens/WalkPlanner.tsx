@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { View, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { View, StyleSheet, ActivityIndicator } from "react-native";
 import { useTheme } from "react-native-paper";
 import { CustomText } from "@/components/CustomText";
 import { PrimaryButton } from "@/components/Button";
@@ -97,18 +97,9 @@ export default function WalkPlannerScreen({
     await generateRoute();
   };
 
-  // UPDATED: Use callback instead of navigation
+  // The Start button only shows with a generated route
   const handleStartWalk = () => {
-    if (!generatedRoute) {
-      Alert.alert("Error", "No route to start");
-      return;
-    }
-
-    if (onStartWalk) {
-      onStartWalk(generatedRoute);
-    } else {
-      Alert.alert("Info", "Walk tracking will start here");
-    }
+    if (generatedRoute) onStartWalk?.(generatedRoute);
   };
 
   if (loading) {

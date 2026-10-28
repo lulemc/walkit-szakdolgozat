@@ -12,6 +12,10 @@ jest.mock('@/utils/userStorage', () => ({ userStorage: { setUser: jest.fn() } })
 
 const updateUserProfile = UserService.updateUserProfile as jest.Mock;
 const alert = jest.spyOn(Alert, 'alert');
+const mockShowMessage = jest.fn();
+jest.mock('@/context/SnackbarProvider', () => ({
+  useSnackbar: () => ({ showMessage: mockShowMessage }),
+}));
 
 const user = {
   _id: 'u1',
@@ -63,7 +67,8 @@ describe('ProfileSettings', () => {
       activityLevel: 'active',
     });
     expect(userStorage.setUser).toHaveBeenCalledWith(saved);
-    expect(alert).toHaveBeenCalledWith('Success', 'Profile updated successfully!');
+    expect(mockShowMessage).toHaveBeenCalledWith('Profile saved');
+    expect(alert).not.toHaveBeenCalled();
   });
 
   it('leaves out an empty height', async () => {
@@ -83,7 +88,9 @@ describe('ProfileSettings', () => {
 
     fireEvent.press(getByText('Save Profile'));
 
-    await waitFor(() => expect(alert).toHaveBeenCalledWith('Error', 'Height must be between 50 and 300 cm'));
+    await waitFor(() =>
+      expect(mockShowMessage).toHaveBeenCalledWith('Height must be between 50 and 300 cm', { type: 'error' }),
+    );
     expect(onProfileUpdate).not.toHaveBeenCalled();
   });
 

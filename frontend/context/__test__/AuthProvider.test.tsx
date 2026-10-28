@@ -18,6 +18,11 @@ jest.mock("@/services/api", () => ({
   setUnauthorizedHandler: jest.fn(),
 }));
 
+const mockShowMessage = jest.fn();
+jest.mock("@/context/SnackbarProvider", () => ({
+  useSnackbar: () => ({ showMessage: mockShowMessage }),
+}));
+
 // Mock Storage
 jest.mock("@/utils/storage", () => ({
   storage: {
@@ -98,6 +103,25 @@ describe("AuthContext Logic", () => {
     expect(userStorage.removeUser).toHaveBeenCalled();
     expect(result.current.token).toBeNull();
     expect(mockReplace).toHaveBeenCalledWith("/(auth)/login");
+    // Says why, instead of just landing on the login screen
+    expect(mockShowMessage).toHaveBeenCalledWith("Your session has expired. Please log in again.", {
+      type: "error",
+    });
+  });
+
+  it("doesn't talk about an expired session when nobody was logged in", async () => {
+    (storage.getToken as jest.Mock).mockResolvedValue(null);
+    renderHook(() => useAuth(), { wrapper });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    const handler = (setUnauthorizedHandler as jest.Mock).mock.calls.at(-1)[0];
+    await act(async () => {
+      await handler();
+    });
+
+    expect(mockShowMessage).not.toHaveBeenCalled();
   });
 
   it("should register successfully and update state", async () => {
@@ -238,24 +262,31 @@ describe("AuthContext Logic", () => {
     expect(mockReplace).toHaveBeenCalledWith("/(auth)/login");
   });
 
-  it("should log error if token loading fails", async () => {
-    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
-
-    (storage.getToken as jest.Mock).mockRejectedValue(
-      new Error("Storage broken"),
-    );
-
+  it("doesn't talk about an expired session when nobody was logged in", async () => {
+    (storage.getToken as jest.Mock).mockResolvedValue(null);
     renderHook(() => useAuth(), { wrapper });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    const handler = (setUnauthorizedHandler as jest.Mock).mock.calls.at(-1)[0];
+    await act(async () => {
+      await handler();
+    });
+
+    expect(mockShowMessage).not.toHaveBeenCalled();
+  });
+
+  it("starts logged out when the stored token can't be read", async () => {
+    (storage.getToken as jest.Mock).mockRejectedValue(new Error("Storage broken"));
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
 
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
 
-    expect(errorSpy).toHaveBeenCalledWith(
-      "Failed to load token",
-      expect.any(Error),
-    );
-
-    errorSpy.mockRestore();
+    expect(result.current.loading).toBe(false);
+    expect(result.current.token).toBeNull();
   });
 });

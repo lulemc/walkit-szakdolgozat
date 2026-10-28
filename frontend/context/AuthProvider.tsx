@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { registerUser, loginUser } from "@/services/authApi";
 import { useRouter } from "expo-router";
 import { storage } from "@/utils/storage";
 import { setUnauthorizedHandler } from "@/services/api";
+import { useSnackbar } from "@/context/SnackbarProvider";
 import { userStorage } from "@/utils/userStorage";
 import { User } from "@/types/User";
 
@@ -30,6 +31,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { showMessage } = useSnackbar();
+  // Read by the 401 handler, which is registered once
+  const tokenRef = useRef<string | null>(null);
+  useEffect(() => {
+    tokenRef.current = token;
+  }, [token]);
 
   useEffect(() => {
     const bootstrap = async () => {
@@ -40,8 +47,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         ]);
         setToken(storedToken);
         setUser(storedUser);
-      } catch (err) {
-        console.error("Failed to load token", err);
+      } catch {
+        // Nothing stored or unreadable: start logged out
       } finally {
         setLoading(false);
       }
@@ -78,8 +85,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     router.replace("/(auth)/login");
   };
 
+  // A 401 means the token expired or was revoked (e.g. after a password change elsewhere)
+  const handleUnauthorized = async () => {
+    if (tokenRef.current) {
+      showMessage("Your session has expired. Please log in again.", { type: "error" });
+    }
+    await logout();
+  };
+
   useEffect(() => {
-    setUnauthorizedHandler(logout);
+    setUnauthorizedHandler(handleUnauthorized);
     return () => setUnauthorizedHandler(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

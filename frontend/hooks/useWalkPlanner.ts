@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Alert, ScrollView } from 'react-native';
+import { ScrollView } from 'react-native';
 import * as Location from 'expo-location';
 import MapView from 'react-native-maps';
 import GooglePlacesService from '@/services/GooglePlacesService';
@@ -10,6 +10,7 @@ import type {
   PlaceSuggestion,
 } from '@/services/GooglePlacesService';
 import { apiErrorMessage } from '@/utils/apiError';
+import { useSnackbar } from '@/context/SnackbarProvider';
 
 type RouteType = 'circular' | 'point-to-point';
 type MapSelectionMode = 'none' | 'start' | 'destination';
@@ -18,6 +19,7 @@ export const useWalkPlanner = () => {
   const mapRef = useRef<MapView>(null);
   const scrollRef = useRef<ScrollView>(null);
 
+  const { showMessage } = useSnackbar();
   const [currentLocation, setCurrentLocation] = useState<Coordinates | null>(null);
   const [startLocation, setStartLocation] = useState<LocationType | null>(null);
   const [destinationLocation, setDestinationLocation] = useState<LocationType | null>(null);
@@ -56,9 +58,9 @@ export const useWalkPlanner = () => {
         const { status } = await Location.requestForegroundPermissionsAsync();
 
         if (status !== 'granted') {
-          Alert.alert(
-            'Permission Required',
-            'Location permission is needed to plan walks.'
+          showMessage(
+            'Location permission is needed to use your position. You can still pick a start point on the map.',
+            { type: 'error' }
           );
           setLoading(false);
           return;
@@ -92,15 +94,15 @@ export const useWalkPlanner = () => {
           longitudeDelta: 0.05,
         });
       } catch (error) {
-        console.error('Error getting location:', error);
-        Alert.alert('Error', 'Could not get your current location');
+        showMessage('Could not get your current location', { type: 'error' });
       } finally {
         setLoading(false);
       }
     };
 
     getCurrentLocation();
-  }, []);
+    // showMessage is stable, so this still runs once
+  }, [showMessage]);
 
   // Circular routes have no destination, so clear it when switching to them
   const changeRouteType = (type: RouteType) => {
@@ -133,16 +135,9 @@ export const useWalkPlanner = () => {
     });
   };
 
+  // The map shows a hint (MapSelectionIndicator) with a Cancel button, so no alert
   const handleEnableMapSelection = (type: 'start' | 'destination') => {
     setMapSelectionMode(type);
-    Alert.alert(
-      'Select Location',
-      `Tap anywhere on the map to set your ${type === 'start' ? 'start' : 'destination'} location.`,
-      [
-        { text: 'Cancel', onPress: () => setMapSelectionMode('none'), style: 'cancel' },
-        { text: 'OK' },
-      ]
-    );
   };
 
   const handleMapPress = async (coordinate: Coordinates) => {
@@ -153,10 +148,10 @@ export const useWalkPlanner = () => {
 
       if (mapSelectionMode === 'start') {
         setStartLocation(locationWithAddress);
-        Alert.alert('Start Location Set', locationWithAddress.name || 'Start location has been updated.');
+        showMessage(`Start set: ${locationWithAddress.name || 'the selected point'}`);
       } else if (mapSelectionMode === 'destination') {
         setDestinationLocation(locationWithAddress);
-        Alert.alert('Destination Set', locationWithAddress.name || 'Destination location has been updated.');
+        showMessage(`Destination set: ${locationWithAddress.name || 'the selected point'}`);
       }
     } catch (error) {
       const fallbackLocation: LocationType = {
@@ -203,20 +198,19 @@ export const useWalkPlanner = () => {
         setDestinationLocation(location);
       }
     } catch (error) {
-      console.error('Error selecting place:', error);
-      Alert.alert('Error', 'Could not load place details');
+      showMessage('Could not load place details', { type: 'error' });
     }
   };
 
 // Generate route function
   const generateRoute = async (): Promise<void> => {
     if (!startLocation) {
-      Alert.alert('Error', 'Please select a start location');
+      showMessage('Please select a start location', { type: 'error' });
       return;
     }
 
     if (routeType === 'point-to-point' && !destinationLocation) {
-      Alert.alert('Error', 'Please select a destination for point-to-point route');
+      showMessage('Please select a destination for a point-to-point route', { type: 'error' });
       return;
     }
 
@@ -244,11 +238,10 @@ export const useWalkPlanner = () => {
 
       setGeneratedRoute(route);
     } catch (error) {
-      console.error('❌ Error generating route:', error);
       // The server explains what went wrong (e.g. the routing service is busy)
       const errorMessage = apiErrorMessage(error, 'Failed to generate route');
       setRouteError(errorMessage);
-      Alert.alert('Error', errorMessage);
+      showMessage(errorMessage, { type: 'error' });
     } finally {
       setIsGeneratingRoute(false);
     }

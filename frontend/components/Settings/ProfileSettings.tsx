@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { View, StyleSheet, ActivityIndicator } from "react-native";
 import { CustomText } from "../CustomText";
 import { CustomTextInput } from "../Inputs/CustomTextInput";
 import { PrimaryButton } from "../Button";
@@ -12,6 +12,7 @@ import { userStorage } from "@/utils/userStorage";
 import ConfirmationModal from "../ConformationModal";
 import ChangePasswordModal from "./ChangePasswordModal";
 import { apiErrorMessage } from "@/utils/apiError";
+import { useSnackbar } from "@/context/SnackbarProvider";
 
 interface ProfileSettingsProps extends User {
   onProfileUpdate?: (updatedUser: User) => void;
@@ -21,6 +22,7 @@ export default function ProfileSettings({
   onProfileUpdate,
   ...user
 }: ProfileSettingsProps) {
+  const { showMessage } = useSnackbar();
   const [userName, setUserName] = useState(user.name || "");
   const [dateOfBirth, setDateOfBirth] = useState<Date>(
     user.dateOfBirth ? new Date(user.dateOfBirth) : new Date(),
@@ -58,9 +60,9 @@ export default function ProfileSettings({
       // So the settings screen shows the new profile without reloading
       onProfileUpdate?.(updatedUser);
 
-      Alert.alert("Success", "Profile updated successfully!");
+      showMessage("Profile saved");
     } catch (error) {
-      Alert.alert("Error", apiErrorMessage(error, "Failed to update profile"));
+      showMessage(apiErrorMessage(error, "Failed to update profile"), { type: "error" });
     } finally {
       setIsLoading(false);
     }

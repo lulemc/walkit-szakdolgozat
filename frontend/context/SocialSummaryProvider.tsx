@@ -27,7 +27,8 @@ export const SocialSummaryProvider = ({ children }: { children: React.ReactNode 
   const refresh = useCallback(
     () =>
       groupWalkService.getSummary().then(setSummary, (error: Error) => {
-        console.warn("[SocialSummary] Couldn't load the badge counts:", error?.message);
+        // A stale badge isn't worth bothering the user; it refreshes on the next visit
+        if (__DEV__) console.warn("[SocialSummary] Couldn't load the badge counts:", error?.message);
       }),
     [],
   );

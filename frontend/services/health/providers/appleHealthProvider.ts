@@ -54,9 +54,7 @@ export class AppleHealthProvider implements HealthProvider {
 
     return new Promise((resolve) => {
       AppleHealthKit.initHealthKit(permissions, (error: string) => {
-        if (error) {
-          console.error("[AppleHealth] Permission error:", error);
-        }
+        // A refusal shows as the "access denied" state on the Statistics screen
         this.isInitialized = !error;
         resolve(!error);
       });

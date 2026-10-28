@@ -8,6 +8,10 @@ import { routeService } from '@/services/routeService';
 jest.mock('expo-location');
 jest.mock('@/services/GooglePlacesService');
 jest.spyOn(Alert, 'alert');
+const mockShowMessage = jest.fn();
+jest.mock('@/context/SnackbarProvider', () => ({
+  useSnackbar: () => ({ showMessage: mockShowMessage }),
+}));
 
 const mockedLocation = Location as jest.Mocked<typeof Location>;
 const mockedGooglePlaces = GooglePlacesService as jest.Mocked<typeof GooglePlacesService>;
@@ -90,9 +94,9 @@ describe('useWalkPlanner', () => {
         expect(result.current.loading).toBe(false);
       });
 
-      expect(Alert.alert).toHaveBeenCalledWith(
-        'Permission Required',
-        'Location permission is needed to plan walks.'
+      expect(mockShowMessage).toHaveBeenCalledWith(
+        'Location permission is needed to use your position. You can still pick a start point on the map.',
+        { type: 'error' }
       );
     });
 
@@ -114,10 +118,7 @@ describe('useWalkPlanner', () => {
         expect(result.current.loading).toBe(false);
       });
 
-      expect(Alert.alert).toHaveBeenCalledWith(
-        'Error',
-        'Could not get your current location'
-      );
+      expect(mockShowMessage).toHaveBeenCalledWith('Could not get your current location', { type: 'error' });
     });
   });
 
@@ -233,10 +234,7 @@ describe('useWalkPlanner', () => {
         await result.current.handleSelectPlace('999', 'start');
       });
 
-      expect(Alert.alert).toHaveBeenCalledWith(
-        'Error',
-        'Could not load place details'
-      );
+      expect(mockShowMessage).toHaveBeenCalledWith('Could not load place details', { type: 'error' });
     });
   });
 
@@ -346,11 +344,39 @@ describe('useWalkPlanner', () => {
         await result.current.generateRoute();
       });
 
-      expect(Alert.alert).toHaveBeenCalledWith(
-        'Error',
+      expect(mockShowMessage).toHaveBeenCalledWith(
         'The routing service is busy. Please try again in a minute.',
+        { type: 'error' },
       );
       expect(result.current.isGeneratingRoute).toBe(false);
+    });
+  });
+
+  describe('without blocking alerts', () => {
+    it('sets the start from the map with a short notice, not an alert', async () => {
+      mockedGooglePlaces.reverseGeocode.mockResolvedValueOnce({
+        coordinates: { latitude: 47.5, longitude: 19.04 },
+        name: 'Heroes Square',
+        address: 'Budapest',
+      });
+      const { result } = renderHook(() => useWalkPlanner());
+      act(() => result.current.handleEnableMapSelection('start'));
+
+      await act(async () => {
+        await result.current.handleMapPress({ latitude: 47.5, longitude: 19.04 });
+      });
+
+      expect(mockShowMessage).toHaveBeenCalledWith('Start set: Heroes Square');
+      expect(Alert.alert).not.toHaveBeenCalled();
+    });
+
+    it("doesn't interrupt with an alert when picking on the map starts (the map shows a hint)", () => {
+      const { result } = renderHook(() => useWalkPlanner());
+
+      act(() => result.current.handleEnableMapSelection('destination'));
+
+      expect(result.current.mapSelectionMode).toBe('destination');
+      expect(Alert.alert).not.toHaveBeenCalled();
     });
   });
 });

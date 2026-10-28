@@ -48,38 +48,34 @@ class GooglePlacesService {
     location?: Coordinates,
     sessionToken?: string,
   ): Promise<PlaceSuggestion[]> {
-    try {
-      const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json`;
-      
-      const params: Record<string, string | number | undefined> = {
-        input: query,
-        key: GOOGLE_PLACES_API_KEY,
-        language: 'en',
-        ...(sessionToken && { sessiontoken: sessionToken }),
-      };
+    // Errors are passed on; the caller tells the user (the search box)
+    const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json`;
+    
+    const params: Record<string, string | number | undefined> = {
+      input: query,
+      key: GOOGLE_PLACES_API_KEY,
+      language: 'en',
+      ...(sessionToken && { sessiontoken: sessionToken }),
+    };
 
-      // Add location bias if provided (searches near user's location)
-      if (location) {
-        params.location = `${location.latitude},${location.longitude}`;
-        params.radius = 50000; // 50km radius
-      }
-
-      const response = await axios.get(url, { params });
-
-      if (response.data.status !== 'OK' && response.data.status !== 'ZERO_RESULTS') {
-        throw googleError('Google Places API', response.data);
-      }
-
-      return (response.data.predictions as GooglePrediction[]).map((prediction) => ({
-        placeId: prediction.place_id,
-        description: prediction.description,
-        mainText: prediction.structured_formatting.main_text,
-        secondaryText: prediction.structured_formatting.secondary_text,
-      }));
-    } catch (error) {
-      console.error('Error searching places:', error);
-      throw error;
+    // Add location bias if provided (searches near user's location)
+    if (location) {
+      params.location = `${location.latitude},${location.longitude}`;
+      params.radius = 50000; // 50km radius
     }
+
+    const response = await axios.get(url, { params });
+
+    if (response.data.status !== 'OK' && response.data.status !== 'ZERO_RESULTS') {
+      throw googleError('Google Places API', response.data);
+    }
+
+    return (response.data.predictions as GooglePrediction[]).map((prediction) => ({
+      placeId: prediction.place_id,
+      description: prediction.description,
+      mainText: prediction.structured_formatting.main_text,
+      secondaryText: prediction.structured_formatting.secondary_text,
+    }));
   }
 
   /**
@@ -87,36 +83,32 @@ class GooglePlacesService {
    * search's sessionToken, this ends the session (one billed search).
    */
   async getPlaceDetails(placeId: string, sessionToken?: string): Promise<Location> {
-    try {
-      const url = `https://maps.googleapis.com/maps/api/place/details/json`;
-      
-      const params = {
-        place_id: placeId,
-        fields: 'name,formatted_address,geometry',
-        key: GOOGLE_PLACES_API_KEY,
-        ...(sessionToken && { sessiontoken: sessionToken }),
-      };
+    // Errors are passed on; the caller tells the user (the planner)
+    const url = `https://maps.googleapis.com/maps/api/place/details/json`;
+    
+    const params = {
+      place_id: placeId,
+      fields: 'name,formatted_address,geometry',
+      key: GOOGLE_PLACES_API_KEY,
+      ...(sessionToken && { sessiontoken: sessionToken }),
+    };
 
-      const response = await axios.get(url, { params });
+    const response = await axios.get(url, { params });
 
-      if (response.data.status !== 'OK') {
-        throw googleError('Google Places API', response.data);
-      }
-
-      const result = response.data.result;
-
-      return {
-        coordinates: {
-          latitude: result.geometry.location.lat,
-          longitude: result.geometry.location.lng,
-        },
-        name: result.name,
-        address: result.formatted_address,
-      };
-    } catch (error) {
-      console.error('Error getting place details:', error);
-      throw error;
+    if (response.data.status !== 'OK') {
+      throw googleError('Google Places API', response.data);
     }
+
+    const result = response.data.result;
+
+    return {
+      coordinates: {
+        latitude: result.geometry.location.lat,
+        longitude: result.geometry.location.lng,
+      },
+      name: result.name,
+      address: result.formatted_address,
+    };
   }
 
   /**
@@ -158,7 +150,6 @@ class GooglePlacesService {
         address: result.formatted_address,
       };
     } catch (error) {
-      console.error('Error reverse geocoding:', error);
       // Return a basic location if geocoding fails
       return {
         coordinates,

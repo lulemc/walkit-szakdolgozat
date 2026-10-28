@@ -67,8 +67,8 @@ export default function LocationSelector({
       await onSelectPlace(suggestion.placeId, type, search.sessionToken);
       search.endSession(suggestion.description);
       closeSearch();
-    } catch (error) {
-      console.error(`Error selecting ${type} place:`, error);
+    } catch {
+      // The planner already told the user (onSelectPlace shows the error)
     }
   };
 
