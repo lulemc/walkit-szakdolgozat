@@ -13,6 +13,12 @@ const hu: Translation<typeof en> = {
     pace: "Tempó",
     paceUnit: "perc/km",
   },
+  share: {
+    button: "Megosztás",
+    dialogTitle: "Oszd meg a sétádat",
+    failed: "Nem sikerült megosztani a sétát. Próbáld újra.",
+    unavailable: "Ezen a telefonon nem érhető el a megosztás.",
+  },
   summary: {
     title: "Séta teljesítve! 🎉",
     inFavourites: "A kedvenceid között",

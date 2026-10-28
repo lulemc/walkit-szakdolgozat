@@ -11,6 +11,12 @@ export default {
     pace: "Pace",
     paceUnit: "min/km",
   },
+  share: {
+    button: "Share",
+    dialogTitle: "Share your walk",
+    failed: "Couldn't share the walk. Please try again.",
+    unavailable: "Sharing isn't available on this phone.",
+  },
   summary: {
     title: "Walk complete! 🎉",
     inFavourites: "In your favourites",

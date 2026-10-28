@@ -126,6 +126,8 @@ export default function ActiveWalkScreen({
         onSave={save}
         onDiscard={confirmDiscard}
         onFavorite={addToFavorites}
+        segments={finished.segments}
+        endedAt={finished.endedAt}
       />
     );
   }
