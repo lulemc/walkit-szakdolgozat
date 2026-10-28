@@ -80,7 +80,7 @@ export const useWalkPlanner = () => {
         try {
           const locationWithAddress = await GooglePlacesService.reverseGeocode(coords);
           setStartLocation(locationWithAddress);
-        } catch (error) {
+        } catch {
           setStartLocation({
             coordinates: coords,
             name: 'Current Location',
@@ -93,7 +93,7 @@ export const useWalkPlanner = () => {
           latitudeDelta: 0.05,
           longitudeDelta: 0.05,
         });
-      } catch (error) {
+      } catch {
         showMessage('Could not get your current location', { type: 'error' });
       } finally {
         setLoading(false);
@@ -119,7 +119,7 @@ export const useWalkPlanner = () => {
     try {
       const locationWithAddress = await GooglePlacesService.reverseGeocode(currentLocation);
       setStartLocation(locationWithAddress);
-    } catch (error) {
+    } catch {
       setStartLocation({
         coordinates: currentLocation,
         name: 'Current Location',
@@ -153,7 +153,7 @@ export const useWalkPlanner = () => {
         setDestinationLocation(locationWithAddress);
         showMessage(`Destination set: ${locationWithAddress.name || 'the selected point'}`);
       }
-    } catch (error) {
+    } catch {
       const fallbackLocation: LocationType = {
         coordinates: coordinate,
         name: 'Selected Location',
@@ -197,7 +197,7 @@ export const useWalkPlanner = () => {
       } else {
         setDestinationLocation(location);
       }
-    } catch (error) {
+    } catch {
       showMessage('Could not load place details', { type: 'error' });
     }
   };

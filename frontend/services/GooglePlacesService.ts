@@ -149,7 +149,7 @@ class GooglePlacesService {
         name,
         address: result.formatted_address,
       };
-    } catch (error) {
+    } catch {
       // Return a basic location if geocoding fails
       return {
         coordinates,

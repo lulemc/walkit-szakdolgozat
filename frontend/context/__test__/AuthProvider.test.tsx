@@ -2,7 +2,6 @@ import { renderHook, act } from "@testing-library/react-native";
 import { AuthProvider, useAuth } from "../../context/AuthProvider";
 import { storage } from "@/utils/storage";
 import { userStorage } from "@/utils/userStorage";
-import { useRouter } from "expo-router";
 import React from "react";
 import { loginUser, registerUser } from "@/services/authApi";
 import { setUnauthorizedHandler } from "@/services/api";
@@ -163,7 +162,7 @@ describe("AuthContext Logic", () => {
     await act(async () => {
       try {
         await result.current.register("User", "e@e.com", "p");
-      } catch (e) {
+      } catch {
         // Error is expected to be re-thrown by the component
       }
     });
