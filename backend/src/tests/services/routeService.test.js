@@ -60,10 +60,11 @@ const orsAnswer = {
     ],
   },
 };
+// ...as the route stores it, each point with its height
 const roadPath = [
-  { latitude: 47.5, longitude: 19.04 },
-  { latitude: 47.51, longitude: 19.05 },
-  { latitude: 47.5, longitude: 19.04 },
+  { latitude: 47.5, longitude: 19.04, elevation: 100 },
+  { latitude: 47.51, longitude: 19.05, elevation: 130 },
+  { latitude: 47.5, longitude: 19.04, elevation: 100 },
 ];
 const start = { latitude: 47.5, longitude: 19.04 };
 const circular = (overrides = {}) => ({ routeType: "circular", startLocation: start, distance: 5, preferences: {}, ...overrides });

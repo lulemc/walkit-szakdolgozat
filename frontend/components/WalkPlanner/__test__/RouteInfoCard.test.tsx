@@ -46,4 +46,21 @@ describe('RouteInfoCard', () => {
 
     expect(onPlanGroupWalk).toHaveBeenCalledWith(route);
   });
+
+  it('shows the elevation profile when the path has heights', () => {
+    const hilly = {
+      ...route,
+      elevationGain: 25,
+      coordinates: [
+        { latitude: 47.5, longitude: 19.04, elevation: 110 },
+        { latitude: 47.51, longitude: 19.04, elevation: 135 },
+      ],
+    } as Route;
+
+    const { getByLabelText } = renderWithTheme(
+      <RouteInfoCard route={hilly} onClose={jest.fn()} onStartWalk={jest.fn()} />,
+    );
+
+    expect(getByLabelText('Elevation profile: between 110 m and 135 m')).toBeTruthy();
+  });
 });

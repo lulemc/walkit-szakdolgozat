@@ -1,6 +1,7 @@
 import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { Card, useTheme } from "react-native-paper";
 import { CustomText } from "@/components/CustomText";
+import { ElevationProfile } from "./ElevationProfile";
 import { PrimaryButton } from "@/components/Button";
 import { useTranslation } from "react-i18next";
 import { Route, RoutePreferences, routeService } from "@/services/routeService";
@@ -143,6 +144,7 @@ const RouteInfoCard: React.FC<RouteInfoCardProps> = ({
                 </CustomText>
               </View>
             </View>
+            <ElevationProfile coordinates={route.coordinates} />
           </View>
         )}
 

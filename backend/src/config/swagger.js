@@ -129,6 +129,11 @@ const swaggerSpec = swaggerJSDoc({
               example: 19.0402,
               description: "Longitude coordinate",
             },
+            elevation: {
+              type: "number",
+              example: 112.5,
+              description: "Height in metres (points of generated routes; absent otherwise)",
+            },
           },
         },
         RoutePreferences: {

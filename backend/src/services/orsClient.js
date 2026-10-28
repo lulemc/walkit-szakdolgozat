@@ -91,7 +91,12 @@ export const getWalkingRoute = async (waypoints, { wait = sleep } = {}) => {
 
     const points = feature.geometry.coordinates;
     return {
-      coordinates: points.map(([longitude, latitude]) => ({ latitude, longitude })),
+      // ORS adds each point's height (m) as a third value when asked for elevation
+      coordinates: points.map(([longitude, latitude, elevation]) => ({
+        latitude,
+        longitude,
+        ...(typeof elevation === "number" && { elevation }),
+      })),
       distance: feature.properties.summary.distance,
       duration: feature.properties.summary.duration / 60,
       elevation: summarizeElevation(points, feature.properties),

@@ -11,6 +11,8 @@ export const coordinateSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    // Height in metres, for the elevation profile (generated routes only)
+    elevation: Number,
   },
   { _id: false },
 );

@@ -16,6 +16,24 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+describe("Route path", () => {
+  it("keeps each point's height when there is one, for the elevation profile", () => {
+    const route = new Route({
+      ...fields(),
+      coordinates: [
+        { latitude: 47.5, longitude: 19.04, elevation: 110.5 },
+        { latitude: 47.51, longitude: 19.05 },
+      ],
+    });
+
+    expect(route.validateSync()).toBeUndefined();
+    expect(route.toObject().coordinates).toEqual([
+      { latitude: 47.5, longitude: 19.04, elevation: 110.5 },
+      { latitude: 47.51, longitude: 19.05 },
+    ]);
+  });
+});
+
 describe("Route drafts", () => {
   it("treats routes as saved unless they are created as drafts (older routes have no status)", () => {
     expect(new Route(fields()).status).toBe("saved");

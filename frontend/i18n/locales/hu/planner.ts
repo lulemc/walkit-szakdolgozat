@@ -78,6 +78,8 @@ const hu: Translation<typeof en> = {
     duration: "Időtartam",
     pace: "Tempó",
     elevation: "⛰️ Szintkülönbség",
+    metres: "{{value}} m",
+    profileLabel: "Szintprofil: {{min}} és {{max}} között",
     gain: "Emelkedés",
     loss: "Lejtés",
     activePreferences: "Bekapcsolt preferenciák:",

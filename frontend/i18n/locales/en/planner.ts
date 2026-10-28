@@ -77,6 +77,8 @@ export default {
     duration: "Duration",
     pace: "Pace",
     elevation: "⛰️ Elevation",
+    metres: "{{value}} m",
+    profileLabel: "Elevation profile: between {{min}} and {{max}}",
     gain: "Gain",
     loss: "Loss",
     activePreferences: "Active Preferences:",

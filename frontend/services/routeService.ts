@@ -5,6 +5,8 @@ import i18n from '@/i18n';
 export interface Coordinates {
   latitude: number;
   longitude: number;
+  /** Height in metres; generated routes have it, older routes and GPS points don't */
+  elevation?: number;
 }
 
 export interface RoutePreferences {

@@ -50,16 +50,16 @@ describe("getWalkingRoute", () => {
     );
   });
 
-  it("returns the road-snapped path, distance, walking time and elevation", async () => {
+  it("returns the road-snapped path (with each point's height), distance, walking time and elevation", async () => {
     axios.post.mockResolvedValue(orsResponse);
 
     const route = await getWalkingRoute([a, b], noWait);
 
     expect(route).toEqual({
       coordinates: [
-        { latitude: 47.5, longitude: 19.04 },
-        { latitude: 47.505, longitude: 19.045 },
-        { latitude: 47.51, longitude: 19.05 },
+        { latitude: 47.5, longitude: 19.04, elevation: 110 },
+        { latitude: 47.505, longitude: 19.045, elevation: 125.5 },
+        { latitude: 47.51, longitude: 19.05, elevation: 118 },
       ],
       distance: 1520.4,
       duration: 20,
@@ -77,6 +77,10 @@ describe("getWalkingRoute", () => {
     const route = await getWalkingRoute([a, b], noWait);
 
     expect(route.elevation).toEqual({ gain: 0, loss: 0, max: null, min: null });
+    expect(route.coordinates).toEqual([
+      { latitude: 47.5, longitude: 19.04 },
+      { latitude: 47.51, longitude: 19.05 },
+    ]);
   });
 
   it.each([
