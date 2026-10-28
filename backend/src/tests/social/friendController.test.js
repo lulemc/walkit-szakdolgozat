@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import * as friendshipService from "../../services/friendshipService.js";
+import { notifyFriendAccepted, notifyFriendRequest } from "../../services/socialNotifications.js";
 import { HttpError } from "../../utils/httpError.js";
 import {
   listFriends,
@@ -21,12 +22,17 @@ vi.mock("../../services/friendshipService.js", () => ({
   unfriend: vi.fn(),
 }));
 
+vi.mock("../../services/socialNotifications.js", () => ({
+  notifyFriendRequest: vi.fn(() => Promise.resolve()),
+  notifyFriendAccepted: vi.fn(() => Promise.resolve()),
+}));
+
 const mockRes = () => ({
   status: vi.fn().mockReturnThis(),
   json: vi.fn(),
 });
 
-const user = { id: "me" };
+const user = { id: "me", name: "Ann" };
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -69,6 +75,38 @@ describe("friendController", () => {
       data: friendship,
       message: "Friend request sent",
     });
+  });
+
+  it("notifies the recipient of a new request", async () => {
+    friendshipService.sendRequest.mockResolvedValue({
+      friendship: { _id: "r1", requester: "me", recipient: "u2", status: "pending" },
+      autoAccepted: false,
+    });
+
+    await sendFriendRequest({ user, body: { userId: "u2" } }, mockRes());
+
+    expect(notifyFriendRequest).toHaveBeenCalledWith("u2", "Ann");
+    expect(notifyFriendAccepted).not.toHaveBeenCalled();
+  });
+
+  it("tells the other user when sending accepted their request", async () => {
+    friendshipService.sendRequest.mockResolvedValue({
+      friendship: { _id: "r1", requester: "u2", recipient: "me", status: "accepted" },
+      autoAccepted: true,
+    });
+
+    await sendFriendRequest({ user, body: { userId: "u2" } }, mockRes());
+
+    expect(notifyFriendAccepted).toHaveBeenCalledWith("u2", "Ann");
+    expect(notifyFriendRequest).not.toHaveBeenCalled();
+  });
+
+  it("tells the requester when I accept", async () => {
+    friendshipService.acceptRequest.mockResolvedValue({ _id: "r1", requester: "u2", recipient: "me", status: "accepted" });
+
+    await acceptFriendRequest({ user, params: { id: "r1" } }, mockRes());
+
+    expect(notifyFriendAccepted).toHaveBeenCalledWith("u2", "Ann");
   });
 
   it("responds 200 when sending accepted the other user's request", async () => {

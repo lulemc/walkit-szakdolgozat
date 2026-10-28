@@ -7,6 +7,7 @@ import { useSnackbar } from "@/context/SnackbarProvider";
 import { userStorage } from "@/utils/userStorage";
 import { User } from "@/types/User";
 import i18n from "@/i18n";
+import { registerForPushNotifications, unregisterPushNotifications } from "@/services/pushNotifications";
 
 interface AuthContextType {
   token: string | null;
@@ -77,7 +78,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     router.replace("/");
   };
 
-  const logout = async () => {
+  // Notifications follow the logged-in user, in the app's current language
+  const userId = user?._id;
+  useEffect(() => {
+    if (!token || !userId) return;
+    registerForPushNotifications(userId, i18n.language);
+    const onLanguageChanged = (language: string) => {
+      registerForPushNotifications(userId, language);
+    };
+    i18n.on("languageChanged", onLanguageChanged);
+    return () => i18n.off("languageChanged", onLanguageChanged);
+  }, [token, userId]);
+
+  const endSession = async () => {
     await storage.removeToken();
     await userStorage.removeUser();
 
@@ -86,12 +99,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     router.replace("/(auth)/login");
   };
 
+  const logout = async () => {
+    // While the token still works: this phone shouldn't get the user's notifications any more
+    if (userId) await unregisterPushNotifications(userId);
+    await endSession();
+  };
+
   // A 401 means the token expired or was revoked (e.g. after a password change elsewhere)
   const handleUnauthorized = async () => {
     if (tokenRef.current) {
       showMessage(i18n.t("auth:sessionExpired"), { type: "error" });
     }
-    await logout();
+    // Not logout(): the backend can't be asked to forget the phone with a token it rejects
+    await endSession();
   };
 
   useEffect(() => {

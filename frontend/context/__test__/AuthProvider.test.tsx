@@ -5,6 +5,8 @@ import { userStorage } from "@/utils/userStorage";
 import React from "react";
 import { loginUser, registerUser } from "@/services/authApi";
 import { setUnauthorizedHandler } from "@/services/api";
+import { registerForPushNotifications, unregisterPushNotifications } from "@/services/pushNotifications";
+import i18n from "@/i18n";
 
 // Mock the API
 jest.mock("@/services/authApi", () => ({
@@ -38,6 +40,11 @@ jest.mock("@/utils/userStorage", () => ({
     setUser: jest.fn(),
     removeUser: jest.fn(),
   },
+}));
+
+jest.mock("@/services/pushNotifications", () => ({
+  registerForPushNotifications: jest.fn(() => Promise.resolve(null)),
+  unregisterPushNotifications: jest.fn(() => Promise.resolve()),
 }));
 
 // Mock Expo Router
@@ -287,5 +294,76 @@ describe("AuthContext Logic", () => {
 
     expect(result.current.loading).toBe(false);
     expect(result.current.token).toBeNull();
+  });
+
+  describe("push notifications", () => {
+    const mockUser = { _id: "123", name: "Test User", email: "test@test.com" };
+    const loggedIn = async () => {
+      (storage.getToken as jest.Mock).mockResolvedValue("existing-token");
+      (userStorage.getUser as jest.Mock).mockResolvedValue(mockUser);
+      const hook = renderHook(() => useAuth(), { wrapper });
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+      return hook;
+    };
+
+    afterEach(async () => {
+      await act(async () => {
+        await i18n.changeLanguage("en");
+      });
+    });
+
+    it("registers this phone for notifications once someone is logged in", async () => {
+      await loggedIn();
+
+      expect(registerForPushNotifications).toHaveBeenCalledWith("123", "en");
+    });
+
+    it("doesn't register while nobody is logged in", async () => {
+      (storage.getToken as jest.Mock).mockResolvedValue(null);
+      renderHook(() => useAuth(), { wrapper });
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+
+      expect(registerForPushNotifications).not.toHaveBeenCalled();
+    });
+
+    it("registers again when the language changes, so notifications follow it", async () => {
+      await loggedIn();
+
+      await act(async () => {
+        await i18n.changeLanguage("hu");
+      });
+
+      expect(registerForPushNotifications).toHaveBeenLastCalledWith("123", "hu");
+    });
+
+    it("stops notifications on this phone before logging out", async () => {
+      const { result } = await loggedIn();
+
+      await act(async () => {
+        await result.current.logout();
+      });
+
+      expect(unregisterPushNotifications).toHaveBeenCalledWith("123");
+      const [unregistered] = (unregisterPushNotifications as jest.Mock).mock.invocationCallOrder;
+      const [tokenRemoved] = (storage.removeToken as jest.Mock).mock.invocationCallOrder;
+      expect(unregistered).toBeLessThan(tokenRemoved);
+    });
+
+    // The token no longer works, so the backend can't be asked (it would answer 401 again)
+    it("doesn't call the backend when the session has expired", async () => {
+      await loggedIn();
+      const handler = (setUnauthorizedHandler as jest.Mock).mock.calls.at(-1)[0];
+
+      await act(async () => {
+        await handler();
+      });
+
+      expect(unregisterPushNotifications).not.toHaveBeenCalled();
+      expect(storage.removeToken).toHaveBeenCalled();
+    });
   });
 });

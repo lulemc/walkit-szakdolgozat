@@ -7,6 +7,7 @@ const stored = {
   email: "ann@example.com",
   passwordHash: "hash",
   tokenVersion: 2,
+  pushTokens: [{ token: "ExponentPushToken[a]", language: "en" }],
   __v: 0,
   dateOfBirth: "1990-01-01",
   sex: "female",
@@ -40,6 +41,7 @@ describe("toPublicUser", () => {
 
     expect(user).not.toHaveProperty("passwordHash");
     expect(user).not.toHaveProperty("tokenVersion");
+    expect(user).not.toHaveProperty("pushTokens");
     expect(user).not.toHaveProperty("__v");
   });
 

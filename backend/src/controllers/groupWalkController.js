@@ -1,12 +1,15 @@
 import * as groupWalkService from "../services/groupWalkService.js";
 import * as commentService from "../services/groupWalkCommentService.js";
 import * as summaryService from "../services/socialSummaryService.js";
+import { notifyWalkCancelled, notifyWalkInvitation } from "../services/socialNotifications.js";
 
-// Errors are passed on to middleware/errorHandler.js
+// Errors are passed on to middleware/errorHandler.js.
+// Notifications are sent after the response and never fail the request.
 
 export const createGroupWalk = async (req, res) => {
   const walk = await groupWalkService.createGroupWalk(req.user.id, req.body);
   res.status(201).json({ success: true, data: walk });
+  void notifyWalkInvitation(walk, req.user.name);
 };
 
 export const listGroupWalks = async (req, res) => {
@@ -30,6 +33,7 @@ export const updateGroupWalk = async (req, res) => {
 export const cancelGroupWalk = async (req, res) => {
   const walk = await groupWalkService.cancelGroupWalk(req.user.id, req.params.id);
   res.json({ success: true, data: walk });
+  void notifyWalkCancelled(walk);
 };
 
 export const inviteToGroupWalk = async (req, res) => {
@@ -39,6 +43,7 @@ export const inviteToGroupWalk = async (req, res) => {
     req.body.userIds,
   );
   res.json({ success: true, data: walk });
+  void notifyWalkInvitation(walk, req.user.name, req.body.userIds);
 };
 
 export const removeGroupWalkParticipant = async (req, res) => {

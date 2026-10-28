@@ -42,6 +42,12 @@ describe("User model", () => {
     expect(errorsOf({ ...valid, [field]: value })[field].message).toBe(message);
   });
 
+  it("starts without push tokens and keeps each one's language", () => {
+    expect(new User(valid).pushTokens).toEqual([]);
+    const user = new User({ ...valid, pushTokens: [{ token: "ExponentPushToken[a]", language: "hu" }] });
+    expect(user.toObject().pushTokens).toEqual([{ token: "ExponentPushToken[a]", language: "hu" }]);
+  });
+
   it("has a weekly walking goal of 10 km until one is set", () => {
     expect(new User(valid).weeklyGoalKm).toBe(10);
   });

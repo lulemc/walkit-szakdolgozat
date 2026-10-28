@@ -1,6 +1,8 @@
 import * as friendshipService from "../services/friendshipService.js";
+import { notifyFriendAccepted, notifyFriendRequest } from "../services/socialNotifications.js";
 
-// Errors are passed on to middleware/errorHandler.js
+// Errors are passed on to middleware/errorHandler.js.
+// Notifications are sent after the response and never fail the request.
 
 export const listFriends = async (req, res) => {
   const friends = await friendshipService.listFriends(req.user.id);
@@ -22,11 +24,15 @@ export const sendFriendRequest = async (req, res) => {
     data: friendship,
     message: autoAccepted ? "Friend request accepted" : "Friend request sent",
   });
+  // Accepting automatically means the other user had asked first
+  if (autoAccepted) void notifyFriendAccepted(friendship.requester, req.user.name);
+  else void notifyFriendRequest(friendship.recipient, req.user.name);
 };
 
 export const acceptFriendRequest = async (req, res) => {
   const friendship = await friendshipService.acceptRequest(req.user.id, req.params.id);
   res.json({ success: true, data: friendship, message: "Friend request accepted" });
+  void notifyFriendAccepted(friendship.requester, req.user.name);
 };
 
 export const declineFriendRequest = async (req, res) => {

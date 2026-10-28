@@ -794,6 +794,50 @@ const swaggerSpec = swaggerJSDoc({
           },
         },
       },
+      "/api/users/{id}/push-tokens": {
+        post: {
+          summary: "Get notifications on this phone",
+          description:
+            "Friend requests, accepted requests, group walk invitations and cancellations are sent to every registered phone, in its language. A token registered for another account moves to this one.",
+          tags: ["Users"],
+          security: [{ bearerAuth: [] }],
+          parameters: [{ in: "path", name: "id", required: true, schema: { type: "string" } }],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["token"],
+                  properties: {
+                    token: { type: "string", example: "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]" },
+                    language: { type: "string", enum: ["en", "hu"], default: "en" },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: { description: "Registered", content: { "application/json": { schema: { type: "object", properties: { success: { type: "boolean" }, message: { type: "string" } } } } } },
+            400: { description: "Not an Expo push token", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+          },
+        },
+        delete: {
+          summary: "Stop notifications on this phone (e.g. on logout)",
+          tags: ["Users"],
+          security: [{ bearerAuth: [] }],
+          parameters: [{ in: "path", name: "id", required: true, schema: { type: "string" } }],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: { type: "object", required: ["token"], properties: { token: { type: "string" } } },
+              },
+            },
+          },
+          responses: { 200: { description: "Removed (also when it wasn't registered)", content: { "application/json": { schema: { type: "object", properties: { success: { type: "boolean" }, message: { type: "string" } } } } } } },
+        },
+      },
       "/api/users/search": {
         get: {
           summary: "Search users by name or exact email",

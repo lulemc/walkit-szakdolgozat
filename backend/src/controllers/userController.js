@@ -8,6 +8,7 @@ import { toPublicUser } from "../utils/publicUser.js";
 import { emailProblem, nameProblem, passwordProblem } from "../utils/validation.js";
 import * as userSearchService from "../services/userSearchService.js";
 import { deleteUserData } from "../services/accountCleanupService.js";
+import * as pushService from "../services/pushService.js";
 
 // Errors are thrown and turned into responses by middleware/errorHandler.js
 
@@ -124,6 +125,18 @@ export const changePassword = async (req, res) => {
     message: "Password changed successfully",
     data: { token: generateToken(user) },
   });
+};
+
+/** This phone wants notifications, in the given language (requireSelf: only for myself) */
+export const registerPushToken = async (req, res) => {
+  await pushService.registerPushToken(userIdOf(req), req.body.token, req.body.language);
+  res.json({ success: true, message: "Push notifications turned on" });
+};
+
+/** This phone no longer wants notifications for this user, e.g. after logging out */
+export const removePushToken = async (req, res) => {
+  await pushService.removePushToken(userIdOf(req), req.body.token);
+  res.json({ success: true, message: "Push notifications turned off" });
 };
 
 /**

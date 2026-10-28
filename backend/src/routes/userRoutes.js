@@ -5,6 +5,8 @@ import {
   deleteUser,
   changePassword,
   searchUsers,
+  registerPushToken,
+  removePushToken,
 } from "../controllers/userController.js";
 import { protect, requireSelf } from "../middleware/authMiddleware.js";
 
@@ -129,5 +131,9 @@ router.delete("/:id", protect, requireSelf, deleteUser);
  *         description: Password changed successfully
  */
 router.post("/:id/change-password", protect, requireSelf, changePassword);
+
+// Documented in config/swagger.js under the "Users" tag
+router.post("/:id/push-tokens", protect, requireSelf, registerPushToken);
+router.delete("/:id/push-tokens", protect, requireSelf, removePushToken);
 
 export default router;

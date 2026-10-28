@@ -16,9 +16,11 @@ import "@/i18n";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { OfflineBanner } from "@/components/OfflineBanner";
+import { configureNotifications } from "@/services/pushNotifications";
 
 // Keep the native splash screen until the login state is known (no blank flash)
 SplashScreen.preventAutoHideAsync().catch(() => {});
+configureNotifications();
 
 function AppContent() {
   const { loading } = useAuth();

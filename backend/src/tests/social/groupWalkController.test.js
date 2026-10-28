@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import * as groupWalkService from "../../services/groupWalkService.js";
+import { notifyWalkCancelled, notifyWalkInvitation } from "../../services/socialNotifications.js";
 import { HttpError } from "../../utils/httpError.js";
 import {
   createGroupWalk,
@@ -23,12 +24,17 @@ vi.mock("../../services/groupWalkService.js", () => ({
   respondToGroupWalk: vi.fn(),
 }));
 
+vi.mock("../../services/socialNotifications.js", () => ({
+  notifyWalkInvitation: vi.fn(() => Promise.resolve()),
+  notifyWalkCancelled: vi.fn(() => Promise.resolve()),
+}));
+
 const mockRes = () => ({
   status: vi.fn().mockReturnThis(),
   json: vi.fn(),
 });
 
-const user = { id: "me" };
+const user = { id: "me", name: "Ann" };
 const walk = { _id: "w1", title: "Sunday walk" };
 
 beforeEach(() => {
@@ -105,6 +111,24 @@ describe("groupWalkController", () => {
     await inviteToGroupWalk({ user, params: { id: "w1" }, body: { userIds: ["u3"] } }, mockRes());
 
     expect(groupWalkService.inviteToGroupWalk).toHaveBeenCalledWith("me", "w1", ["u3"]);
+    expect(notifyWalkInvitation).toHaveBeenCalledWith(walk, "Ann", ["u3"]);
+  });
+
+  it("invites the friends of a new walk", async () => {
+    groupWalkService.createGroupWalk.mockResolvedValue(walk);
+
+    await createGroupWalk({ user, body: { routeId: "r1" } }, mockRes());
+
+    expect(notifyWalkInvitation).toHaveBeenCalledWith(walk, "Ann");
+  });
+
+  it("tells the participants when a walk is cancelled", async () => {
+    const cancelled = { ...walk, status: "cancelled" };
+    groupWalkService.cancelGroupWalk.mockResolvedValue(cancelled);
+
+    await cancelGroupWalk({ user, params: { id: "w1" } }, mockRes());
+
+    expect(notifyWalkCancelled).toHaveBeenCalledWith(cancelled);
   });
 
   it("removes a participant", async () => {

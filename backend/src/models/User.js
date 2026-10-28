@@ -29,6 +29,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ["sedentary", "light", "moderate", "active", "very_active"],
     },
+    // Phones to notify (Expo push tokens), each with the language of its notifications; never sent to the app
+    pushTokens: {
+      type: [{ token: { type: String, required: true }, language: { type: String, default: "en" }, _id: false }],
+      default: [],
+    },
     // How far the user wants to walk with WalkIt each week, shown on Statistics
     weeklyGoalKm: { type: Number, default: 10, min: [1, GOAL_MESSAGE], max: [200, GOAL_MESSAGE] },
   },
