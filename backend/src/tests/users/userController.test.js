@@ -73,14 +73,14 @@ describe("updateUser", () => {
     const res = mockRes();
 
     await updateUser(
-      { params: { id: ID }, body: { name: "New Name", password: "newpass", height: 180, weight: 75, activityLevel: "active" } },
+      { params: { id: ID }, body: { name: "New Name", password: "newpass", height: 180, weight: 75, activityLevel: "active", weeklyGoalKm: 20 } },
       res,
     );
 
     expect(bcrypt.hash).not.toHaveBeenCalled();
     expect(User.findByIdAndUpdate).toHaveBeenCalledWith(
       ID,
-      { name: "New Name", height: 180, weight: 75, activityLevel: "active" },
+      { name: "New Name", height: 180, weight: 75, activityLevel: "active", weeklyGoalKm: 20 },
       { new: true, runValidators: true },
     );
     expect(res.json).toHaveBeenCalledWith({

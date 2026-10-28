@@ -17,6 +17,7 @@ vi.mock("../../services/walkSessionService.js", () => ({
   listWalks: vi.fn(),
   getWalk: vi.fn(),
   getWalkStats: vi.fn(),
+  getWalkActivity: vi.fn(),
 }));
 
 beforeEach(() => {
@@ -29,6 +30,7 @@ describe("walk routes", () => {
     ["POST", "/api/walks", "recordWalk", { distanceM: 10 }, ["me", { distanceM: 10 }], 201],
     ["GET", "/api/walks?before=2030-01-01&limit=5", "listWalks", undefined, ["me", { before: "2030-01-01", limit: "5" }], 200],
     ["GET", "/api/walks/stats?from=2030-01-01", "getWalkStats", undefined, ["me", { from: "2030-01-01" }], 200],
+    ["GET", "/api/walks/activity?from=2030-01-01", "getWalkActivity", undefined, ["me", { from: "2030-01-01" }], 200],
     ["GET", "/api/walks/w1", "getWalk", undefined, ["me", "w1"], 200],
   ])("%s %s reaches %s", async (method, url, serviceFn, body, args, status) => {
     const response = await inject(app, { method, url, body });

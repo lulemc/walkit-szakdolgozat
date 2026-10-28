@@ -6,7 +6,9 @@ import { useTranslation } from "react-i18next";
 import { CustomText, ScreenContainer } from "@/components";
 import { useHealthData } from "@/hooks/useHealthData";
 import { useWalkStats } from "@/hooks/useWalkStats";
+import { useWalkGoal } from "@/hooks/useWalkGoal";
 import { WalkTotalsCard } from "@/components/Walks/WalkTotalsCard";
+import { WalkGoalCard } from "@/components/Statistics/WalkGoalCard";
 import { StatisticsHeader } from "@/components/Statistics/StatisticsHeader";
 import { LoadingState } from "@/components/Statistics/LoadingState";
 import { ErrorState } from "@/components/Statistics/ErrorState";
@@ -62,6 +64,7 @@ export default function StatisticsScreen() {
     openInstallPage,
   } = useHealthData();
   const { stats: walkStats } = useWalkStats();
+  const walkGoal = useWalkGoal();
 
   if (status === "loading") {
     return <LoadingState />;
@@ -124,6 +127,14 @@ export default function StatisticsScreen() {
         />
       </View>
 
+      {walkGoal.loaded ? (
+        <WalkGoalCard
+          goalKm={walkGoal.goalKm}
+          thisWeekM={walkGoal.thisWeekM}
+          streak={walkGoal.streak}
+          onSaveGoal={walkGoal.saveGoal}
+        />
+      ) : null}
       {walkStats ? <WalkTotalsCard title={t("walkTotals")} stats={walkStats} /> : null}
 
       <SegmentedButtons

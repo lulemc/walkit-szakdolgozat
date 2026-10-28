@@ -15,7 +15,7 @@ export const notFound = (req, res) =>
  * rejected promise through; Express 5 forwards it here):
  * - HttpError: its own status and message, plus its details
  * - Mongoose validation errors: 400 with the first problem
- * - ids that can't exist (CastError): 404
+ * - ids that can't exist (CastError): 404; other values of the wrong type: 400
  * - duplicate keys: 409
  * - Express's own client errors (bad JSON, too large body): their status
  * - anything else: logged, and a 500 that reveals nothing
@@ -30,7 +30,10 @@ export const errorHandler = (error, req, res, next) => {
     const [first] = Object.values(error.errors ?? {});
     return fail(res, 400, first?.message ?? "Invalid data");
   }
-  if (error?.name === "CastError") return fail(res, 404, "Not found");
+  if (error?.name === "CastError") {
+    if (error.kind === "ObjectId") return fail(res, 404, "Not found");
+    return fail(res, 400, `${error.path} must be a ${error.kind.toLowerCase()}`);
+  }
   if (error?.code === 11000) return fail(res, 409, "Already exists");
 
   if (error?.type === "entity.parse.failed") {

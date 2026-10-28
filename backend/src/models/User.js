@@ -7,6 +7,7 @@ import {
 
 const HEIGHT_MESSAGE = "Height must be between 50 and 300 cm";
 const WEIGHT_MESSAGE = "Weight must be between 20 and 500 kg";
+const GOAL_MESSAGE = "The weekly goal must be between 1 and 200 km";
 
 const userSchema = new mongoose.Schema(
   {
@@ -28,6 +29,8 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ["sedentary", "light", "moderate", "active", "very_active"],
     },
+    // How far the user wants to walk with WalkIt each week, shown on Statistics
+    weeklyGoalKm: { type: Number, default: 10, min: [1, GOAL_MESSAGE], max: [200, GOAL_MESSAGE] },
   },
   { timestamps: true },
 );

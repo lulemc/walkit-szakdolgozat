@@ -13,6 +13,7 @@ const stored = {
   height: 170,
   weight: 60,
   activityLevel: "active",
+  weeklyGoalKm: 15,
   createdAt: "2030-01-01",
   updatedAt: "2030-01-02",
 };
@@ -28,6 +29,7 @@ describe("toPublicUser", () => {
       height: 170,
       weight: 60,
       activityLevel: "active",
+      weeklyGoalKm: 15,
       createdAt: "2030-01-01",
       updatedAt: "2030-01-02",
     });

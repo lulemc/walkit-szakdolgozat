@@ -43,6 +43,12 @@ export interface WalkStats {
   totalDurationSec: number;
 }
 
+/** When and how far one walk went (for weekly goals and streaks) */
+export interface WalkActivity {
+  startedAt: string;
+  distanceM: number;
+}
+
 export interface WalkStatsRange {
   /** ISO times; walks that started in [from, to) */
   from?: string;

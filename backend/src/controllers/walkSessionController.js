@@ -17,6 +17,11 @@ export const getWalkStats = async (req, res) => {
   res.json({ success: true, data: stats });
 };
 
+export const getWalkActivity = async (req, res) => {
+  const activity = await walkSessionService.getWalkActivity(req.user.id, req.query);
+  res.json({ success: true, data: activity });
+};
+
 export const getWalk = async (req, res) => {
   const walk = await walkSessionService.getWalk(req.user.id, req.params.id);
   res.json({ success: true, data: walk });

@@ -10,6 +10,7 @@ export interface UpdateUserData {
   height?: number;
   weight?: number;
   activityLevel?: string;
+  weeklyGoalKm?: number;
 }
 
 export interface ChangePasswordData {

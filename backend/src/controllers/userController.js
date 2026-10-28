@@ -19,7 +19,7 @@ const userIdOf = (req) => {
   return req.params.id;
 };
 
-const PROFILE_FIELDS = ["dateOfBirth", "sex", "height", "weight", "activityLevel"];
+const PROFILE_FIELDS = ["dateOfBirth", "sex", "height", "weight", "activityLevel", "weeklyGoalKm"];
 
 export const getUserById = async (req, res) => {
   const user = await User.findById(userIdOf(req)).select("-passwordHash");

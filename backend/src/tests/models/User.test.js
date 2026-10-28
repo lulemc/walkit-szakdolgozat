@@ -36,8 +36,14 @@ describe("User model", () => {
     ["height", 301, "Height must be between 50 and 300 cm"],
     ["weight", 19, "Weight must be between 20 and 500 kg"],
     ["weight", 501, "Weight must be between 20 and 500 kg"],
+    ["weeklyGoalKm", 0, "The weekly goal must be between 1 and 200 km"],
+    ["weeklyGoalKm", 201, "The weekly goal must be between 1 and 200 km"],
   ])("rejects %s %s", (field, value, message) => {
     expect(errorsOf({ ...valid, [field]: value })[field].message).toBe(message);
+  });
+
+  it("has a weekly walking goal of 10 km until one is set", () => {
+    expect(new User(valid).weeklyGoalKm).toBe(10);
   });
 
   it("accepts sensible heights and weights", () => {

@@ -8,6 +8,7 @@ const PUBLIC_FIELDS = [
   "height",
   "weight",
   "activityLevel",
+  "weeklyGoalKm",
   "createdAt",
   "updatedAt",
 ];

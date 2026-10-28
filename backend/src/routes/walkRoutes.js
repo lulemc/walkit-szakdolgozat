@@ -1,13 +1,14 @@
 // routes/walkRoutes.js
 import express from "express";
-import { getWalk, getWalkStats, listWalks, recordWalk } from "../controllers/walkSessionController.js";
+import { getWalk, getWalkActivity, getWalkStats, listWalks, recordWalk } from "../controllers/walkSessionController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
 // Documented in config/swagger.js under the "Walks" tag.
-// /stats must be declared above /:id, which would otherwise treat it as an id.
+// /stats and /activity must be declared above /:id, which would otherwise treat them as an id.
 router.get("/stats", protect, getWalkStats);
+router.get("/activity", protect, getWalkActivity);
 router.post("/", protect, recordWalk);
 router.get("/", protect, listWalks);
 router.get("/:id", protect, getWalk);

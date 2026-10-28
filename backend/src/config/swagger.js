@@ -67,6 +67,7 @@ const swaggerSpec = swaggerJSDoc({
               type: "string",
               enum: ["sedentary", "light", "moderate", "active", "very_active"],
             },
+            weeklyGoalKm: { type: "number", minimum: 1, maximum: 200, default: 10, description: "Weekly walking goal in km" },
             createdAt: { type: "string", format: "date-time" },
             updatedAt: { type: "string", format: "date-time" },
           },
@@ -82,6 +83,7 @@ const swaggerSpec = swaggerJSDoc({
             height: { type: "number" },
             weight: { type: "number" },
             activityLevel: { type: "string" },
+            weeklyGoalKm: { type: "number", minimum: 1, maximum: 200 },
           },
         },
         AuthRequest: {
@@ -476,6 +478,13 @@ const swaggerSpec = swaggerJSDoc({
               },
             },
           ],
+        },
+        WalkActivity: {
+          type: "object",
+          properties: {
+            startedAt: { type: "string", format: "date-time" },
+            distanceM: { type: "number" },
+          },
         },
         WalkStats: {
           type: "object",
@@ -1485,6 +1494,33 @@ const swaggerSpec = swaggerJSDoc({
               },
             },
             400: { description: "Invalid from or to", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+          },
+        },
+      },
+      "/api/walks/activity": {
+        get: {
+          summary: "When and how far I walked since a date (for weekly goals and streaks)",
+          tags: ["Walks"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { in: "query", name: "from", required: true, schema: { type: "string", format: "date-time" }, description: "Walks started at or after this" },
+          ],
+          responses: {
+            200: {
+              description: "Oldest first, at most 1000 walks",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: { type: "boolean" },
+                      data: { type: "array", items: { $ref: "#/components/schemas/WalkActivity" } },
+                    },
+                  },
+                },
+              },
+            },
+            400: { description: "Missing or invalid from", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
           },
         },
       },

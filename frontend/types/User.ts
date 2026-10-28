@@ -7,4 +7,6 @@ export interface User {
   height?: number;
   weight?: number;
   activityLevel?: string;
+  /** Weekly walking goal in km (the backend uses 10 until one is set) */
+  weeklyGoalKm?: number;
 }

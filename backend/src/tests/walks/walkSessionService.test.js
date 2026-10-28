@@ -6,7 +6,9 @@ import GroupWalk from "../../models/GroupWalk.js";
 import { HttpError } from "../../utils/httpError.js";
 import {
   MAX_PATH_POINTS,
+  MAX_ACTIVITY_WALKS,
   getWalk,
+  getWalkActivity,
   getWalkStats,
   listWalks,
   recordWalk,
@@ -311,5 +313,28 @@ describe("getWalkStats", () => {
 
   it("rejects dates that aren't dates", async () => {
     await expectHttpError(getWalkStats(me, { from: "monday" }), 400, "from and to must be dates");
+  });
+});
+
+describe("getWalkActivity", () => {
+  it("lists when and how far I walked since a date, oldest first", async () => {
+    const days = [{ startedAt: new Date("2030-01-01T09:00:00Z"), distanceM: 2000 }];
+    const q = query(days);
+    WalkSession.find.mockReturnValue(q);
+
+    const activity = await getWalkActivity(me, { from: "2029-12-01T00:00:00.000Z" });
+
+    expect(activity).toEqual(days);
+    expect(WalkSession.find).toHaveBeenCalledWith({
+      user: me,
+      startedAt: { $gte: new Date("2029-12-01T00:00:00.000Z") },
+    });
+    expect(q.select).toHaveBeenCalledWith("startedAt distanceM -_id");
+    expect(q.sort).toHaveBeenCalledWith({ startedAt: 1 });
+    expect(q.limit).toHaveBeenCalledWith(MAX_ACTIVITY_WALKS);
+  });
+
+  it.each([undefined, "monday"])("needs a from date (%s)", async (from) => {
+    await expectHttpError(getWalkActivity(me, { from }), 400, "from must be a date");
   });
 });

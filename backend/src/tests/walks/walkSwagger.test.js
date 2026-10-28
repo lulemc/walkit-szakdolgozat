@@ -6,6 +6,7 @@ describe("Swagger spec: Walks", () => {
     ["post", "/api/walks"],
     ["get", "/api/walks"],
     ["get", "/api/walks/stats"],
+    ["get", "/api/walks/activity"],
     ["get", "/api/walks/{id}"],
   ])("documents %s %s behind login", (method, path) => {
     const operation = swaggerSpec.paths[path]?.[method];
@@ -15,7 +16,7 @@ describe("Swagger spec: Walks", () => {
     expect(operation.security).toEqual([{ bearerAuth: [] }]);
   });
 
-  it.each(["RecordWalkRequest", "WalkSummary", "Walk", "WalkStats"])("defines the %s schema", (name) => {
+  it.each(["RecordWalkRequest", "WalkSummary", "Walk", "WalkStats", "WalkActivity"])("defines the %s schema", (name) => {
     expect(swaggerSpec.components.schemas[name]).toBeDefined();
   });
 });

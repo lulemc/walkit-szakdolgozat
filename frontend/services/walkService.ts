@@ -1,6 +1,14 @@
 import api from './api';
 import type { ApiResponse } from '@/types/api';
-import type { RecordWalkRequest, Walk, WalkPage, WalkStats, WalkStatsRange, WalkSummary } from '@/types/walk';
+import type {
+  RecordWalkRequest,
+  Walk,
+  WalkActivity,
+  WalkPage,
+  WalkStats,
+  WalkStatsRange,
+  WalkSummary,
+} from '@/types/walk';
 
 const unwrap = <T>(response: { data: ApiResponse<T> }) => response.data.data;
 
@@ -31,6 +39,11 @@ export const walkService = {
 
   async get(walkId: string): Promise<Walk> {
     return unwrap(await api.get<ApiResponse<Walk>>(`/walks/${walkId}`));
+  },
+
+  /** When and how far I walked since `from` (ISO time), oldest first */
+  async activity(from: string): Promise<WalkActivity[]> {
+    return unwrap(await api.get<ApiResponse<WalkActivity[]>>('/walks/activity', { params: { from } }));
   },
 
   async stats(range: WalkStatsRange = {}): Promise<WalkStats> {

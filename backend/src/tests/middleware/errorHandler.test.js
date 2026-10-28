@@ -50,6 +50,15 @@ describe("errorHandler", () => {
     expect(res.json).toHaveBeenCalledWith({ success: false, message: "Not found" });
   });
 
+  it("answers a value of the wrong type (e.g. text for a number) with 400", () => {
+    const error = new mongoose.Error.CastError("Number", "abc", "weeklyGoalKm");
+
+    const { res } = handle(error);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ success: false, message: "weeklyGoalKm must be a number" });
+  });
+
   it("answers a duplicate key with 409", () => {
     const { res } = handle(Object.assign(new Error("E11000 duplicate key error"), { code: 11000 }));
 

@@ -9,6 +9,8 @@ export const MAX_PATH_POINTS = 500;
 export const MAX_DISTANCE_M = 200_000;
 export const DEFAULT_PAGE_SIZE = 20;
 export const MAX_PAGE_SIZE = 50;
+// A year of walks most days is well below this
+export const MAX_ACTIVITY_WALKS = 1000;
 /** Phones' clocks can be a bit ahead of the server's */
 const CLOCK_SKEW_MS = 5 * 60 * 1000;
 /** Rounding slack between the app's timer and the start/end times */
@@ -178,6 +180,21 @@ export const getWalk = async (userId, walkId) => {
   const walk = await WalkSession.findOne({ _id: walkId, user: userId }).lean();
   if (!walk) throw walkNotFound();
   return toWalk(walk);
+};
+
+/**
+ * When and how far I walked since `from`, oldest first: just enough for the
+ * app to work out weekly goals and streaks in the phone's own time zone
+ */
+export const getWalkActivity = async (userId, { from } = {}) => {
+  const fromDate = parseDate(from);
+  if (!fromDate) throw new HttpError(400, "from must be a date");
+
+  return WalkSession.find({ user: userId, startedAt: { $gte: fromDate } })
+    .select("startedAt distanceM -_id")
+    .sort({ startedAt: 1 })
+    .limit(MAX_ACTIVITY_WALKS)
+    .lean();
 };
 
 /** Totals of my walks that started in [from, to); all of them without a range */

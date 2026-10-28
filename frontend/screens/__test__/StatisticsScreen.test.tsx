@@ -1,6 +1,9 @@
 /* eslint-disable import/first */
 jest.mock("@/hooks/useHealthData");
 jest.mock("@/hooks/useWalkStats", () => ({ useWalkStats: jest.fn(() => ({ stats: null })) }));
+jest.mock("@/hooks/useWalkGoal", () => ({
+  useWalkGoal: jest.fn(() => ({ goalKm: 10, thisWeekM: 0, streak: 0, loaded: false, saveGoal: jest.fn() })),
+}));
 jest.mock("react-native-gifted-charts", () => ({
   BarChart: () => null,
   LineChart: () => null,
@@ -13,6 +16,7 @@ import { useHealthData, UseHealthDataReturn } from "@/hooks/useHealthData";
 import { renderWithTheme } from "@/components/Statistics/__test__/renderWithTheme";
 import { summarize } from "@/utils/healthStats";
 import { useWalkStats } from "@/hooks/useWalkStats";
+import { useWalkGoal } from "@/hooks/useWalkGoal";
 import StatisticsScreen from "../StatisticsScreen";
 
 const mockedUseHealthData = useHealthData as jest.MockedFunction<typeof useHealthData>;
@@ -149,5 +153,30 @@ describe("StatisticsScreen", () => {
     const { getByLabelText } = renderWithTheme(<StatisticsScreen />);
 
     expect(getByLabelText("WalkIt walks this week: 3 walks, 9.00km, 1h 30m 0s")).toBeTruthy();
+  });
+
+  it("shows the weekly walking goal and streak once the walks are loaded", () => {
+    mockedUseHealthData.mockReturnValue(healthState());
+    (useWalkGoal as jest.Mock).mockReturnValue({
+      goalKm: 10,
+      thisWeekM: 4200,
+      streak: 2,
+      loaded: true,
+      saveGoal: jest.fn(),
+    });
+
+    const { getByText } = renderWithTheme(<StatisticsScreen />);
+
+    expect(getByText("4.2 of 10 km")).toBeTruthy();
+    expect(getByText("🔥 2-week streak")).toBeTruthy();
+  });
+
+  it("leaves the goal out until the walks are loaded", () => {
+    mockedUseHealthData.mockReturnValue(healthState());
+    (useWalkGoal as jest.Mock).mockReturnValue({ goalKm: 10, thisWeekM: 0, streak: 0, loaded: false, saveGoal: jest.fn() });
+
+    const { queryByText } = renderWithTheme(<StatisticsScreen />);
+
+    expect(queryByText("Weekly goal")).toBeNull();
   });
 });
