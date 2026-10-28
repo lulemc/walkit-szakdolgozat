@@ -1,5 +1,5 @@
 import { View, StyleSheet, TouchableOpacity } from "react-native";
-import { Card } from "react-native-paper";
+import { Card, useTheme } from "react-native-paper";
 import { CustomText } from "@/components/CustomText";
 import { PrimaryButton } from "@/components/Button";
 import { Route, routeService } from "@/services/routeService";
@@ -20,6 +20,10 @@ const RouteInfoCard: React.FC<RouteInfoCardProps> = ({
   onStartWalk,
   onPlanGroupWalk,
 }) => {
+  const theme = useTheme();
+  const muted = { color: theme.colors.onSurfaceVariant };
+  const chipColors = { backgroundColor: theme.colors.surfaceVariant };
+  const divider = { backgroundColor: theme.colors.outlineVariant };
   const distance = routeService.formatDistance(route.totalDistance);
   const duration = routeService.formatDuration(route.estimatedDuration);
   const pace = routeService.calculatePace(
@@ -70,7 +74,7 @@ const RouteInfoCard: React.FC<RouteInfoCardProps> = ({
         <View style={styles.statsGrid}>
           <View style={styles.statItem}>
             <CustomText style={styles.statIcon}>📏</CustomText>
-            <CustomText variant="bodySmall" style={styles.statLabel}>
+            <CustomText variant="bodySmall" style={[styles.statLabel, muted]}>
               Distance
             </CustomText>
             <CustomText variant="titleMedium" style={styles.statValue}>
@@ -80,7 +84,7 @@ const RouteInfoCard: React.FC<RouteInfoCardProps> = ({
 
           <View style={styles.statItem}>
             <CustomText style={styles.statIcon}>⏱️</CustomText>
-            <CustomText variant="bodySmall" style={styles.statLabel}>
+            <CustomText variant="bodySmall" style={[styles.statLabel, muted]}>
               Duration
             </CustomText>
             <CustomText variant="titleMedium" style={styles.statValue}>
@@ -90,7 +94,7 @@ const RouteInfoCard: React.FC<RouteInfoCardProps> = ({
 
           <View style={styles.statItem}>
             <CustomText style={styles.statIcon}>⚡</CustomText>
-            <CustomText variant="bodySmall" style={styles.statLabel}>
+            <CustomText variant="bodySmall" style={[styles.statLabel, muted]}>
               Pace
             </CustomText>
             <CustomText variant="titleMedium" style={styles.statValue}>
@@ -101,14 +105,14 @@ const RouteInfoCard: React.FC<RouteInfoCardProps> = ({
 
         {(route.elevationGain > 0 || route.elevationLoss > 0) && (
           <View style={styles.elevationSection}>
-            <View style={styles.divider} />
+            <View style={[styles.divider, divider]} />
             <CustomText variant="bodyMedium" style={styles.elevationTitle}>
               ⛰️ Elevation
             </CustomText>
             <View style={styles.elevationGrid}>
               <View style={styles.elevationItem}>
                 <CustomText style={styles.elevationIcon}>↗️</CustomText>
-                <CustomText variant="bodySmall" style={styles.elevationLabel}>
+                <CustomText variant="bodySmall" style={[styles.elevationLabel, muted]}>
                   Gain
                 </CustomText>
                 <CustomText variant="titleSmall" style={styles.elevationValue}>
@@ -117,7 +121,7 @@ const RouteInfoCard: React.FC<RouteInfoCardProps> = ({
               </View>
               <View style={styles.elevationItem}>
                 <CustomText style={styles.elevationIcon}>↘️</CustomText>
-                <CustomText variant="bodySmall" style={styles.elevationLabel}>
+                <CustomText variant="bodySmall" style={[styles.elevationLabel, muted]}>
                   Loss
                 </CustomText>
                 <CustomText variant="titleSmall" style={styles.elevationValue}>
@@ -130,52 +134,52 @@ const RouteInfoCard: React.FC<RouteInfoCardProps> = ({
 
         {Object.values(route.preferences).some((v) => v) && (
           <>
-            <View style={styles.divider} />
+            <View style={[styles.divider, divider]} />
             <View style={styles.preferencesSection}>
-              <CustomText variant="bodySmall" style={styles.preferencesLabel}>
+              <CustomText variant="bodySmall" style={[styles.preferencesLabel, muted]}>
                 Active Preferences:
               </CustomText>
               <View style={styles.preferenceChips}>
                 {route.preferences.parks && (
-                  <View style={styles.chip}>
-                    <CustomText style={styles.chipText}>🌳 Parks</CustomText>
+                  <View style={[styles.chip, chipColors]}>
+                    <CustomText style={[styles.chipText, muted]}>🌳 Parks</CustomText>
                   </View>
                 )}
                 {route.preferences.waterfront && (
-                  <View style={styles.chip}>
-                    <CustomText style={styles.chipText}>
+                  <View style={[styles.chip, chipColors]}>
+                    <CustomText style={[styles.chipText, muted]}>
                       💧 Waterfront
                     </CustomText>
                   </View>
                 )}
                 {route.preferences.scenic && (
-                  <View style={styles.chip}>
-                    <CustomText style={styles.chipText}>🏛️ Scenic</CustomText>
+                  <View style={[styles.chip, chipColors]}>
+                    <CustomText style={[styles.chipText, muted]}>🏛️ Scenic</CustomText>
                   </View>
                 )}
                 {route.preferences.uphill && (
-                  <View style={styles.chip}>
-                    <CustomText style={styles.chipText}>⛰️ Uphill</CustomText>
+                  <View style={[styles.chip, chipColors]}>
+                    <CustomText style={[styles.chipText, muted]}>⛰️ Uphill</CustomText>
                   </View>
                 )}
                 {route.preferences.mountain && (
-                  <View style={styles.chip}>
-                    <CustomText style={styles.chipText}>🏔️ Mountain</CustomText>
+                  <View style={[styles.chip, chipColors]}>
+                    <CustomText style={[styles.chipText, muted]}>🏔️ Mountain</CustomText>
                   </View>
                 )}
                 {route.preferences.quietStreets && (
-                  <View style={styles.chip}>
-                    <CustomText style={styles.chipText}>🤫 Quiet</CustomText>
+                  <View style={[styles.chip, chipColors]}>
+                    <CustomText style={[styles.chipText, muted]}>🤫 Quiet</CustomText>
                   </View>
                 )}
                 {route.preferences.beach && (
-                  <View style={styles.chip}>
-                    <CustomText style={styles.chipText}>🏖️ Beach</CustomText>
+                  <View style={[styles.chip, chipColors]}>
+                    <CustomText style={[styles.chipText, muted]}>🏖️ Beach</CustomText>
                   </View>
                 )}
                 {route.preferences.avoidHighways && (
-                  <View style={styles.chip}>
-                    <CustomText style={styles.chipText}>
+                  <View style={[styles.chip, chipColors]}>
+                    <CustomText style={[styles.chipText, muted]}>
                       🚫 No Highways
                     </CustomText>
                   </View>
@@ -185,7 +189,7 @@ const RouteInfoCard: React.FC<RouteInfoCardProps> = ({
           </>
         )}
 
-        <View style={styles.divider} />
+        <View style={[styles.divider, divider]} />
         <PrimaryButton
           mode="contained"
           onPress={onStartWalk}
@@ -258,7 +262,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   statLabel: {
-    color: colors.lightGrey,
     marginBottom: 4,
   },
   statValue: {
@@ -266,7 +269,6 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: colors.beige,
     marginVertical: 12,
   },
   elevationSection: {
@@ -288,7 +290,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   elevationLabel: {
-    color: colors.lightGrey,
     marginBottom: 2,
   },
   elevationValue: {
@@ -298,7 +299,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   preferencesLabel: {
-    color: colors.lightGrey,
     marginBottom: 8,
   },
   preferenceChips: {
@@ -307,14 +307,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chip: {
-    backgroundColor: colors.beige,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
   },
   chipText: {
     fontSize: 12,
-    color: "#374151",
   },
   startButton: {
     marginTop: 4,

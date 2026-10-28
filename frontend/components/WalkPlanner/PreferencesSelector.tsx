@@ -2,7 +2,6 @@ import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { Switch, useTheme } from "react-native-paper";
 import { CustomText } from "@/components/CustomText";
 import type { RoutePreferences } from "@/services/routeService";
-import { colors } from "@/theme/colors";
 
 interface PreferencesSelectorProps {
   preferences: RoutePreferences;
@@ -85,9 +84,14 @@ const PreferencesSelector: React.FC<PreferencesSelectorProps> = ({
       {PREFERENCE_OPTIONS.map((option) => (
         <TouchableOpacity
           key={option.key}
+          testID={`preference-${option.key}`}
           style={[
             styles.preferenceItem,
-            preferences[option.key] && styles.preferenceItemActive,
+            { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant },
+            preferences[option.key] && {
+              backgroundColor: theme.colors.primaryContainer,
+              borderColor: theme.colors.primary,
+            },
           ]}
           onPress={() => togglePreference(option.key)}
           activeOpacity={0.7}
@@ -102,14 +106,18 @@ const PreferencesSelector: React.FC<PreferencesSelectorProps> = ({
                   variant="bodyMedium"
                   style={[
                     styles.preferenceLabel,
-                    preferences[option.key] && styles.preferenceLabelActive,
+                    { color: theme.colors.onSurface },
+                    preferences[option.key] && [
+                      styles.preferenceLabelActive,
+                      { color: theme.colors.onPrimaryContainer },
+                    ],
                   ]}
                 >
                   {option.label}
                 </CustomText>
                 <CustomText
                   variant="bodySmall"
-                  style={styles.preferenceDescription}
+                  style={[styles.preferenceDescription, { color: theme.colors.onSurfaceVariant }]}
                 >
                   {option.description}
                 </CustomText>
@@ -127,8 +135,8 @@ const PreferencesSelector: React.FC<PreferencesSelectorProps> = ({
       ))}
 
       {Object.values(preferences).filter(Boolean).length > 0 && (
-        <View style={styles.activeCount}>
-          <CustomText variant="bodySmall" style={styles.activeCountText}>
+        <View style={[styles.activeCount, { backgroundColor: theme.colors.surfaceVariant }]}>
+          <CustomText variant="bodySmall" style={[styles.activeCountText, { color: theme.colors.onSurfaceVariant }]}>
             {Object.values(preferences).filter(Boolean).length} preference
             {Object.values(preferences).filter(Boolean).length !== 1
               ? "s"
@@ -146,15 +154,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   preferenceItem: {
-    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: colors.secondBeige,
     overflow: "hidden",
-  },
-  preferenceItemActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.secondBeige,
   },
   preferenceContent: {
     flexDirection: "row",
@@ -177,25 +179,20 @@ const styles = StyleSheet.create({
   },
   preferenceLabel: {
     fontWeight: "500",
-    color: colors.darkerGrey,
   },
   preferenceLabelActive: {
-    color: colors.primary,
     fontWeight: "600",
   },
   preferenceDescription: {
-    color: colors.lightGrey,
     fontSize: 12,
   },
   activeCount: {
     marginTop: 8,
     padding: 8,
-    backgroundColor: colors.secondBeige,
     borderRadius: 8,
     alignItems: "center",
   },
   activeCountText: {
-    color: colors.lightGrey,
     fontWeight: "500",
   },
 });

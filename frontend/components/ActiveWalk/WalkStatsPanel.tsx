@@ -1,8 +1,7 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
-import { Card } from "react-native-paper";
+import { Card, useTheme } from "react-native-paper";
 import { CustomText } from "@/components/CustomText";
-import { colors } from "@/theme/colors";
 import {
   formatElapsed,
   formatPace,
@@ -23,7 +22,12 @@ export const WalkStatsPanel: React.FC<WalkStatsPanelProps> = ({
   plannedDistanceM,
   elapsedSec,
   notice,
-}) => (
+}) => {
+  const theme = useTheme();
+  const muted = { color: theme.colors.onSurfaceVariant };
+  const value = { color: theme.colors.onSurface };
+
+  return (
   <Card style={styles.card}>
     <Card.Content>
       {/* One sentence for screen readers instead of nine separate numbers and labels */}
@@ -34,41 +38,41 @@ export const WalkStatsPanel: React.FC<WalkStatsPanelProps> = ({
         )} in ${formatElapsed(elapsedSec)}, pace ${formatPace(elapsedSec, distanceM)} minutes per kilometre`}
       >
         {notice ? (
-          <View style={styles.notice}>
-            <CustomText style={styles.noticeText}>{notice}</CustomText>
+          <View style={[styles.notice, { backgroundColor: theme.colors.secondaryContainer }]}>
+            <CustomText style={[styles.noticeText, { color: theme.colors.onSecondaryContainer }]}>{notice}</CustomText>
           </View>
         ) : null}
 
         <View style={styles.grid}>
           <View style={styles.item}>
-            <CustomText variant="bodySmall" style={styles.label}>
+            <CustomText variant="bodySmall" style={[styles.label, muted]}>
               Distance
             </CustomText>
-            <CustomText variant="titleLarge" style={styles.value}>
+            <CustomText variant="titleLarge" style={[styles.value, value]}>
               {formatWalkDistance(distanceM)}
             </CustomText>
-            <CustomText variant="bodySmall" style={styles.subtext}>
+            <CustomText variant="bodySmall" style={[styles.subtext, muted]}>
               / {formatWalkDistance(plannedDistanceM)}
             </CustomText>
           </View>
 
           <View style={styles.item}>
-            <CustomText variant="bodySmall" style={styles.label}>
+            <CustomText variant="bodySmall" style={[styles.label, muted]}>
               Time
             </CustomText>
-            <CustomText variant="titleLarge" style={styles.value}>
+            <CustomText variant="titleLarge" style={[styles.value, value]}>
               {formatElapsed(elapsedSec)}
             </CustomText>
           </View>
 
           <View style={styles.item}>
-            <CustomText variant="bodySmall" style={styles.label}>
+            <CustomText variant="bodySmall" style={[styles.label, muted]}>
               Pace
             </CustomText>
-            <CustomText variant="titleLarge" style={styles.value}>
+            <CustomText variant="titleLarge" style={[styles.value, value]}>
               {formatPace(elapsedSec, distanceM)}
             </CustomText>
-            <CustomText variant="bodySmall" style={styles.subtext}>
+            <CustomText variant="bodySmall" style={[styles.subtext, muted]}>
               min/km
             </CustomText>
           </View>
@@ -76,7 +80,8 @@ export const WalkStatsPanel: React.FC<WalkStatsPanelProps> = ({
       </View>
     </Card.Content>
   </Card>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   card: {
@@ -87,14 +92,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   notice: {
-    backgroundColor: colors.beige,
     padding: 8,
     borderRadius: 8,
     marginBottom: 12,
   },
   noticeText: {
     textAlign: "center",
-    color: colors.secondary,
     fontWeight: "600",
   },
   grid: {
@@ -106,15 +109,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   label: {
-    color: "#6B7280",
     marginBottom: 4,
   },
   value: {
     fontWeight: "700",
-    color: colors.beige,
   },
   subtext: {
-    color: colors.grey,
     fontSize: 10,
   },
 });
