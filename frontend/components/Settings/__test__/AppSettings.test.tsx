@@ -13,7 +13,9 @@ describe('AppSettings', () => {
       </ThemePreferenceContext.Provider>,
     );
 
-    expect(getByRole('button', { name: 'System' })).toBeChecked();
+    // Paper's segmented buttons report the chosen one as "checked"
+    expect(getByRole('button', { name: 'System' }).props.accessibilityState).toMatchObject({ checked: true });
+    expect(getByRole('button', { name: 'Dark' }).props.accessibilityState).toMatchObject({ checked: false });
     fireEvent.press(getByRole('button', { name: 'Dark' }));
 
     expect(setPreference).toHaveBeenCalledWith('dark');
