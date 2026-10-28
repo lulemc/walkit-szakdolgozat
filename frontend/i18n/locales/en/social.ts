@@ -1,4 +1,9 @@
 export default {
+  reminder: {
+    title: "Group walk in 1 hour",
+    body: "“{{title}}” starts at {{time}}",
+    bodyUntitled: "Your group walk starts at {{time}}",
+  },
   // Shared by several social views
   actions: {
     accept: "Accept",

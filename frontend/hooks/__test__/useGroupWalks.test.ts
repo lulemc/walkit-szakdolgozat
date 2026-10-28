@@ -1,11 +1,14 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { groupWalkService } from '@/services/groupWalkService';
 import { makeWalkSummary } from '@/components/Social/__test__/groupWalkFixtures';
+import { syncWalkReminders } from '@/services/walkReminders';
 import { useGroupWalks } from '../useGroupWalks';
 
 jest.mock('@/services/groupWalkService', () => ({
   groupWalkService: { list: jest.fn() },
 }));
+
+jest.mock('@/services/walkReminders', () => ({ syncWalkReminders: jest.fn(() => Promise.resolve()) }));
 
 const list = groupWalkService.list as jest.Mock;
 const invitation = makeWalkSummary({ _id: 'w1' });
@@ -27,6 +30,13 @@ describe('useGroupWalks', () => {
     expect(result.current.invitations).toEqual([invitation]);
     expect(result.current.upcoming).toEqual([upcoming]);
     expect(result.current.past).toEqual([past]);
+  });
+
+  it("keeps the phone's walk reminders in step with the upcoming walks", async () => {
+    const { result } = renderHook(() => useGroupWalks());
+
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(syncWalkReminders).toHaveBeenCalledWith([upcoming]);
   });
 
   it('shows the error state when the first load fails', async () => {

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { groupWalkService } from '@/services/groupWalkService';
+import { syncWalkReminders } from '@/services/walkReminders';
 import type { GroupWalkSummary } from '@/types/social';
 
 export type GroupWalksStatus = 'loading' | 'ready' | 'error';
@@ -27,6 +28,7 @@ export const useGroupWalks = () => {
           setUpcoming(loadedUpcoming);
           setPast(loadedPast);
           setStatus('ready');
+          syncWalkReminders(loadedUpcoming);
         },
         () => {
           // Keep showing the last lists if a reload fails

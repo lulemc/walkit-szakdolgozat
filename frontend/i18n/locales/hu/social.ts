@@ -2,6 +2,11 @@ import type en from "../en/social";
 import type { Translation } from "../../types";
 
 const hu: Translation<typeof en> = {
+  reminder: {
+    title: "Egy óra múlva közös séta",
+    body: "„{{title}}” {{time}}-kor indul",
+    bodyUntitled: "A közös sétád {{time}}-kor indul",
+  },
   actions: {
     accept: "Elfogadás",
     decline: "Elutasítás",

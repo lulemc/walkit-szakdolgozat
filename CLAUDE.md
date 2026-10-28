@@ -74,6 +74,7 @@ WalkIt is a React Native walking planner application that generates walking rout
 **Push Notifications**:
 - Friend requests, accepted requests, group walk invitations and cancellations are pushed through Expo's push service (`backend/src/services/pushService.js`, texts in `socialNotifications.js`, sent after the response and never failing it)
 - The app registers the phone's Expo push token with its language after login and on language change (`services/pushNotifications.ts`, `POST /api/users/:id/push-tokens`); logging out removes it; tokens of uninstalled apps are dropped
+- Walk reminders are local notifications an hour before each upcoming group walk the user accepted (`services/walkReminders.ts`), re-synced whenever the Social hub loads its walks
 - Needs a development build on a real phone (no simulator; not Expo Go on Android). iOS: push credentials via `eas credentials`. Android: an FCM (Firebase) key uploaded to EAS
 
 **Maps & Location**:
